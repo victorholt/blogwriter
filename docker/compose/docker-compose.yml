@@ -1,0 +1,133 @@
+name: blogwriter
+version: "3.9"
+services:
+  proxy:
+    build:
+      context: ../..
+      dockerfile: docker/proxy/Dockerfile
+    container_name: ${CONTAINER_PREFIX:-blogwriter}-proxy
+    ports:
+      - ${PROXY_PORT:-8081}:80
+      - ${PROXY_SSL_PORT:-8444}:443
+    volumes:
+      - ../../docker/proxy/httpd.conf:/usr/local/apache2/conf/httpd.conf:ro
+      - ../../docker/proxy/httpd-vhosts.conf:/usr/local/apache2/conf/vhosts/httpd-vhosts.conf:ro
+      - ../../docker/ssl:/usr/local/apache2/conf/ssl:ro
+    networks:
+      - app-network
+    depends_on:
+      - api
+      - nextjs
+    restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - --quiet
+        - --tries=1
+        - --spider
+        - http://localhost:80/
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+  api:
+    build:
+      context: ../..
+      dockerfile: docker/images/api.Dockerfile
+      target: development
+    container_name: ${CONTAINER_PREFIX:-blogwriter}-api
+    environment:
+      NODE_ENV: development
+      PORT: "4000"
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - --quiet
+        - --tries=1
+        - --spider
+        - http://localhost:4000/health
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+  nextjs:
+    build:
+      context: ../..
+      dockerfile: docker/images/nextjs.Dockerfile
+      target: development
+    container_name: ${CONTAINER_PREFIX:-blogwriter}-nextjs
+    environment:
+      NODE_ENV: development
+      NEXT_TELEMETRY_DISABLED: "1"
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://blogwriter.test:4444}
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - --quiet
+        - --tries=1
+        - --spider
+        - http://localhost:3000/
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+  postgres:
+    image: postgres:16-alpine
+    container_name: ${CONTAINER_PREFIX:-blogwriter}-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-blogwriter_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-blogwriter_pass}
+      POSTGRES_DB: ${POSTGRES_DB:-blogwriter_db}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    profiles:
+      - local
+  valkey:
+    image: valkey/valkey:latest
+    container_name: ${CONTAINER_PREFIX:-blogwriter}-valkey
+    command: valkey-server --appendonly yes
+    volumes:
+      - valkey_data:/data
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD
+        - valkey-cli
+        - ping
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    profiles:
+      - local
+volumes:
+  postgres_data:
+    driver: local
+  valkey_data:
+    driver: local
+networks:
+  app-network:
+    driver: bridge

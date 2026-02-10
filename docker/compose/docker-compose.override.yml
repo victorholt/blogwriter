@@ -1,0 +1,22 @@
+version: "3.9"
+services:
+  api:
+    volumes:
+      - ../../apps/api:/app
+      - /app/node_modules
+    ports:
+      - ${API_EXTERNAL_PORT:-4444}:4000
+    command: npm run dev
+  nextjs:
+    volumes:
+      - ../../apps/nextjs:/app
+      - /app/node_modules
+    ports:
+      - ${NEXTJS_EXTERNAL_PORT:-4443}:3000
+    command: npm run dev
+  postgres:
+    ports:
+      - 5432:5432
+  valkey:
+    ports:
+      - 6380:6379

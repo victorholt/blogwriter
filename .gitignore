@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+
+# Next.js
+apps/nextjs/.next/
+apps/nextjs/out/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# OS
+.DS_Store
+Thumbs.db
+default.profraw
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Docker volumes
+postgres_data/
+valkey_data/
+
+# SSL certificates
+docker/ssl/*.pem
+docker/ssl/*.key
+docker/ssl/*.crt
+
+# Logs
+*.log
+
+# Build output
+dist/
+build/
