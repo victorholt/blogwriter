@@ -1,0 +1,18 @@
+// ============================================================
+// Layout — Page shell & paper card
+// ============================================================
+
+.page-shell {
+  min-height: 100vh;
+  padding: 24px 24px 24px;
+}
+
+.paper {
+  max-width: 960px;
+  margin: 0 auto;
+  background: var(--color-paper);
+  border-radius: 16px;
+  box-shadow: var(--shadow-card);
+  padding: 40px 48px;
+  min-height: calc(100vh - 48px);
+}

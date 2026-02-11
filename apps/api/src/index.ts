@@ -3,6 +3,8 @@ import cors from 'cors'
 import helmet from 'helmet'
 import morgan from 'morgan'
 import apiRoutes from './routes/api'
+import { runMigrations } from './db/migrate'
+import { seedDatabase } from './db/seed'
 
 const app = express()
 const PORT = process.env.PORT || 4000
@@ -47,7 +49,15 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
 })
 
 // Start server
-app.listen(PORT, () => {
-  console.log(`🚀 API server running on http://localhost:${PORT}`)
-  console.log(`📝 Environment: ${process.env.NODE_ENV || 'development'}`)
+app.listen(PORT, async () => {
+  console.log(`API server running on http://localhost:${PORT}`)
+  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`)
+
+  // Run migrations then seed default data
+  try {
+    await runMigrations()
+    await seedDatabase()
+  } catch (err) {
+    console.error('[Startup] Failed to initialize database:', err)
+  }
 })

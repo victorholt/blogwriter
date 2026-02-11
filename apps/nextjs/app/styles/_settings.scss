@@ -1,0 +1,153 @@
+// ============================================================
+// Settings Page
+// ============================================================
+
+.settings-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--color-gray-200);
+  margin-bottom: 32px;
+  overflow-x: auto;
+}
+
+.settings-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-gray-500);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  background: none;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s;
+
+  &:hover {
+    color: var(--color-gray-700);
+  }
+
+  &--active {
+    color: var(--color-blue);
+    border-bottom-color: var(--color-blue);
+  }
+}
+
+.settings-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  color: var(--color-gray-400);
+}
+
+.settings-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--color-gray-800);
+  margin-bottom: 4px;
+}
+
+.settings-subtitle {
+  font-size: 15px;
+  color: var(--color-gray-500);
+  margin-bottom: 32px;
+}
+
+.settings-section {
+  margin-bottom: 40px;
+
+  &__heading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--color-gray-700);
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--color-gray-200);
+  }
+}
+
+.settings-card {
+  background: var(--color-gray-50);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  margin-bottom: 12px;
+
+  &__title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--color-gray-800);
+    margin-bottom: 16px;
+  }
+
+  &__fields {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  &__row {
+    display: flex;
+    gap: 12px;
+
+    @media (max-width: 640px) {
+      flex-direction: column;
+    }
+
+    .settings-field {
+      flex: 1;
+    }
+  }
+
+  &__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--color-gray-200);
+  }
+
+  &__updated {
+    font-size: 12px;
+    color: var(--color-gray-400);
+  }
+}
+
+.settings-field {
+  &__label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-gray-500);
+    margin-bottom: 6px;
+  }
+
+  &__current {
+    font-size: 13px;
+    color: var(--color-gray-400);
+    margin-bottom: 8px;
+    font-family: monospace;
+  }
+
+  &__row {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+
+    .input {
+      flex: 1;
+    }
+  }
+
+  &__textarea {
+    resize: vertical;
+    min-height: 80px;
+    font-family: inherit;
+    line-height: 1.5;
+  }
+}

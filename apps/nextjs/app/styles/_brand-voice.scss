@@ -1,0 +1,232 @@
+// ============================================================
+// Step — Brand Voice (magazine-style brand profile)
+// ============================================================
+
+.brand-voice {
+  &__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+
+  &__name {
+    font-size: 2.75rem;
+    font-weight: 700;
+    color: var(--color-gray-800);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+
+    @media (min-width: 768px) {
+      font-size: 3.25rem;
+    }
+  }
+
+  // --- Hero summary (pullquote style) ---
+  &__summary {
+    font-size: 17px;
+    line-height: 1.65;
+    color: var(--color-gray-600);
+    margin-bottom: 32px;
+    max-width: 640px;
+  }
+
+  // --- Tone pills (colorful) ---
+  &__tone-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 32px;
+  }
+
+  &__tone-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    border-radius: 100px;
+    text-transform: lowercase;
+
+    &:nth-child(5n + 1) {
+      background: #eef4ff;
+      color: #3b76d6;
+    }
+    &:nth-child(5n + 2) {
+      background: #f0fdf4;
+      color: #22863a;
+    }
+    &:nth-child(5n + 3) {
+      background: #fef3c7;
+      color: #b45309;
+    }
+    &:nth-child(5n + 4) {
+      background: #fce7f3;
+      color: #be185d;
+    }
+    &:nth-child(5n + 5) {
+      background: #ede9fe;
+      color: #7c3aed;
+    }
+  }
+
+  // --- Stat grid (audience + price) ---
+  &__stats {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-bottom: 28px;
+
+    @media (min-width: 640px) {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  &__stat {
+    background: var(--color-gray-50);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+  }
+
+  &__stat-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-gray-400);
+    margin-bottom: 8px;
+  }
+
+  &__stat-value {
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--color-gray-800);
+  }
+
+  &__stat-value--price {
+    font-size: 18px;
+    font-weight: 600;
+    text-transform: capitalize;
+  }
+
+  // --- USP section ---
+  &__usps {
+    margin-bottom: 28px;
+  }
+
+  &__section-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-gray-400);
+    margin-bottom: 12px;
+  }
+
+  &__usp-list {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+
+    @media (min-width: 640px) {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  &__usp {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: var(--color-gray-50);
+    border-radius: var(--radius-md);
+    padding: 14px 16px;
+    font-size: 14px;
+    line-height: 1.45;
+    color: var(--color-gray-700);
+  }
+
+  &__usp-icon {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--color-blue-light);
+    color: var(--color-blue);
+    font-size: 11px;
+    font-weight: 700;
+    margin-top: 1px;
+  }
+
+  // --- Blog tone (blockquote) ---
+  &__blog-tone {
+    margin-bottom: 8px;
+    padding: 20px 24px;
+    border-left: 3px solid var(--color-blue);
+    background: linear-gradient(135deg, #f8faff 0%, #fefefe 100%);
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  }
+
+  &__blog-tone-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-gray-400);
+    margin-bottom: 10px;
+  }
+
+  &__blog-tone-text {
+    font-size: 15px;
+    font-style: italic;
+    line-height: 1.6;
+    color: var(--color-gray-700);
+  }
+
+  // --- Edit mode (keeps old form-style for editing) ---
+  &__section {
+    margin-bottom: 24px;
+  }
+
+  &__label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-gray-500);
+    margin-bottom: 6px;
+  }
+
+  &__text {
+    color: var(--color-gray-800);
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  &__text--italic {
+    font-style: italic;
+    color: var(--color-gray-700);
+  }
+
+  &__list {
+    list-style: disc;
+    padding-left: 20px;
+
+    li {
+      color: var(--color-gray-800);
+      font-size: 15px;
+      margin-bottom: 4px;
+    }
+  }
+}

@@ -1,0 +1,70 @@
+// ============================================================
+// Step — Store Info
+// ============================================================
+
+.store-input {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--color-paper);
+  border-radius: var(--radius-md);
+  padding: 8px 8px 8px 20px;
+  box-shadow: var(--shadow-input);
+
+  &__field {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 14px;
+    color: var(--color-gray-600);
+
+    &::placeholder {
+      color: var(--color-gray-300);
+    }
+  }
+}
+
+// --- Analysis progress log ---
+
+.analysis-log {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    animation: analysis-log-in 0.2s ease-out;
+
+    &--done {
+      color: var(--color-gray-400);
+    }
+
+    &--active {
+      color: var(--color-blue);
+      font-weight: 500;
+    }
+  }
+
+  &__check {
+    font-size: 11px;
+    color: var(--color-blue);
+    width: 12px;
+    text-align: center;
+  }
+}
+
+@keyframes analysis-log-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

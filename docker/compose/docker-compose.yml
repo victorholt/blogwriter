@@ -40,6 +40,12 @@ services:
     environment:
       NODE_ENV: development
       PORT: "4000"
+      DATABASE_URL: postgresql://${POSTGRES_USER:-blogwriter_user}:${POSTGRES_PASSWORD:-blogwriter_pass}@postgres:5432/${POSTGRES_DB:-blogwriter_db}
+      ADMIN_TOKEN: ${ADMIN_TOKEN:-dev-admin-token}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
     networks:
       - app-network
     restart: unless-stopped
@@ -101,8 +107,6 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
-    profiles:
-      - local
   valkey:
     image: valkey/valkey:latest
     container_name: ${CONTAINER_PREFIX:-blogwriter}-valkey

@@ -1,0 +1,369 @@
+// ============================================================
+// Result View — Editorial blog display
+// ============================================================
+
+.result {
+  padding: 8px 0;
+
+  // Header
+  &__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--color-gray-200);
+  }
+
+  &__header-text {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__title {
+    font-family: var(--font-heading, Georgia, serif);
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--color-gray-800);
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+  }
+
+  &__subtitle {
+    font-family: var(--font-body, Georgia, serif);
+    font-size: 1rem;
+    color: var(--color-gray-500);
+    margin-top: 8px;
+    line-height: 1.5;
+    font-style: italic;
+  }
+
+  &__actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  // --------------------------------------------------------
+  // Blog Content — Editorial magazine styling
+  // --------------------------------------------------------
+
+  &__content {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 40px 0;
+    font-family: var(--font-body, Georgia, serif);
+    font-size: 1.125rem;
+    line-height: 1.8;
+    color: var(--color-gray-700);
+
+    // Headings — serif editorial
+    h1, h2, h3, h4, h5, h6 {
+      font-family: var(--font-heading, Georgia, serif);
+      color: var(--color-gray-800);
+      letter-spacing: -0.01em;
+      line-height: 1.3;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      font-weight: 900;
+      margin-top: 2em;
+      margin-bottom: 0.5em;
+    }
+
+    h2 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      margin-top: 2em;
+      margin-bottom: 0.5em;
+    }
+
+    h3 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-top: 1.5em;
+      margin-bottom: 0.5em;
+    }
+
+    // First heading — no top margin
+    > h1:first-child,
+    > h2:first-child {
+      margin-top: 0;
+    }
+
+    // Drop cap on first paragraph
+    > p:first-of-type::first-letter {
+      font-family: var(--font-heading, Georgia, serif);
+      float: left;
+      font-size: 3.5em;
+      line-height: 0.8;
+      margin: 0.05em 0.12em 0 0;
+      font-weight: 700;
+      color: var(--color-gray-800);
+    }
+
+    // Paragraphs
+    p {
+      margin-bottom: 1.25em;
+    }
+
+    // Images — full-width, magazine-style
+    img {
+      display: block;
+      width: 100%;
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+      margin: 2em 0;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    }
+
+    // Blockquotes — editorial pull-quote
+    blockquote {
+      font-family: var(--font-heading, Georgia, serif);
+      font-style: italic;
+      font-size: 1.35rem;
+      line-height: 1.6;
+      border-left: 4px solid var(--color-blue);
+      padding: 8px 0 8px 24px;
+      margin: 2em 0;
+      color: var(--color-gray-600);
+    }
+
+    // Lists
+    ul, ol {
+      margin-bottom: 1.5em;
+      padding-left: 1.5em;
+    }
+
+    ul {
+      list-style: disc;
+    }
+
+    ol {
+      list-style: decimal;
+    }
+
+    li {
+      margin-bottom: 0.5em;
+    }
+
+    // Links
+    a {
+      color: var(--color-blue);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    // Horizontal rules
+    hr {
+      border: none;
+      border-top: 1px solid var(--color-gray-200);
+      margin: 3em 0;
+    }
+
+    // Strong text
+    strong {
+      color: var(--color-gray-800);
+      font-weight: 600;
+    }
+
+    // Emphasis
+    em {
+      font-style: italic;
+    }
+  }
+
+  &__empty {
+    text-align: center;
+    color: var(--color-gray-400);
+    padding: 40px 0;
+    font-family: var(--font-sans);
+  }
+
+  // --------------------------------------------------------
+  // Collapsible Panels
+  // --------------------------------------------------------
+
+  &__panels {
+    max-width: 720px;
+    margin: 0 auto;
+    padding-top: 16px;
+    border-top: 1px solid var(--color-gray-200);
+  }
+
+  &__panel {
+    border: 1px solid var(--color-gray-200);
+    border-radius: var(--radius-lg);
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+
+  &__panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 14px 20px;
+    cursor: pointer;
+    background: var(--color-gray-50);
+    transition: background 0.15s;
+
+    &:hover {
+      background: var(--color-gray-100);
+    }
+  }
+
+  &__panel-header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  &__panel-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-gray-700);
+  }
+
+  &__panel-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    color: white;
+  }
+
+  &__panel-chevron {
+    color: var(--color-gray-400);
+    transition: transform 0.2s ease;
+
+    &--open {
+      transform: rotate(180deg);
+    }
+  }
+
+  &__panel-body {
+    padding: 20px;
+    border-top: 1px solid var(--color-gray-200);
+    animation: panelSlideDown 0.2s ease-out;
+  }
+
+  // --------------------------------------------------------
+  // Review (inside panel)
+  // --------------------------------------------------------
+
+  &__review-section {
+    margin-bottom: 16px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  &__review-heading {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-gray-600);
+    margin-bottom: 6px;
+  }
+
+  &__review-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+
+    li {
+      position: relative;
+      padding-left: 16px;
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--color-gray-600);
+      margin-bottom: 2px;
+
+      &::before {
+        content: '\2713';
+        position: absolute;
+        left: 0;
+        color: var(--color-green);
+        font-weight: 600;
+      }
+    }
+
+    &--suggestions li::before {
+      content: '\2192';
+      color: var(--color-blue);
+    }
+
+    &--flags li::before {
+      content: '!';
+      color: #ef4444;
+    }
+  }
+
+  // --------------------------------------------------------
+  // SEO (inside panel)
+  // --------------------------------------------------------
+
+  &__seo-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  &__seo-field {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &__seo-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-gray-400);
+  }
+
+  &__seo-value {
+    font-size: 14px;
+    color: var(--color-gray-700);
+    line-height: 1.4;
+  }
+
+  &__seo-keywords {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  &__seo-keyword {
+    display: inline-block;
+    padding: 2px 10px;
+    background: white;
+    border: 1px solid var(--color-gray-200);
+    border-radius: 20px;
+    font-size: 12px;
+    color: var(--color-gray-600);
+  }
+}
+
+// Panel slide-down animation
+@keyframes panelSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

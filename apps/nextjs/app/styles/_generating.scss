@@ -1,0 +1,233 @@
+// ============================================================
+// Generating View — Pipeline progress + streaming preview
+// ============================================================
+
+// --- Animations ---
+
+@keyframes stepFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes stepActivate {
+  0% { transform: scale(0.8); opacity: 0.5; }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes checkPop {
+  0% { transform: scale(0); }
+  60% { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+
+@keyframes activeGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(91, 155, 245, 0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(91, 155, 245, 0); }
+}
+
+@keyframes lineGrow {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+
+@keyframes previewFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// --- Component ---
+
+.generating {
+  padding: 24px 0;
+
+  &__title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--color-gray-800);
+    margin-bottom: 4px;
+    text-align: center;
+  }
+
+  &__subtitle {
+    font-size: 15px;
+    color: var(--color-gray-500);
+    text-align: center;
+    margin-bottom: 32px;
+  }
+
+  // Pipeline stepper
+  &__pipeline {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin-bottom: 32px;
+    max-width: 480px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  &__step {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 0;
+    position: relative;
+
+    // Staggered fade-in on mount
+    animation: stepFadeIn 0.4s ease-out both;
+    animation-delay: calc(var(--step-index, 0) * 0.08s);
+
+    // Connector line
+    &:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      left: 11px;
+      top: 36px;
+      bottom: -12px;
+      width: 2px;
+      background: var(--color-gray-200);
+      transition: background 0.4s ease;
+    }
+
+    &--complete:not(:last-child)::after {
+      background: var(--color-green);
+      transform-origin: top;
+      animation: lineGrow 0.3s ease-out;
+    }
+
+    &--active:not(:last-child)::after {
+      background: linear-gradient(to bottom, var(--color-blue) 50%, var(--color-gray-200) 50%);
+    }
+  }
+
+  &__step-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: var(--color-gray-100);
+    color: var(--color-gray-400);
+    transition: background 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+
+    .generating__step--complete & {
+      background: var(--color-green);
+      color: white;
+    }
+
+    .generating__step--active & {
+      background: var(--color-blue);
+      color: white;
+      animation: stepActivate 0.4s ease-out, activeGlow 2s ease-in-out 0.4s infinite;
+    }
+  }
+
+  // Check icon pop animation
+  &__check-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: checkPop 0.35s ease-out;
+  }
+
+  &__step-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding-top: 2px;
+  }
+
+  &__step-label {
+    font-size: 14px;
+    font-weight: 600;
+    transition: color 0.3s ease;
+
+    .generating__step--pending & {
+      color: var(--color-gray-400);
+    }
+
+    .generating__step--active & {
+      color: var(--color-blue);
+    }
+
+    .generating__step--complete & {
+      color: var(--color-green);
+    }
+  }
+
+  &__step-desc {
+    font-size: 12px;
+    transition: color 0.3s ease;
+    color: var(--color-gray-400);
+
+    .generating__step--active & {
+      color: var(--color-gray-500);
+    }
+  }
+
+  // Error
+  &__error {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: var(--radius-md);
+    color: #dc2626;
+    font-size: 14px;
+    margin-bottom: 24px;
+    max-width: 480px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  // Streaming preview
+  &__preview {
+    max-width: 640px;
+    margin: 0 auto;
+    background: var(--color-gray-50);
+    border: 1px solid var(--color-gray-200);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    animation: previewFadeIn 0.35s ease-out;
+  }
+
+  &__preview-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-gray-500);
+    border-bottom: 1px solid var(--color-gray-200);
+    background: white;
+  }
+
+  &__preview-text {
+    padding: 16px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--color-gray-600);
+    max-height: 200px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+}

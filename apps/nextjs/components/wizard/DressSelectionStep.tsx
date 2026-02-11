@@ -1,0 +1,57 @@
+'use client';
+
+import { useWizardStore } from '@/stores/wizard-store';
+import DressMultiSelect from '@/components/ui/DressMultiSelect';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
+
+export default function DressSelectionStep(): React.ReactElement {
+  const selectedDressIds = useWizardStore((s) => s.selectedDressIds);
+  const toggleDress = useWizardStore((s) => s.toggleDress);
+  const clearSelectedDresses = useWizardStore((s) => s.clearSelectedDresses);
+  const dressesMap = useWizardStore((s) => s.dressesMap);
+  const addDressesToMap = useWizardStore((s) => s.addDressesToMap);
+  const setStep = useWizardStore((s) => s.setStep);
+
+  return (
+    <div>
+      <h1 className="step-heading" style={{ color: 'var(--color-gray-800)' }}>
+        Wedding Dresses
+      </h1>
+      <p className="dress-step__subtitle">
+        Select the dresses to feature in your blog post
+      </p>
+
+      <DressMultiSelect
+        selectedIds={selectedDressIds}
+        onToggle={toggleDress}
+        onClear={clearSelectedDresses}
+        dressesMap={dressesMap}
+        addDressesToMap={addDressesToMap}
+      />
+
+      {/* Selection count */}
+      <div
+        className={`selection-count ${selectedDressIds.size > 0 ? 'selection-count--active' : 'selection-count--empty'}`}
+        style={{ marginTop: '16px' }}
+      >
+        {selectedDressIds.size} dress{selectedDressIds.size !== 1 ? 'es' : ''} selected
+      </div>
+
+      {/* Navigation */}
+      <div className="step-actions">
+        <button className="btn btn--ghost" onClick={() => setStep(2)}>
+          <ArrowLeft size={16} />
+          Back
+        </button>
+        <button
+          className="btn btn--primary"
+          onClick={() => setStep(4)}
+          disabled={selectedDressIds.size === 0}
+        >
+          Next
+          <ArrowRight size={16} />
+        </button>
+      </div>
+    </div>
+  );
+}

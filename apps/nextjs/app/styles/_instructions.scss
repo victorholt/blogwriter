@@ -1,0 +1,57 @@
+// ============================================================
+// Step — Additional Instructions
+// ============================================================
+
+.instructions-step {
+  &__subtitle {
+    color: var(--color-gray-500);
+    font-size: 15px;
+    margin-bottom: 32px;
+  }
+
+  &__textarea {
+    @extend .textarea;
+    font-size: 15px;
+    margin-bottom: 32px;
+  }
+}
+
+.session-summary {
+  background: var(--color-gray-50);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  margin-bottom: 40px;
+
+  &__title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-gray-500);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 12px;
+  }
+
+  &__row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+    color: var(--color-gray-700);
+    margin-bottom: 8px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    svg {
+      color: var(--color-gray-400);
+      flex-shrink: 0;
+    }
+  }
+
+  &__text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}

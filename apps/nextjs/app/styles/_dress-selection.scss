@@ -1,0 +1,31 @@
+// ============================================================
+// Step — Dress Selection
+// ============================================================
+
+.dress-step {
+  &__subtitle {
+    color: var(--color-gray-500);
+    font-size: 15px;
+    margin-bottom: 24px;
+  }
+}
+
+.selection-count {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  margin-bottom: 16px;
+
+  &--empty {
+    background: var(--color-gray-100);
+    color: var(--color-gray-500);
+  }
+
+  &--active {
+    background: var(--color-blue);
+    color: #fff;
+  }
+}
