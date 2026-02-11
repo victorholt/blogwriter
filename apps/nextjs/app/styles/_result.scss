@@ -3,14 +3,13 @@
 // ============================================================
 
 .result {
-  padding: 0;
 
   // --------------------------------------------------------
   // Blog Content — Editorial magazine styling
   // --------------------------------------------------------
 
   &__content {
-    max-width: 720px;
+    max-width: 900px;
     margin: 0 auto;
     padding: 16px 0 40px;
     font-family: var(--font-body, Georgia, serif);
@@ -77,7 +76,6 @@
 
       &--1 {
         grid-template-columns: 1fr;
-        max-width: 600px;
       }
 
       &--2 {
@@ -326,7 +324,7 @@
   // --------------------------------------------------------
 
   &__panels {
-    max-width: 720px;
+    max-width: 900px;
     margin: 0 auto;
     padding-top: 16px;
     border-top: 1px solid var(--color-gray-200);
@@ -497,7 +495,7 @@
   // --------------------------------------------------------
 
   &__insights {
-    max-width: 720px;
+    max-width: 900px;
     margin: 24px auto 0;
     padding: 16px 0 24px;
     border-top: 1px solid var(--color-gray-200);

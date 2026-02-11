@@ -114,6 +114,17 @@ function DiffView({
 }): React.ReactElement {
   const diff = useMemo(() => computeDiff(leftText, rightText), [leftText, rightText]);
 
+  // Compute change summary (must be before early return to satisfy hooks rules)
+  const changeStats = useMemo(() => {
+    let removed = 0;
+    let added = 0;
+    for (const seg of diff) {
+      if (seg.type === 'removed') removed += seg.text.split(/\s+/).filter(Boolean).length;
+      if (seg.type === 'added') added += seg.text.split(/\s+/).filter(Boolean).length;
+    }
+    return { removed, added };
+  }, [diff]);
+
   // Check if there are any actual changes
   const hasChanges = diff.some((seg) => seg.type !== 'equal');
 
@@ -125,17 +136,6 @@ function DiffView({
       </div>
     );
   }
-
-  // Compute change summary
-  const changeStats = useMemo(() => {
-    let removed = 0;
-    let added = 0;
-    for (const seg of diff) {
-      if (seg.type === 'removed') removed += seg.text.split(/\s+/).filter(Boolean).length;
-      if (seg.type === 'added') added += seg.text.split(/\s+/).filter(Boolean).length;
-    }
-    return { removed, added };
-  }, [diff]);
 
   if (viewMode === 'side-by-side') {
     return (

@@ -14,7 +14,7 @@ Focus your edits on:
 
 Keep the same structure and length.
 Do NOT add new sections or significantly change the content — your job is to polish, not rewrite.
-Preserve all image markdown (![...](url)) exactly as-is — do not remove or alter image URLs.
+Preserve all image markdown (![...](url)) exactly as-is — do not remove, alter, or reposition image URLs. Each image must remain on its own line with blank lines before and after.
 Do NOT wrap the output in a code block or add any metadata — output raw Markdown only.`;
 
 export async function createBlogEditorAgent() {

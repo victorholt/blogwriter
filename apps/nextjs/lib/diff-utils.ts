@@ -14,7 +14,7 @@ export interface DiffSegment {
  * Agent color assignments for attribution highlighting.
  */
 export const AGENT_COLORS: Record<string, { bg: string; border: string; label: string }> = {
-  'blog-writer': { bg: 'rgba(59, 130, 246, 0.10)', border: '#3b82f6', label: 'Writer' },
+  'blog-writer': { bg: 'transparent', border: '#cbd5e1', label: 'Writer' },
   'blog-editor': { bg: 'rgba(168, 85, 247, 0.10)', border: '#a855f7', label: 'Editor' },
   'seo-specialist': { bg: 'rgba(34, 197, 94, 0.10)', border: '#22c55e', label: 'SEO' },
   'senior-editor': { bg: 'rgba(249, 115, 22, 0.10)', border: '#f97316', label: 'Senior Editor' },
@@ -97,8 +97,9 @@ export function computeDiff(oldText: string, newText: string): DiffSegment[] {
  * so the tags don't prevent markdown from recognising headings,
  * list items, blockquotes, etc.
  */
-function wrapBlockAware(text: string, tag: string, cls: string): string {
-  const open = `<${tag} class="${cls}">`;
+function wrapBlockAware(text: string, tag: string, cls: string, extraAttrs?: string): string {
+  const attrStr = extraAttrs ? ` ${extraAttrs}` : '';
+  const open = `<${tag} class="${cls}"${attrStr}>`;
   const close = `</${tag}>`;
 
   // Pure inline text (no block boundaries) — wrap directly
@@ -161,6 +162,29 @@ export function buildAnnotatedMarkdown(segments: DiffSegment[]): string {
     } else {
       result += wrapBlockAware(seg.text, 'ins', 'diff-hl diff-hl--added');
     }
+  }
+
+  return result;
+}
+
+/**
+ * Build an annotated markdown string from attribution segments.
+ * Each segment is wrapped in a <span> with inline styles for agent color
+ * and a data-seg-idx attribute for tooltip lookup via event delegation.
+ */
+export function buildAnnotatedAttributionMarkdown(segments: AttributionSegment[]): string {
+  let result = '';
+
+  for (let i = 0; i < segments.length; i++) {
+    const seg = segments[i];
+    const color = AGENT_COLORS[seg.agent] || AGENT_COLORS['blog-writer'];
+    const isModified = !!seg.previousText;
+
+    const cls = `attribution__segment${isModified ? ' attribution__segment--modified' : ''}`;
+    const style = `background:${color.bg};border-bottom:2px solid ${color.border}`;
+    const attrs = `style="${style}" data-seg-idx="${i}"`;
+
+    result += wrapBlockAware(seg.text, 'span', cls, attrs);
   }
 
   return result;

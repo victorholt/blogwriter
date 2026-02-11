@@ -1,9 +1,11 @@
 'use client';
 
-import { useMemo, useState, useRef } from 'react';
+import { useMemo, useState, useRef, useCallback } from 'react';
 import { useWizardStore } from '@/stores/wizard-store';
-import { buildAttribution, AGENT_COLORS } from '@/lib/diff-utils';
+import { buildAttribution, buildAnnotatedAttributionMarkdown, AGENT_COLORS } from '@/lib/diff-utils';
 import type { AttributionSegment } from '@/lib/diff-utils';
+import Markdown from 'react-markdown';
+import rehypeRaw from 'rehype-raw';
 
 const AGENT_ORDER = ['blog-writer', 'blog-editor', 'seo-specialist', 'senior-editor', 'blog-reviewer'];
 
@@ -60,27 +62,43 @@ export default function AttributionOverlay(): React.ReactElement | null {
     return Array.from(agents);
   }, [segments]);
 
-  if (!debugMode || agentIds.length < 2 || !generatedBlog || segments.length === 0) return null;
+  // Build rich markdown with attribution spans
+  const annotatedMarkdown = useMemo(
+    () => buildAnnotatedAttributionMarkdown(segments),
+    [segments],
+  );
 
-  const agentLabel = (id: string) => {
+  const agentLabel = useCallback((id: string) => {
     const found = generationPipeline.find((a) => a.id === id);
     return found?.label || AGENT_COLORS[id]?.label || id;
-  };
+  }, [generationPipeline]);
 
-  function handleMouseEnter(e: React.MouseEvent, seg: AttributionSegment) {
-    if (!seg.previousText) return;
-    const rect = (e.target as HTMLElement).getBoundingClientRect();
+  // Event delegation for tooltips on raw HTML spans
+  function handleMouseOver(e: React.MouseEvent) {
+    const target = (e.target as HTMLElement).closest('[data-seg-idx]') as HTMLElement | null;
+    if (!target) {
+      setTooltip((prev) => ({ ...prev, visible: false }));
+      return;
+    }
+    const idx = parseInt(target.dataset.segIdx || '', 10);
+    if (isNaN(idx) || !segments[idx]?.previousText) {
+      setTooltip((prev) => ({ ...prev, visible: false }));
+      return;
+    }
+    const rect = target.getBoundingClientRect();
     setTooltip({
       visible: true,
       x: rect.left + rect.width / 2,
       y: rect.top - 8,
-      segment: seg,
+      segment: segments[idx],
     });
   }
 
   function handleMouseLeave() {
     setTooltip((prev) => ({ ...prev, visible: false }));
   }
+
+  if (!debugMode || agentIds.length < 2 || !generatedBlog || segments.length === 0) return null;
 
   return (
     <div className="attribution">
@@ -100,26 +118,15 @@ export default function AttributionOverlay(): React.ReactElement | null {
         })}
       </div>
 
-      {/* Attributed text */}
-      <div className="attribution__text">
-        {segments.map((seg, i) => {
-          const color = AGENT_COLORS[seg.agent] || AGENT_COLORS['blog-writer'];
-          const isModified = !!seg.previousText;
-          return (
-            <span
-              key={i}
-              className={`attribution__segment ${isModified ? 'attribution__segment--modified' : ''}`}
-              style={{
-                background: color.bg,
-                borderBottom: `2px solid ${color.border}`,
-              }}
-              onMouseEnter={(e) => handleMouseEnter(e, seg)}
-              onMouseLeave={handleMouseLeave}
-            >
-              {seg.text}
-            </span>
-          );
-        })}
+      {/* Attributed text — rendered as rich blog preview */}
+      <div
+        className="attribution__text result__content"
+        onMouseOver={handleMouseOver}
+        onMouseLeave={handleMouseLeave}
+      >
+        <Markdown rehypePlugins={[rehypeRaw]}>
+          {annotatedMarkdown}
+        </Markdown>
       </div>
 
       {/* Tooltip */}

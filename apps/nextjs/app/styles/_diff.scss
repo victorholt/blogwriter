@@ -313,11 +313,16 @@ ins.diff-hl {
   border-radius: 50%;
 }
 
-.attribution__text {
-  font-family: var(--font-body, Georgia, serif);
-  font-size: 1.125rem;
-  line-height: 1.8;
-  color: var(--color-gray-700);
+// When combined with result__content, disable the drop-cap
+// (first paragraph starts inside an attribution span)
+.attribution__text.result__content {
+  > p:first-of-type::first-letter {
+    float: none;
+    font-size: inherit;
+    line-height: inherit;
+    margin: 0;
+    font-weight: inherit;
+  }
 }
 
 .attribution__segment {

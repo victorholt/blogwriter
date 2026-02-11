@@ -18,8 +18,9 @@ export function buildWriterInstructions(
 
   const imageRequirements = includeImages
     ? `- For each dress you feature, include its image using Markdown: ![Dress Name](imageUrl)
-- Place each image inline within the paragraph that discusses that dress — NOT on its own line between paragraphs
-- Ensure there is at least a full paragraph of text (3+ sentences) surrounding each image so text wraps around it naturally
+- Place each image on its OWN line between paragraphs — never inline within a sentence or paragraph
+- Each image line must contain ONLY the image markdown (![...](url)) with nothing else on that line
+- Leave a blank line before and after every image so it renders as a standalone block
 - Spread images throughout the post with substantial text between them — do NOT cluster images near each other
 - Do NOT put all images at the end — weave them into the narrative`
     : `- Do NOT include any images or image markdown (![...](url)) in the blog post`;

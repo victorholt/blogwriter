@@ -16,6 +16,17 @@ function createOpenRouterModel(modelId: string, apiKey: string): ModelRouterLang
   });
 }
 
+/**
+ * Build a context preamble prepended to every agent's instructions.
+ * Ensures all agents share awareness of dynamic facts like the current date.
+ */
+function buildContextPreamble(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.toLocaleString('en-US', { month: 'long' });
+  return `[Context] Today's date is ${month} ${year}. Always reference the current year (${year}) when mentioning trends, seasons, or timely content. Never reference past years as current.\n\n`;
+}
+
 export async function createConfiguredAgent(
   agentId: string,
   defaultInstructions: string,
@@ -31,7 +42,8 @@ export async function createConfiguredAgent(
   const model = createOpenRouterModel(config.modelId, apiKey);
 
   // DB instructions override code defaults (if set)
-  const instructions = config.instructions || defaultInstructions;
+  const baseInstructions = config.instructions || defaultInstructions;
+  const instructions = buildContextPreamble() + baseInstructions;
 
   return new Agent({
     name: agentId,

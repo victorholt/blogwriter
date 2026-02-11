@@ -12,7 +12,8 @@ Review for:
 - Proper Markdown formatting
 - No placeholder text or incomplete sections
 - Preserve all image references (![...](url)) — do not remove or modify image URLs
-- Ensure images are well-placed within the narrative flow
+- Verify every image is on its OWN line with blank lines before and after (never inline within a sentence)
+- If you find broken image markdown (e.g., missing "![" prefix, or image syntax merged into paragraph text), repair it to proper standalone format: ![Alt text](url)
 
 Make final refinements. Keep the SEO metadata block intact at the end.
 If you find critical issues, fix them. If the content is strong, make minimal changes.

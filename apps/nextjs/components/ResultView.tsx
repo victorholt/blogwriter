@@ -10,6 +10,7 @@ import AttributionOverlay from '@/components/AttributionOverlay';
 import CompareDropdown from '@/components/CompareDropdown';
 import type { CompareMode } from '@/components/CompareDropdown';
 import { copyRichText } from '@/lib/copy-utils';
+import { fetchDebugMode } from '@/lib/api';
 
 /**
  * Preprocess markdown to convert bracket placeholders and real links
@@ -28,6 +29,62 @@ function preprocessLinks(markdown: string): string {
   );
 }
 
+/**
+ * Fix broken image markdown that agents may produce when editing text
+ * around inline images. Uses a placeholder strategy to avoid re-matching:
+ *
+ * Step 1: Protect existing valid ![alt](url) with placeholders
+ * Step 2: Fix [alt](image-url) missing "!" prefix
+ * Step 3: Fix orphaned ](image-url) where ![alt was completely stripped
+ * Step 4: Restore all placeholders
+ */
+const IMAGE_EXTENSIONS = /\.(jpe?g|png|webp|gif|avif|svg)(\?[^\s)]*)?$/i;
+const IMAGE_CDNS = /cdn\.(essensedesigns|maggie|maggiesottero|sotteroandmidgley|morilee|allurebridals|justinalexander)\./i;
+
+function isImageUrl(url: string): boolean {
+  return IMAGE_EXTENSIONS.test(url) || IMAGE_CDNS.test(url);
+}
+
+function preprocessImages(markdown: string): string {
+  const placeholders: string[] = [];
+
+  // Step 1: Protect existing valid ![alt](url) with placeholders
+  let result = markdown.replace(/!\[[^\]]*\]\([^)]+\)/g, (match) => {
+    placeholders.push(match);
+    return `__IMGPH_${placeholders.length - 1}__`;
+  });
+
+  // Step 2: [alt](image-url) missing "!" prefix → convert to image
+  result = result.replace(
+    /\[([^\]]*)\]\((https?:\/\/[^)]+)\)/g,
+    (match, alt: string, url: string) => {
+      if (!isImageUrl(url)) return match;
+      const img = `![${alt}](${url})`;
+      placeholders.push(img);
+      return `\n\n__IMGPH_${placeholders.length - 1}__\n\n`;
+    },
+  );
+
+  // Step 3: Orphaned ](image-url) where ![alt was completely stripped.
+  // After steps 1–2, any remaining ](image-url) is guaranteed orphaned.
+  // Replace just the ](url) with a proper image; leftover text stays as-is.
+  result = result.replace(
+    /\]\((https?:\/\/[^)]+)\)/g,
+    (match, url: string) => {
+      if (!isImageUrl(url)) return match;
+      const img = `![](${url})`;
+      placeholders.push(img);
+      return `\n\n__IMGPH_${placeholders.length - 1}__\n\n`;
+    },
+  );
+
+  // Step 4: Restore all placeholders
+  result = result.replace(/__IMGPH_(\d+)__/g, (_, i) => placeholders[parseInt(i)]);
+
+  // Collapse runs of 3+ newlines
+  return result.replace(/\n{3,}/g, '\n\n');
+}
+
 /** Convert slugs like "sorella-dress" to "Sorella Dress" */
 function formatBrandName(raw: string): string {
   return raw
@@ -44,8 +101,14 @@ export default function ResultView(): React.ReactElement {
   const agentOutputs = useWizardStore((s) => s.agentOutputs);
   const generationPipeline = useWizardStore((s) => s.generationPipeline);
   const debugMode = useWizardStore((s) => s.debugMode);
+  const setDebugMode = useWizardStore((s) => s.setDebugMode);
   const dressesMap = useWizardStore((s) => s.dressesMap);
   const generateImages = useWizardStore((s) => s.generateImages);
+
+  // Re-fetch debug mode on mount so changes made in admin since page load take effect
+  useEffect(() => {
+    fetchDebugMode().then((result) => setDebugMode(result.debugMode));
+  }, [setDebugMode]);
 
   // Build imageUrl → Dress lookup for structured captions
   const imageUrlToDress = useMemo(() => {
@@ -246,7 +309,7 @@ export default function ResultView(): React.ReactElement {
                 },
               }}
             >
-              {preprocessLinks(generatedBlog)}
+              {preprocessLinks(preprocessImages(generatedBlog))}
             </Markdown>
           ) : (
             <p className="result__empty">No blog content generated.</p>

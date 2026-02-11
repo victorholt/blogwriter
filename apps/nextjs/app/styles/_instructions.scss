@@ -16,42 +16,195 @@
   }
 }
 
+// ============================================================
+// Session Summary — Rich pre-generation overview
+// ============================================================
+
 .session-summary {
   background: var(--color-gray-50);
+  border: 1px solid var(--color-gray-200);
   border-radius: var(--radius-lg);
-  padding: 20px;
+  padding: 24px;
   margin-bottom: 40px;
 
-  &__title {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--color-gray-500);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-bottom: 12px;
+  // --- Sections & dividers ---
+
+  &__section {
+    // no extra spacing needed; dividers handle gaps
   }
 
-  &__row {
+  &__divider {
+    height: 1px;
+    background: var(--color-gray-200);
+    margin: 18px 0;
+  }
+
+  &__section-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-gray-400);
+    margin-bottom: 10px;
+  }
+
+  // --- Brand & Store ---
+
+  &__brand-name {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--color-gray-800);
+    line-height: 1.2;
+    margin-bottom: 6px;
+  }
+
+  &__url {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--color-gray-400);
+    margin-bottom: 12px;
+    overflow: hidden;
+
+    svg {
+      flex-shrink: 0;
+      color: var(--color-gray-300);
+    }
+
+    span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  &__tones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  &__tone-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    border-radius: 100px;
+    text-transform: lowercase;
+
+    &:nth-child(5n + 1) {
+      background: #eef4ff;
+      color: #3b76d6;
+    }
+    &:nth-child(5n + 2) {
+      background: #f0fdf4;
+      color: #22863a;
+    }
+    &:nth-child(5n + 3) {
+      background: #fef3c7;
+      color: #b45309;
+    }
+    &:nth-child(5n + 4) {
+      background: #fce7f3;
+      color: #be185d;
+    }
+    &:nth-child(5n + 5) {
+      background: #ede9fe;
+      color: #7c3aed;
+    }
+  }
+
+  // --- Dresses ---
+
+  &__dresses {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+
+    @media (min-width: 640px) {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  &__dress {
     display: flex;
     align-items: center;
     gap: 12px;
-    font-size: 14px;
-    color: var(--color-gray-700);
-    margin-bottom: 8px;
+    background: white;
+    border: 1px solid var(--color-gray-200);
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+  }
 
-    &:last-child {
-      margin-bottom: 0;
-    }
+  &__dress-thumb {
+    width: 40px;
+    height: 54px;
+    object-fit: cover;
+    border-radius: var(--radius-sm);
+    flex-shrink: 0;
+    background: var(--color-gray-100);
 
-    svg {
-      color: var(--color-gray-400);
-      flex-shrink: 0;
+    &--fallback {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-gray-300);
     }
   }
 
-  &__text {
+  &__dress-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  &__dress-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-gray-800);
+    white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  &__dress-meta {
+    font-size: 12px;
+    color: var(--color-gray-400);
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  // --- Settings pills ---
+
+  &__settings {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  &__setting-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    border-radius: 100px;
+    background: var(--color-gray-100);
+    color: var(--color-gray-400);
+
+    svg {
+      flex-shrink: 0;
+    }
+
+    &--on {
+      background: var(--color-green-light);
+      color: var(--color-green);
+    }
   }
 }
