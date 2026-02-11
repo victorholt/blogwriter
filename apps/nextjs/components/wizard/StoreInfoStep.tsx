@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useWizardStore } from '@/stores/wizard-store';
 import { analyzeBrandVoiceStream } from '@/lib/api';
 import { Play, Loader2, Check, ArrowRight } from 'lucide-react';
@@ -22,8 +22,11 @@ export default function StoreInfoStep(): React.ReactElement {
   const appendDebugData = useWizardStore((s) => s.appendDebugData);
   const setBrandVoiceTraceId = useWizardStore((s) => s.setBrandVoiceTraceId);
   const invalidateUrlDependentState = useWizardStore((s) => s.invalidateUrlDependentState);
+  const previousBrandVoice = useWizardStore((s) => s.previousBrandVoice);
+  const brandVoiceAttemptCount = useWizardStore((s) => s.brandVoiceAttemptCount);
 
   const [error, setError] = useState<string | null>(null);
+  const retryTriggered = useRef(false);
 
   // Map status log messages to debug events by matching patterns
   function getDebugEventForMessage(msg: string, msgIndex: number): import('@/types').DebugEvent | null {
@@ -62,6 +65,7 @@ export default function StoreInfoStep(): React.ReactElement {
         storeUrl,
         (message) => { appendStatusLog(message); },
         (data) => { appendDebugData(data); },
+        previousBrandVoice ?? undefined,
       );
 
       if (result.success && result.data) {
@@ -80,6 +84,14 @@ export default function StoreInfoStep(): React.ReactElement {
     }
   }
 
+  // Auto-trigger re-analysis when user rejected a previous voice (clicked "Try Again")
+  useEffect(() => {
+    if (previousBrandVoice && !analysisComplete && !isAnalyzing && !retryTriggered.current) {
+      retryTriggered.current = true;
+      handleAnalyze();
+    }
+  }, [previousBrandVoice]); // eslint-disable-line react-hooks/exhaustive-deps
+
   function handleUrlChange(value: string): void {
     setStoreUrl(value);
     if (analysisComplete) {
@@ -90,6 +102,12 @@ export default function StoreInfoStep(): React.ReactElement {
   return (
     <div>
       <h1 className="step-heading">Store Website</h1>
+
+      {brandVoiceAttemptCount > 0 && isAnalyzing && (
+        <div className="brand-voice__retry-banner">
+          Re-analyzing with a fresh perspective... (attempt {brandVoiceAttemptCount + 1})
+        </div>
+      )}
 
       <div className="store-input">
         <input

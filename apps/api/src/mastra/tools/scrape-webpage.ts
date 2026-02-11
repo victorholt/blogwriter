@@ -18,7 +18,7 @@ export const scrapeWebpage = createTool({
   execute: async ({ context }) => {
     try {
       const response = await fetch(context.url, {
-        signal: AbortSignal.timeout(10_000),
+        signal: AbortSignal.timeout(15_000),
         headers: {
           'User-Agent': 'Blogwriter/1.0 (Brand Analysis)',
           Accept: 'text/html',
@@ -30,7 +30,7 @@ export const scrapeWebpage = createTool({
       }
 
       const html = await response.text();
-      const $ = cheerio.load(html.slice(0, 100_000)); // Limit to 100KB
+      const $ = cheerio.load(html.slice(0, 200_000)); // Limit to 200KB
 
       // Extract internal links before removing nav/header (they contain the site links)
       let baseUrl: URL;
@@ -61,10 +61,10 @@ export const scrapeWebpage = createTool({
         $('meta[name="description"]').attr('content') ||
         $('meta[property="og:description"]').attr('content') ||
         '';
-      const text = $('body').text().replace(/\s+/g, ' ').trim().slice(0, 8_000);
+      const text = $('body').text().replace(/\s+/g, ' ').trim().slice(0, 15_000);
 
-      // Return up to 15 internal links for the agent to choose from
-      return { title, text, metaDescription, links: links.slice(0, 15) };
+      // Return up to 25 internal links for the agent to choose from
+      return { title, text, metaDescription, links: links.slice(0, 25) };
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
       return { title: '', text: '', error: message };

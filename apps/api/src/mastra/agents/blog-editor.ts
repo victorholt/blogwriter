@@ -1,6 +1,6 @@
 import { createConfiguredAgent, type GlobalContext } from '../lib/agent-factory';
 
-const INSTRUCTIONS = `You are a professional editor specializing in bridal content. You receive a blog draft and return an improved version.
+const INSTRUCTIONS = `You are a professional editor. You receive a blog draft and return an improved version.
 
 CRITICAL: Output ONLY the improved blog post in Markdown. No commentary, no explanations, no preamble, no notes about what you changed. Just the polished blog content — nothing else.
 

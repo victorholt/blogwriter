@@ -52,6 +52,11 @@
     padding: 12px 28px;
   }
 
+  &--sm {
+    font-size: 12px;
+    padding: 4px 10px;
+  }
+
   &--danger {
     color: var(--color-red);
     border-color: var(--color-red);

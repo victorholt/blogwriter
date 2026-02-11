@@ -20,15 +20,7 @@ async function getSettingBool(key: string, defaultVal: boolean): Promise<boolean
 
 const generateSchema = z.object({
   storeUrl: z.string().min(1),
-  brandVoice: z.object({
-    brandName: z.string(),
-    tone: z.array(z.string()),
-    targetAudience: z.string(),
-    priceRange: z.string(),
-    uniqueSellingPoints: z.array(z.string()),
-    suggestedBlogTone: z.string(),
-    summary: z.string(),
-  }),
+  brandVoice: z.record(z.string(), z.unknown()),
   selectedDressIds: z.array(z.string()).min(1),
   additionalInstructions: z.string().optional(),
   themeId: z.number().optional(),
@@ -121,7 +113,7 @@ router.get('/:sessionId/stream', async (req, res) => {
     themeDescription = theme?.description;
   }
 
-  const globalContext = { allowedBrands, themeDescription };
+  const globalContext = { allowedBrands, themeDescription, brandVoice };
 
   // Set up SSE
   res.writeHead(200, {

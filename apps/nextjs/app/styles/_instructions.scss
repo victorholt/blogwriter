@@ -86,6 +86,13 @@
     margin: 0 0 12px;
   }
 
+  &__personality {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-blue);
+    margin-bottom: 10px;
+  }
+
   &__tones {
     display: flex;
     flex-wrap: wrap;

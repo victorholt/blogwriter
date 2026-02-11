@@ -87,10 +87,15 @@ export default function AdditionalInstructionsStep(): React.ReactElement {
           {brandVoice?.summary && (
             <p className="session-summary__voice-summary">{brandVoice.summary}</p>
           )}
-          {brandVoice && brandVoice.tone.length > 0 && (
+          {brandVoice?.personality?.archetype && (
+            <div className="session-summary__personality">
+              {brandVoice.personality.archetype}
+            </div>
+          )}
+          {brandVoice?.toneAttributes && brandVoice.toneAttributes.length > 0 && (
             <div className="session-summary__tones">
-              {brandVoice.tone.map((t) => (
-                <span key={t} className="session-summary__tone-tag">{t}</span>
+              {brandVoice.toneAttributes.map((t) => (
+                <span key={t.name} className="session-summary__tone-tag">{t.name}</span>
               ))}
             </div>
           )}

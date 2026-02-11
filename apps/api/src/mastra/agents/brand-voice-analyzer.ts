@@ -1,35 +1,75 @@
 import { createConfiguredAgent } from '../lib/agent-factory';
 import { scrapeWebpage } from '../tools/scrape-webpage';
 
-const INSTRUCTIONS = `You are a brand strategist specializing in bridal retail. When given a store URL, use the scrape-webpage tool to fetch the page content, then analyze it.
+const INSTRUCTIONS = `You are an expert brand strategist who builds comprehensive writing voice guides by analyzing websites. When given a URL, use the scrape-webpage tool to explore the site thoroughly, then produce a detailed voice profile.
 
-CRITICAL RULES:
-- First scrape the given URL. The result includes a "links" array of internal pages found on that page.
-- If the homepage lacks brand details, pick ONE link from the returned links array that looks most useful (e.g. an about page, our story, or blog page). Do NOT guess URLs — only use links from the array.
-- If a page returns an error (e.g. 404), you may try ONE more link from the array. Never retry the same URL.
-- Scrape AT MOST 3 pages total. Work with what you get.
-- Do NOT output any text before the JSON. No explanations, no commentary.
-- Your ENTIRE response must be a single JSON object — nothing else.
+CRAWL STRATEGY:
+1. First scrape the given URL. The result includes a "links" array of internal pages.
+2. From the returned links, pick 4-7 MORE pages to scrape. Prioritize:
+   - About / Our Story / Who We Are pages
+   - Blog posts (pick 2-3 diverse ones)
+   - Product or collection pages
+   - Testimonial or review pages
+3. If a page returns an error (e.g. 404), skip it and pick another link.
+4. Scrape 5-8 pages total. Work with what you get — quality over quantity.
+5. Do NOT guess URLs — only use links from the returned arrays.
 
-Extract:
-1. Brand name
-2. Tone descriptors (3-5 adjectives)
-3. Target audience profile
-4. Price positioning (budget, mid-range, premium, luxury)
-5. Unique selling points (2-4 key differentiators)
-6. Suggested blog tone (one sentence)
-7. Summary (2-3 sentences)
+ANALYSIS APPROACH:
+- Pay attention to the language, phrasing, and word choices used across the site
+- Note recurring themes, brand-specific terminology, and emotional triggers
+- Identify what the brand emphasizes and what it avoids
+- Determine the target customer from the content, not just surface-level demographics
+- Look for personality cues: is the brand formal or casual? authoritative or friendly?
 
-Return ONLY this JSON:
+OUTPUT FORMAT:
+Do NOT output any text before the JSON. No explanations, no commentary.
+Your ENTIRE response must be a single JSON object matching this exact structure:
+
 {
-  "brandName": "...",
-  "tone": ["...", "...", "..."],
-  "targetAudience": "...",
-  "priceRange": "...",
-  "uniqueSellingPoints": ["...", "..."],
-  "suggestedBlogTone": "...",
-  "summary": "..."
-}`;
+  "brandName": "string — the brand or business name",
+  "summary": "string — 2-3 sentence overview of the brand's identity and positioning",
+  "targetAudience": "string — detailed description of the ideal customer",
+  "priceRange": "string — one of: budget, mid-range, premium, luxury",
+  "businessType": "string — the type of business, e.g. 'bridal retail', 'SaaS', 'outdoor gear'",
+  "uniqueSellingPoints": ["string — 2-5 key differentiators"],
+  "personality": {
+    "archetype": "string — a short, memorable name for the brand personality, e.g. 'The Trusted Guide', 'The Creative Rebel'",
+    "description": "string — 2-3 sentences explaining the personality, who the brand is as a 'character'"
+  },
+  "toneAttributes": [
+    {
+      "name": "string — e.g. 'Warm & Approachable'",
+      "description": "string — detailed description with specific language examples from the site, e.g. 'Uses conversational language like \"we're here to help\" and \"your journey\"'"
+    }
+  ],
+  "vocabulary": [
+    {
+      "category": "string — e.g. 'Brand Lexicon', 'Emotional Language', 'Product Descriptors'",
+      "terms": ["string — actual words and phrases found on or inspired by the site"]
+    }
+  ],
+  "writingStyle": [
+    {
+      "rule": "string — e.g. 'Use second person (you/your)'",
+      "description": "string — explanation of why and how, with examples"
+    }
+  ],
+  "avoidances": [
+    {
+      "rule": "string — e.g. 'Don't use jargon'",
+      "description": "string — explanation of what to avoid and why"
+    }
+  ],
+  "writingDirection": "string — a single guiding statement that captures the essence of how to write for this brand, like a creative brief"
+}
+
+REQUIREMENTS:
+- toneAttributes must have 3-5 items, each with a descriptive name and rich description including specific language examples
+- vocabulary must have 2-4 categories, each with 5-10 actual terms
+- writingStyle must have 3-6 rules
+- avoidances must have 2-5 items
+- Every field must be filled — do not leave any empty or with placeholder text
+- Base everything on actual content you scraped, not generic assumptions`;
 
 function extractJson(text: string): Record<string, unknown> {
   // Try direct parse first
@@ -57,16 +97,21 @@ function extractJson(text: string): Record<string, unknown> {
   throw new Error(`Failed to parse brand voice analysis from agent response`);
 }
 
-export async function analyzeBrandVoice(url: string): Promise<Record<string, unknown>> {
+export async function analyzeBrandVoice(
+  url: string,
+  previousAttempt?: Record<string, unknown>,
+): Promise<Record<string, unknown>> {
   const agent = await createConfiguredAgent('brand-voice-analyzer', INSTRUCTIONS, {
     'scrape-webpage': scrapeWebpage,
   });
 
+  let prompt = `Analyze the brand voice of this website: ${url}`;
+  if (previousAttempt) {
+    prompt += `\n\nIMPORTANT: The user rejected a previous voice analysis. Here is what was rejected:\n${JSON.stringify(previousAttempt, null, 2)}\n\nExplore different pages than before, reconsider the tone interpretation, and produce a meaningfully different result. Do NOT produce the same analysis again.`;
+  }
+
   const result = await agent.generate([
-    {
-      role: 'user' as const,
-      content: `Analyze the brand voice of this website: ${url}`,
-    },
+    { role: 'user' as const, content: prompt },
   ]);
 
   const text = typeof result.text === 'string' ? result.text : '';
@@ -76,7 +121,7 @@ export async function analyzeBrandVoice(url: string): Promise<Record<string, unk
 export async function streamBrandVoiceAnalysis(
   url: string,
   onEvent: (event: { type: string; data?: unknown }) => void,
-  options?: { debugMode?: boolean },
+  options?: { debugMode?: boolean; previousAttempt?: Record<string, unknown> },
 ): Promise<Record<string, unknown>> {
   onEvent({ type: 'status', data: 'Connecting to analysis service...' });
 
@@ -84,13 +129,16 @@ export async function streamBrandVoiceAnalysis(
     'scrape-webpage': scrapeWebpage,
   });
 
-  onEvent({ type: 'status', data: `Visiting ${new URL(url).hostname}...` });
+  let prompt = `Analyze the brand voice of this website: ${url}`;
+  if (options?.previousAttempt) {
+    prompt += `\n\nIMPORTANT: The user rejected a previous voice analysis. Here is what was rejected:\n${JSON.stringify(options.previousAttempt, null, 2)}\n\nExplore different pages than before, reconsider the tone interpretation, and produce a meaningfully different result. Do NOT produce the same analysis again.`;
+    onEvent({ type: 'status', data: 'Re-analyzing with a fresh perspective...' });
+  } else {
+    onEvent({ type: 'status', data: `Visiting ${new URL(url).hostname}...` });
+  }
 
   const result = await agent.stream([
-    {
-      role: 'user' as const,
-      content: `Analyze the brand voice of this website: ${url}`,
-    },
+    { role: 'user' as const, content: prompt },
   ]);
 
   let fullText = '';
@@ -141,7 +189,7 @@ export async function streamBrandVoiceAnalysis(
       }
     } else if (value.type === 'text-delta') {
       if (!sentAnalyzingMsg) {
-        onEvent({ type: 'status', data: 'Building brand profile...' });
+        onEvent({ type: 'status', data: 'Building brand voice profile...' });
         sentAnalyzingMsg = true;
       }
       fullText += payload?.text ?? '';

@@ -1,11 +1,37 @@
+export interface ToneAttribute {
+  name: string;
+  description: string;
+}
+
+export interface VocabularyCategory {
+  category: string;
+  terms: string[];
+}
+
+export interface WritingRule {
+  rule: string;
+  description: string;
+}
+
 export interface BrandVoice {
+  // Display metadata
   brandName: string;
-  tone: string[];
+  summary: string;
   targetAudience: string;
   priceRange: string;
+  businessType: string;
   uniqueSellingPoints: string[];
-  suggestedBlogTone: string;
-  summary: string;
+
+  // Rich voice definition
+  personality: {
+    archetype: string;
+    description: string;
+  };
+  toneAttributes: ToneAttribute[];
+  vocabulary: VocabularyCategory[];
+  writingStyle: WritingRule[];
+  avoidances: WritingRule[];
+  writingDirection: string;
 }
 
 export interface Dress {

@@ -1,6 +1,6 @@
 import { createConfiguredAgent, type GlobalContext } from '../lib/agent-factory';
 
-const INSTRUCTIONS = `You are a senior editor at a premium bridal publication. This is the final editorial review before publication.
+const INSTRUCTIONS = `You are a senior editor performing the final editorial review before publication.
 
 CRITICAL: Output ONLY the final blog post in Markdown. No commentary, no explanations, no preamble. Just the polished blog content.
 

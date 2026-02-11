@@ -10,6 +10,7 @@ const router = Router();
 
 const analyzeSchema = z.object({
   url: z.string().url('Invalid URL format'),
+  previousAttempt: z.record(z.string(), z.unknown()).optional(),
 });
 
 router.post('/analyze', async (req, res) => {
@@ -20,17 +21,17 @@ router.post('/analyze', async (req, res) => {
     return res.status(400).json({ success: false, error: message });
   }
 
-  const { url } = parsed.data;
+  const { url, previousAttempt } = parsed.data;
 
   try {
-    // Check cache first
+    // Check cache first (skip if retrying after rejection)
     const cached = await db
       .select()
       .from(brandVoiceCache)
       .where(eq(brandVoiceCache.url, url))
       .limit(1);
 
-    if (cached[0] && cached[0].expiresAt > new Date()) {
+    if (!previousAttempt && cached[0] && cached[0].expiresAt > new Date()) {
       console.log(`[BrandVoice] Cache hit for ${url}`);
       return res.json({
         success: true,
@@ -41,7 +42,7 @@ router.post('/analyze', async (req, res) => {
 
     // Run brand voice analysis
     console.log(`[BrandVoice] Analyzing ${url}...`);
-    const analysis = await analyzeBrandVoice(url);
+    const analysis = await analyzeBrandVoice(url, previousAttempt);
 
     // Cache result (7-day TTL)
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
@@ -90,7 +91,7 @@ router.post('/analyze-stream', async (req, res) => {
     return res.status(400).json({ success: false, error: message });
   }
 
-  const { url } = parsed.data;
+  const { url, previousAttempt } = parsed.data;
 
   // Set up SSE headers
   res.writeHead(200, {
@@ -104,14 +105,14 @@ router.post('/analyze-stream', async (req, res) => {
   };
 
   try {
-    // Check cache first
+    // Check cache first (skip if retrying after rejection)
     const cached = await db
       .select()
       .from(brandVoiceCache)
       .where(eq(brandVoiceCache.url, url))
       .limit(1);
 
-    if (cached[0] && cached[0].expiresAt > new Date()) {
+    if (!previousAttempt && cached[0] && cached[0].expiresAt > new Date()) {
       sendEvent('status', 'Found cached analysis...');
       sendEvent('result', { data: JSON.parse(cached[0].analysisResult), cached: true });
       res.end();
@@ -143,7 +144,7 @@ router.post('/analyze-stream', async (req, res) => {
       if (insightsOn && traceId && event.type === 'debug') {
         traceLog(traceId, null, 'brand-voice-analyzer', (event.data as any)?.kind ?? 'debug', event.data);
       }
-    }, { debugMode });
+    }, { debugMode, previousAttempt });
 
     // Log final output to trace
     if (insightsOn && traceId) {

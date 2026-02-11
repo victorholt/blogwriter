@@ -1,5 +1,5 @@
 // ============================================================
-// Step — Brand Voice (magazine-style brand profile)
+// Step — Brand Voice (rich structured brand profile)
 // ============================================================
 
 .brand-voice {
@@ -31,7 +31,161 @@
     max-width: 640px;
   }
 
-  // --- Tone pills (colorful) ---
+  // --- Personality card ---
+  &__personality {
+    margin-bottom: 28px;
+    padding: 20px 24px;
+    border-left: 3px solid var(--color-blue);
+    background: linear-gradient(135deg, #f8faff 0%, #fefefe 100%);
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  }
+
+  &__personality-archetype {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--color-gray-800);
+    margin-bottom: 6px;
+  }
+
+  &__personality-desc {
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--color-gray-600);
+  }
+
+  // --- Section title (shared) ---
+  &__section-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-gray-400);
+    margin-bottom: 12px;
+  }
+
+  // --- Tone attributes ---
+  &__tone-section {
+    margin-bottom: 28px;
+  }
+
+  &__tone-attrs {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+
+    @media (min-width: 640px) {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  &__tone-attr {
+    background: var(--color-gray-50);
+    border-radius: var(--radius-md);
+    padding: 16px 18px;
+  }
+
+  &__tone-attr-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-gray-800);
+    margin-bottom: 6px;
+  }
+
+  &__tone-attr-desc {
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--color-gray-600);
+  }
+
+  // --- Vocabulary ---
+  &__vocab {
+    margin-bottom: 28px;
+  }
+
+  &__vocab-group {
+    margin-bottom: 14px;
+  }
+
+  &__vocab-category {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-gray-600);
+    margin-bottom: 8px;
+  }
+
+  &__vocab-terms {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  &__vocab-term {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    border-radius: 100px;
+    background: var(--color-gray-50);
+    color: var(--color-gray-700);
+    border: 1px solid var(--color-gray-200);
+  }
+
+  // --- Writing style rules ---
+  &__style-rules {
+    margin-bottom: 28px;
+  }
+
+  &__style-rule {
+    padding: 14px 16px;
+    background: var(--color-gray-50);
+    border-radius: var(--radius-md);
+    margin-bottom: 8px;
+  }
+
+  &__style-rule-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-gray-800);
+    margin-bottom: 4px;
+  }
+
+  &__style-rule-desc {
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--color-gray-600);
+  }
+
+  // --- Avoidances ---
+  &__avoidances {
+    margin-bottom: 28px;
+  }
+
+  &__avoidance {
+    padding: 14px 16px;
+    background: #fef2f2;
+    border-radius: var(--radius-md);
+    margin-bottom: 8px;
+    border-left: 3px solid #fca5a5;
+  }
+
+  &__avoidance-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #991b1b;
+    margin-bottom: 4px;
+  }
+
+  &__avoidance-desc {
+    font-size: 13px;
+    line-height: 1.55;
+    color: #7f1d1d;
+  }
+
+  // --- Tone pills (colorful, kept for backward compat) ---
   &__tone-list {
     display: flex;
     flex-wrap: wrap;
@@ -118,18 +272,6 @@
     margin-bottom: 28px;
   }
 
-  &__section-title {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--color-gray-400);
-    margin-bottom: 12px;
-  }
-
   &__usp-list {
     display: grid;
     grid-template-columns: 1fr;
@@ -167,9 +309,9 @@
     margin-top: 1px;
   }
 
-  // --- Blog tone (blockquote) ---
+  // --- Blog tone / Writing direction (blockquote) ---
   &__blog-tone {
-    margin-bottom: 8px;
+    margin-bottom: 28px;
     padding: 20px 24px;
     border-left: 3px solid var(--color-blue);
     background: linear-gradient(135deg, #f8faff 0%, #fefefe 100%);
@@ -195,7 +337,19 @@
     color: var(--color-gray-700);
   }
 
-  // --- Edit mode (keeps old form-style for editing) ---
+  // --- Retry banner ---
+  &__retry-banner {
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    border-radius: var(--radius-md);
+    background: #eff6ff;
+    color: #1e40af;
+    font-size: 14px;
+    font-weight: 500;
+    border: 1px solid #bfdbfe;
+  }
+
+  // --- Edit mode ---
   &__section {
     margin-bottom: 24px;
   }
@@ -206,6 +360,21 @@
     font-weight: 500;
     color: var(--color-gray-500);
     margin-bottom: 6px;
+  }
+
+  &__edit-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 12px;
+    background: var(--color-gray-50);
+    border-radius: var(--radius-md);
+    margin-bottom: 8px;
+    position: relative;
+
+    .btn--sm {
+      align-self: flex-end;
+    }
   }
 
   &__text {

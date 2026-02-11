@@ -2,13 +2,7 @@ import { createConfiguredAgent, type GlobalContext } from '../lib/agent-factory'
 import { fetchDressDetails } from '../tools/fetch-dress-details';
 
 export function buildWriterInstructions(
-  brandVoice: {
-    brandName: string;
-    tone: string[];
-    targetAudience: string;
-    suggestedBlogTone: string;
-    summary: string;
-  },
+  brandVoice: Record<string, any>,
   selectedDressIds: string[],
   additionalInstructions: string,
   options?: { generateImages?: boolean; generateLinks?: boolean },
@@ -29,13 +23,30 @@ export function buildWriterInstructions(
     ? ''
     : `\n- Do NOT include any hyperlinks or markdown links ([text](url)) in the blog post`;
 
-  return `You are a professional wedding blog writer. Write an engaging, SEO-friendly blog post about wedding dresses.
+  // Build voice summary — support both new structured and legacy flat formats
+  const brandName = brandVoice.brandName || 'the brand';
+  const businessType = brandVoice.businessType || 'business';
 
-Brand Voice: ${brandVoice.summary}
-Brand: ${brandVoice.brandName}
-Tone: ${brandVoice.tone.join(', ')}
-Target Audience: ${brandVoice.targetAudience}
-Blog Tone: ${brandVoice.suggestedBlogTone}
+  let voiceSummary = '';
+  if (brandVoice.personality?.archetype) {
+    voiceSummary += `Brand personality: ${brandVoice.personality.archetype}\n`;
+  }
+  if (brandVoice.writingDirection) {
+    voiceSummary += `Writing direction: ${brandVoice.writingDirection}\n`;
+  } else if (brandVoice.suggestedBlogTone) {
+    voiceSummary += `Blog tone: ${brandVoice.suggestedBlogTone}\n`;
+  }
+  if (brandVoice.toneAttributes?.length) {
+    voiceSummary += `Tone: ${brandVoice.toneAttributes.map((t: any) => t.name).join(', ')}\n`;
+  } else if (brandVoice.tone?.length) {
+    voiceSummary += `Tone: ${brandVoice.tone.join(', ')}\n`;
+  }
+
+  return `You are a professional ${businessType} blog writer for ${brandName}. Write an engaging, SEO-friendly blog post.
+
+${brandVoice.summary || ''}
+${voiceSummary}
+Target Audience: ${brandVoice.targetAudience || ''}
 
 Use the fetch-dress-details tool to get full details about the selected dresses, then feature them naturally within the blog narrative.
 
@@ -47,20 +58,14 @@ Requirements:
 - 800-1200 words
 - Include H2 and H3 headers
 - Feature each selected dress naturally (don't just list them)
-- Match the brand's tone
+- Match the brand's voice and tone
 - Write in Markdown format
 - Include a compelling introduction and conclusion
 ${imageRequirements}${linkRequirements}`;
 }
 
 export async function createBlogWriterAgent(
-  brandVoice: {
-    brandName: string;
-    tone: string[];
-    targetAudience: string;
-    suggestedBlogTone: string;
-    summary: string;
-  },
+  brandVoice: Record<string, any>,
   selectedDressIds: string[],
   additionalInstructions: string,
   options?: { generateImages?: boolean; generateLinks?: boolean },

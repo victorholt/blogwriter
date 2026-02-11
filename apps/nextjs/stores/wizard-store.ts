@@ -18,6 +18,8 @@ interface WizardState {
   // Step 2: Brand Voice
   brandVoice: BrandVoice | null;
   brandVoiceConfirmed: boolean;
+  previousBrandVoice: BrandVoice | null;
+  brandVoiceAttemptCount: number;
 
   // Step 3: Theme & Brand
   selectedThemeId: number | null;
@@ -100,6 +102,7 @@ interface WizardState {
   setGenerateLinks: (enabled: boolean) => void;
   setSelectedTheme: (id: number | null) => void;
   setSelectedBrand: (slug: string | null) => void;
+  rejectBrandVoice: () => void;
   resetGenerationForRetry: () => void;
   invalidateUrlDependentState: () => void;
   reset: () => void;
@@ -116,6 +119,8 @@ const initialState = {
   brandVoiceTraceId: null as string | null,
   brandVoice: null as BrandVoice | null,
   brandVoiceConfirmed: false,
+  previousBrandVoice: null as BrandVoice | null,
+  brandVoiceAttemptCount: 0,
   availableDresses: [] as Dress[],
   selectedDressIds: new Set<string>(),
   isDressesLoading: false,
@@ -254,6 +259,19 @@ export const useWizardStore = create<WizardState>()(
       setSelectedTheme: (id) => set({ selectedThemeId: id }),
       setSelectedBrand: (slug) => set({ selectedBrandSlug: slug, selectedDressIds: new Set<string>() }),
 
+      rejectBrandVoice: () =>
+        set((state) => ({
+          previousBrandVoice: state.brandVoice,
+          brandVoice: null,
+          brandVoiceConfirmed: false,
+          analysisComplete: false,
+          analysisStatusLog: [],
+          analysisDebugData: [],
+          brandVoiceTraceId: null,
+          brandVoiceAttemptCount: state.brandVoiceAttemptCount + 1,
+          currentStep: 1 as WizardStep,
+        })),
+
       resetGenerationForRetry: () =>
         set({
           sessionId: null,
@@ -279,6 +297,8 @@ export const useWizardStore = create<WizardState>()(
           brandVoiceTraceId: null,
           brandVoice: null,
           brandVoiceConfirmed: false,
+          previousBrandVoice: null,
+          brandVoiceAttemptCount: 0,
           sessionId: null,
           generatedBlog: null,
           seoMetadata: null,
@@ -323,6 +343,8 @@ export const useWizardStore = create<WizardState>()(
         brandVoiceTraceId: state.brandVoiceTraceId,
         brandVoice: state.brandVoice,
         brandVoiceConfirmed: state.brandVoiceConfirmed,
+        previousBrandVoice: state.previousBrandVoice,
+        brandVoiceAttemptCount: state.brandVoiceAttemptCount,
         selectedThemeId: state.selectedThemeId,
         selectedBrandSlug: state.selectedBrandSlug,
         selectedDressIds: state.selectedDressIds,

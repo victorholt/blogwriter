@@ -1,4 +1,5 @@
 import type { BrandVoice, Dress, DressFacet, Theme, BrandLabel, ApiResponse, DebugEvent, AgentLogEntry } from '@/types';
+import { normalizeBrandVoice } from './brand-voice-compat';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://blogwriter.test:4444';
 
@@ -17,11 +18,15 @@ export async function analyzeBrandVoiceStream(
   url: string,
   onStatus: (message: string) => void,
   onDebug?: (data: DebugEvent) => void,
+  previousAttempt?: BrandVoice,
 ): Promise<ApiResponse<BrandVoice>> {
+  const body: Record<string, unknown> = { url };
+  if (previousAttempt) body.previousAttempt = previousAttempt;
+
   const res = await fetch(`${API_BASE}/api/brand-voice/analyze-stream`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ url }),
+    body: JSON.stringify(body),
   });
 
   if (!res.ok || !res.body) {
@@ -49,7 +54,8 @@ export async function analyzeBrandVoiceStream(
         if (event.type === 'status') {
           onStatus(event.data);
         } else if (event.type === 'result') {
-          result = { success: true, data: event.data.data, cached: event.data.cached, traceId: event.data.traceId };
+          const normalized = normalizeBrandVoice(event.data.data);
+          result = { success: true, data: normalized, cached: event.data.cached, traceId: event.data.traceId };
         } else if (event.type === 'debug' && onDebug) {
           onDebug(event.data);
         } else if (event.type === 'error') {

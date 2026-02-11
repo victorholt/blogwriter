@@ -1,12 +1,12 @@
 import { createConfiguredAgent, type GlobalContext } from '../lib/agent-factory';
 
-const INSTRUCTIONS = `You are an SEO specialist for bridal e-commerce. Optimize this blog post for search engines while preserving its natural readability.
+const INSTRUCTIONS = `You are an SEO specialist. Optimize this blog post for search engines while preserving its natural readability.
 
 Optimize:
 - H2/H3 headers (include target keywords naturally)
 - Keyword placement (2-3% density, primary keyword in first 100 words)
 - Internal linking suggestions (add placeholders like [INTERNAL_LINK: topic])
-- For existing images, ensure alt text is descriptive and includes relevant keywords (e.g., ![Essense of Australia D3039 A-line wedding dress with lace details](url))
+- For existing images, ensure alt text is descriptive and includes relevant keywords
 - Do NOT add placeholder images — only optimize alt text on existing image references
 - Preserve all image URLs exactly as provided
 

@@ -30,6 +30,7 @@ function buildContextPreamble(): string {
 export interface GlobalContext {
   allowedBrands?: string[];
   themeDescription?: string;
+  brandVoice?: Record<string, unknown>;
 }
 
 export async function createConfiguredAgent(
@@ -59,6 +60,49 @@ export async function createConfiguredAgent(
 
   if (globalContext?.themeDescription) {
     contextPreamble += `[Blog Theme] ${globalContext.themeDescription}\n\n`;
+  }
+
+  if (globalContext?.brandVoice) {
+    const bv = globalContext.brandVoice as Record<string, any>;
+    let voiceBlock = `[Brand Voice]\nBrand: ${bv.brandName || 'Unknown'}`;
+
+    if (bv.personality) {
+      voiceBlock += `\nPersonality: ${bv.personality.archetype} — ${bv.personality.description}`;
+    }
+
+    if (bv.toneAttributes?.length) {
+      voiceBlock += '\nTone:';
+      for (const attr of bv.toneAttributes) {
+        voiceBlock += `\n  - ${attr.name}: ${attr.description}`;
+      }
+    }
+
+    if (bv.vocabulary?.length) {
+      voiceBlock += '\nVocabulary:';
+      for (const cat of bv.vocabulary) {
+        voiceBlock += `\n  ${cat.category}: ${cat.terms?.join(', ')}`;
+      }
+    }
+
+    if (bv.writingStyle?.length) {
+      voiceBlock += '\nWriting style:';
+      for (const rule of bv.writingStyle) {
+        voiceBlock += `\n  - ${rule.rule}: ${rule.description}`;
+      }
+    }
+
+    if (bv.avoidances?.length) {
+      voiceBlock += '\nAvoid:';
+      for (const rule of bv.avoidances) {
+        voiceBlock += `\n  - ${rule.rule}: ${rule.description}`;
+      }
+    }
+
+    if (bv.writingDirection) {
+      voiceBlock += `\nWriting direction: ${bv.writingDirection}`;
+    }
+
+    contextPreamble += voiceBlock + '\n\n';
   }
 
   const instructions = contextPreamble + baseInstructions;
