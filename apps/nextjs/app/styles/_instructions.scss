@@ -79,6 +79,13 @@
     }
   }
 
+  &__voice-summary {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--color-gray-500);
+    margin: 0 0 12px;
+  }
+
   &__tones {
     display: flex;
     flex-wrap: wrap;
@@ -117,66 +124,53 @@
     }
   }
 
-  // --- Dresses ---
+  // --- Theme / Brand meta rows ---
 
-  &__dresses {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 8px;
-
-    @media (min-width: 640px) {
-      grid-template-columns: 1fr 1fr;
-    }
-  }
-
-  &__dress {
+  &__meta-row {
     display: flex;
     align-items: center;
-    gap: 12px;
-    background: white;
-    border: 1px solid var(--color-gray-200);
-    border-radius: var(--radius-md);
-    padding: 10px 12px;
-  }
+    gap: 8px;
+    font-size: 14px;
+    color: var(--color-gray-600);
 
-  &__dress-thumb {
-    width: 40px;
-    height: 54px;
-    object-fit: cover;
-    border-radius: var(--radius-sm);
-    flex-shrink: 0;
-    background: var(--color-gray-100);
+    & + & {
+      margin-top: 8px;
+    }
 
-    &--fallback {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--color-gray-300);
+    svg {
+      flex-shrink: 0;
+      color: var(--color-gray-400);
     }
   }
 
-  &__dress-info {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    min-width: 0;
+  &__meta-label {
+    font-weight: 500;
+    color: var(--color-gray-400);
   }
 
-  &__dress-name {
+  &__meta-value {
+    font-weight: 600;
+    color: var(--color-gray-700);
+  }
+
+  // --- Dress badges ---
+
+  &__dress-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  &__dress-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 14px;
     font-size: 13px;
     font-weight: 500;
-    color: var(--color-gray-800);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  &__dress-meta {
-    font-size: 12px;
-    color: var(--color-gray-400);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    color: var(--color-gray-700);
+    background: white;
+    border: 1px solid var(--color-gray-200);
+    border-radius: 100px;
   }
 
   // --- Settings pills ---

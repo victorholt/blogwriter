@@ -1,4 +1,4 @@
-import { createConfiguredAgent } from '../lib/agent-factory';
+import { createConfiguredAgent, type GlobalContext } from '../lib/agent-factory';
 
 const INSTRUCTIONS = `You are an SEO specialist for bridal e-commerce. Optimize this blog post for search engines while preserving its natural readability.
 
@@ -21,6 +21,6 @@ After the blog content, add a JSON block with SEO metadata:
 
 Do NOT stuff keywords or make the text sound unnatural. The blog should read perfectly well without knowing it was SEO-optimized.`;
 
-export async function createSeoSpecialistAgent() {
-  return createConfiguredAgent('seo-specialist', INSTRUCTIONS);
+export async function createSeoSpecialistAgent(globalContext?: GlobalContext) {
+  return createConfiguredAgent('seo-specialist', INSTRUCTIONS, {}, globalContext);
 }

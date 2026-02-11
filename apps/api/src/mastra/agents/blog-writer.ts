@@ -1,4 +1,4 @@
-import { createConfiguredAgent } from '../lib/agent-factory';
+import { createConfiguredAgent, type GlobalContext } from '../lib/agent-factory';
 import { fetchDressDetails } from '../tools/fetch-dress-details';
 
 export function buildWriterInstructions(
@@ -64,9 +64,10 @@ export async function createBlogWriterAgent(
   selectedDressIds: string[],
   additionalInstructions: string,
   options?: { generateImages?: boolean; generateLinks?: boolean },
+  globalContext?: GlobalContext,
 ) {
   const instructions = buildWriterInstructions(brandVoice, selectedDressIds, additionalInstructions, options);
   return createConfiguredAgent('blog-writer', instructions, {
     'fetch-dress-details': fetchDressDetails,
-  });
+  }, globalContext);
 }

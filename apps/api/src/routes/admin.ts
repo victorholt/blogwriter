@@ -1,10 +1,11 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { db } from '../db';
-import { agentModelConfigs, appSettings, brandVoiceCache } from '../db/schema';
+import { agentModelConfigs, appSettings, brandVoiceCache, themes, brandLabels } from '../db/schema';
 import { eq, sql } from 'drizzle-orm';
 import { validateAdminToken } from '../middleware/admin-auth';
 import { invalidateCache } from '../mastra/lib/model-resolver';
+import { enhanceText as agentEnhanceText } from '../mastra/agents/text-enhancer';
 import { clearDressCache, syncDressesFromApi, getCacheStats } from '../services/dress-cache';
 import { loadProductApiConfig } from '../services/product-api-client';
 import { invalidateInsightsCache } from '../services/agent-trace';
@@ -258,6 +259,182 @@ router.post('/:token/dress-cache/sync', async (_req, res) => {
   } catch (err) {
     console.error('[Admin] Error syncing dresses:', err);
     return res.status(500).json({ success: false, error: 'Failed to sync dresses' });
+  }
+});
+
+// --- Themes CRUD ---
+
+router.get('/:token/themes', async (_req, res) => {
+  try {
+    const rows = await db.select().from(themes).orderBy(themes.sortOrder);
+    return res.json({ success: true, data: rows });
+  } catch (err) {
+    console.error('[Admin] Error fetching themes:', err);
+    return res.status(500).json({ success: false, error: 'Failed to fetch themes' });
+  }
+});
+
+const createThemeSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  description: z.string().min(1, 'Description is required'),
+});
+
+router.post('/:token/themes', async (req, res) => {
+  const parsed = createThemeSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ success: false, error: parsed.error.issues[0]?.message || 'Invalid request' });
+  }
+
+  try {
+    const [row] = await db.insert(themes).values(parsed.data).returning();
+    return res.json({ success: true, data: row });
+  } catch (err) {
+    console.error('[Admin] Error creating theme:', err);
+    return res.status(500).json({ success: false, error: 'Failed to create theme' });
+  }
+});
+
+const updateThemeSchema = z.object({
+  name: z.string().min(1).optional(),
+  description: z.string().min(1).optional(),
+  isActive: z.boolean().optional(),
+  sortOrder: z.number().optional(),
+});
+
+router.put('/:token/themes/:id', async (req, res) => {
+  const parsed = updateThemeSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ success: false, error: parsed.error.issues[0]?.message || 'Invalid request' });
+  }
+
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) return res.status(400).json({ success: false, error: 'Invalid ID' });
+
+  try {
+    const result = await db
+      .update(themes)
+      .set({ ...parsed.data, updatedAt: new Date() })
+      .where(eq(themes.id, id))
+      .returning();
+
+    if (result.length === 0) return res.status(404).json({ success: false, error: 'Theme not found' });
+    return res.json({ success: true, data: result[0] });
+  } catch (err) {
+    console.error(`[Admin] Error updating theme ${id}:`, err);
+    return res.status(500).json({ success: false, error: 'Failed to update theme' });
+  }
+});
+
+router.delete('/:token/themes/:id', async (req, res) => {
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) return res.status(400).json({ success: false, error: 'Invalid ID' });
+
+  try {
+    const result = await db.delete(themes).where(eq(themes.id, id)).returning();
+    if (result.length === 0) return res.status(404).json({ success: false, error: 'Theme not found' });
+    return res.json({ success: true, data: { deleted: true } });
+  } catch (err) {
+    console.error(`[Admin] Error deleting theme ${id}:`, err);
+    return res.status(500).json({ success: false, error: 'Failed to delete theme' });
+  }
+});
+
+// --- Brand Labels CRUD ---
+
+router.get('/:token/brand-labels', async (_req, res) => {
+  try {
+    const rows = await db.select().from(brandLabels).orderBy(brandLabels.sortOrder);
+    return res.json({ success: true, data: rows });
+  } catch (err) {
+    console.error('[Admin] Error fetching brand labels:', err);
+    return res.status(500).json({ success: false, error: 'Failed to fetch brand labels' });
+  }
+});
+
+const createBrandLabelSchema = z.object({
+  slug: z.string().min(1, 'Slug is required'),
+  displayName: z.string().min(1, 'Display name is required'),
+});
+
+router.post('/:token/brand-labels', async (req, res) => {
+  const parsed = createBrandLabelSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ success: false, error: parsed.error.issues[0]?.message || 'Invalid request' });
+  }
+
+  try {
+    const [row] = await db.insert(brandLabels).values(parsed.data).returning();
+    return res.json({ success: true, data: row });
+  } catch (err) {
+    console.error('[Admin] Error creating brand label:', err);
+    return res.status(500).json({ success: false, error: 'Failed to create brand label' });
+  }
+});
+
+const updateBrandLabelSchema = z.object({
+  slug: z.string().min(1).optional(),
+  displayName: z.string().min(1).optional(),
+  isActive: z.boolean().optional(),
+  sortOrder: z.number().optional(),
+});
+
+router.put('/:token/brand-labels/:id', async (req, res) => {
+  const parsed = updateBrandLabelSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ success: false, error: parsed.error.issues[0]?.message || 'Invalid request' });
+  }
+
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) return res.status(400).json({ success: false, error: 'Invalid ID' });
+
+  try {
+    const result = await db
+      .update(brandLabels)
+      .set({ ...parsed.data, updatedAt: new Date() })
+      .where(eq(brandLabels.id, id))
+      .returning();
+
+    if (result.length === 0) return res.status(404).json({ success: false, error: 'Brand label not found' });
+    return res.json({ success: true, data: result[0] });
+  } catch (err) {
+    console.error(`[Admin] Error updating brand label ${id}:`, err);
+    return res.status(500).json({ success: false, error: 'Failed to update brand label' });
+  }
+});
+
+router.delete('/:token/brand-labels/:id', async (req, res) => {
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) return res.status(400).json({ success: false, error: 'Invalid ID' });
+
+  try {
+    const result = await db.delete(brandLabels).where(eq(brandLabels.id, id)).returning();
+    if (result.length === 0) return res.status(404).json({ success: false, error: 'Brand label not found' });
+    return res.json({ success: true, data: { deleted: true } });
+  } catch (err) {
+    console.error(`[Admin] Error deleting brand label ${id}:`, err);
+    return res.status(500).json({ success: false, error: 'Failed to delete brand label' });
+  }
+});
+
+// --- Enhance Text (generic AI rewrite) ---
+
+const enhanceSchema = z.object({
+  text: z.string().min(1).max(5000),
+  context: z.string().optional(), // e.g. "theme description for a blog writing AI agent"
+});
+
+router.post('/:token/enhance', validateAdminToken, async (req, res) => {
+  try {
+    const { text, context } = enhanceSchema.parse(req.body);
+    const enhanced = await agentEnhanceText(text, context);
+    return res.json({ success: true, data: { text: enhanced } });
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      return res.status(400).json({ success: false, error: 'Invalid input' });
+    }
+    const message = err instanceof Error ? err.message : 'Failed to enhance text';
+    console.error('[Admin] Enhance error:', message);
+    return res.status(500).json({ success: false, error: message });
   }
 });
 

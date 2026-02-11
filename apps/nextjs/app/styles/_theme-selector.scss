@@ -1,0 +1,60 @@
+// ============================================================
+// Theme Selector — pill-based single-select (toggle off to deselect)
+// ============================================================
+
+.theme-selector {
+  margin-bottom: 24px;
+
+  &__label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-gray-400);
+    margin-bottom: 10px;
+  }
+
+  &__pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  &__pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 7px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-gray-600);
+    background: var(--color-paper);
+    border: 1px solid var(--color-gray-200);
+    border-radius: 100px;
+    cursor: pointer;
+    transition: all 0.15s;
+
+    &:hover {
+      border-color: var(--color-blue);
+      color: var(--color-blue);
+    }
+
+    &--active {
+      background: var(--color-blue);
+      color: #fff;
+      border-color: var(--color-blue);
+
+      &:hover {
+        background: var(--color-blue-hover);
+        border-color: var(--color-blue-hover);
+        color: #fff;
+      }
+    }
+  }
+
+  &__loading {
+    font-size: 13px;
+    color: var(--color-gray-400);
+    padding: 8px 0;
+  }
+}

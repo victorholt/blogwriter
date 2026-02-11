@@ -9,6 +9,7 @@ const PRODUCT_TYPES = [
   'essense-dress',
   'stella-dress',
   'martina-dress',
+  'luxe-dress',
   'wander-dress',
   'sorella-dress',
 ];
@@ -21,8 +22,9 @@ export async function getCachedDresses(params: {
   search?: string;
   category?: string;
   allowedStyleIds?: string[];
+  brand?: string;
 }): Promise<{ dresses: MappedDress[]; total: number } | null> {
-  const { limit, offset, search, category, allowedStyleIds } = params;
+  const { limit, offset, search, category, allowedStyleIds, brand } = params;
 
   // Check if cache has any rows
   const countResult = await db
@@ -58,6 +60,10 @@ export async function getCachedDresses(params: {
 
   if (allowedStyleIds && allowedStyleIds.length > 0) {
     conditions.push(inArray(cachedDresses.styleId, allowedStyleIds));
+  }
+
+  if (brand) {
+    conditions.push(eq(cachedDresses.brandSlug, brand));
   }
 
   const whereClause = conditions.length > 0
@@ -130,7 +136,7 @@ export async function getCachedDressesByIds(externalIds: string[]): Promise<Mapp
 
 // --- Write to cache ---
 
-export async function cacheDresses(dresses: MappedDress[]): Promise<number> {
+export async function cacheDresses(dresses: MappedDress[], brandSlug?: string): Promise<number> {
   if (dresses.length === 0) return 0;
 
   let cached = 0;
@@ -150,6 +156,7 @@ export async function cacheDresses(dresses: MappedDress[]): Promise<number> {
         category: d.category || null,
         tags: d.tags ? JSON.stringify(d.tags) : null,
         styleId: d.styleId || null,
+        brandSlug: brandSlug || null,
         expiresAt: farFuture,
       })
       .onConflictDoUpdate({
@@ -163,6 +170,7 @@ export async function cacheDresses(dresses: MappedDress[]): Promise<number> {
           category: d.category || null,
           tags: d.tags ? JSON.stringify(d.tags) : null,
           styleId: d.styleId || null,
+          brandSlug: brandSlug || null,
           cachedAt: new Date(),
           expiresAt: farFuture,
         },
@@ -194,7 +202,7 @@ export async function syncDressesFromApi(config: ProductApiConfig): Promise<{ sy
   for (const type of PRODUCT_TYPES) {
     const typeConfig = { ...config, type };
     const result = await fetchProducts(typeConfig, 5000, 0);
-    const synced = await cacheDresses(result.dresses);
+    const synced = await cacheDresses(result.dresses, type);
     byType[type] = result.dresses.length;
     totalSynced += synced;
     totalFromApi += result.dresses.length;

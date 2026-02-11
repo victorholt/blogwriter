@@ -165,10 +165,180 @@
     }
   }
 
+  &__hint {
+    font-weight: 400;
+    color: var(--color-gray-400);
+    font-style: italic;
+  }
+
   &__textarea {
     resize: vertical;
     min-height: 80px;
     font-family: inherit;
     line-height: 1.5;
+  }
+}
+
+// ============================================================
+// Enhance Button (reusable AI-enhance pattern)
+// ============================================================
+
+.enhance-wrap {
+  position: relative;
+}
+
+.enhance-btn {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 100px;
+  border: 1px solid var(--color-blue);
+  background: #eef4ff;
+  color: var(--color-blue);
+  cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s;
+
+  svg {
+    flex-shrink: 0;
+  }
+
+  &:hover:not(:disabled) {
+    background: #dde8ff;
+    box-shadow: 0 1px 3px rgba(59, 118, 214, 0.2);
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.6;
+  }
+}
+
+// ============================================================
+// Themes Tab
+// ============================================================
+
+.themes-tab {
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  &__search-wrap {
+    position: relative;
+    flex: 1;
+    max-width: 320px;
+  }
+
+  &__search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--color-gray-400);
+    pointer-events: none;
+  }
+
+  &__search {
+    width: 100%;
+    padding: 8px 12px 8px 34px;
+    font-size: 14px;
+    border: 1px solid var(--color-gray-200);
+    border-radius: var(--radius-md);
+    background: white;
+    color: var(--color-gray-700);
+    outline: none;
+    transition: border-color 0.15s;
+
+    &:focus {
+      border-color: var(--color-blue);
+    }
+
+    &::placeholder {
+      color: var(--color-gray-400);
+    }
+  }
+
+  &__create-card {
+    border: 2px dashed var(--color-blue-light, var(--color-gray-300));
+  }
+
+  &__delete-confirm {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+}
+
+// ============================================================
+// Brand Labels Section
+// ============================================================
+
+.brand-labels {
+  &__table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  &__th {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-gray-400);
+    text-align: left;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--color-gray-200);
+  }
+
+  &__td {
+    padding: 10px 12px;
+    font-size: 14px;
+    color: var(--color-gray-700);
+    border-bottom: 1px solid var(--color-gray-100);
+    vertical-align: middle;
+
+    &--slug {
+      font-family: monospace;
+      font-size: 13px;
+      color: var(--color-gray-500);
+    }
+
+    &--actions {
+      text-align: right;
+      white-space: nowrap;
+    }
+  }
+
+  &__name-input {
+    width: 100%;
+    padding: 6px 10px;
+    font-size: 14px;
+    border: 1px solid var(--color-gray-200);
+    border-radius: var(--radius-md);
+    background: white;
+    color: var(--color-gray-700);
+    outline: none;
+
+    &:focus {
+      border-color: var(--color-blue);
+    }
+  }
+
+  &__create-row {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--color-gray-200);
   }
 }

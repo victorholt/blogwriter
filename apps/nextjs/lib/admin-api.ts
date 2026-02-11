@@ -91,3 +91,116 @@ export async function syncDresses(token: string): Promise<ApiResponse<{ synced: 
   });
   return res.json();
 }
+
+// --- Themes ---
+
+export interface AdminTheme {
+  id: number;
+  name: string;
+  description: string;
+  isActive: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function fetchAdminThemes(token: string): Promise<ApiResponse<AdminTheme[]>> {
+  const res = await fetch(`${API_BASE}/api/admin/${token}/themes`);
+  return res.json();
+}
+
+export async function createTheme(
+  token: string,
+  data: { name: string; description: string },
+): Promise<ApiResponse<AdminTheme>> {
+  const res = await fetch(`${API_BASE}/api/admin/${token}/themes`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  return res.json();
+}
+
+export async function updateTheme(
+  token: string,
+  id: number,
+  data: { name?: string; description?: string; isActive?: boolean; sortOrder?: number },
+): Promise<ApiResponse<AdminTheme>> {
+  const res = await fetch(`${API_BASE}/api/admin/${token}/themes/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  return res.json();
+}
+
+export async function deleteTheme(token: string, id: number): Promise<ApiResponse<{ deleted: boolean }>> {
+  const res = await fetch(`${API_BASE}/api/admin/${token}/themes/${id}`, {
+    method: 'DELETE',
+  });
+  return res.json();
+}
+
+// --- Brand Labels ---
+
+export interface AdminBrandLabel {
+  id: number;
+  slug: string;
+  displayName: string;
+  isActive: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function fetchAdminBrandLabels(token: string): Promise<ApiResponse<AdminBrandLabel[]>> {
+  const res = await fetch(`${API_BASE}/api/admin/${token}/brand-labels`);
+  return res.json();
+}
+
+export async function createBrandLabel(
+  token: string,
+  data: { slug: string; displayName: string },
+): Promise<ApiResponse<AdminBrandLabel>> {
+  const res = await fetch(`${API_BASE}/api/admin/${token}/brand-labels`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  return res.json();
+}
+
+export async function updateBrandLabel(
+  token: string,
+  id: number,
+  data: { slug?: string; displayName?: string; isActive?: boolean; sortOrder?: number },
+): Promise<ApiResponse<AdminBrandLabel>> {
+  const res = await fetch(`${API_BASE}/api/admin/${token}/brand-labels/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  return res.json();
+}
+
+export async function deleteBrandLabel(token: string, id: number): Promise<ApiResponse<{ deleted: boolean }>> {
+  const res = await fetch(`${API_BASE}/api/admin/${token}/brand-labels/${id}`, {
+    method: 'DELETE',
+  });
+  return res.json();
+}
+
+// --- Enhance Text ---
+
+export async function enhanceText(
+  token: string,
+  text: string,
+  context?: string,
+): Promise<ApiResponse<{ text: string }>> {
+  const res = await fetch(`${API_BASE}/api/admin/${token}/enhance`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text, context }),
+  });
+  return res.json();
+}

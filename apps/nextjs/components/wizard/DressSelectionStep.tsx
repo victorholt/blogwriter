@@ -2,6 +2,8 @@
 
 import { useWizardStore } from '@/stores/wizard-store';
 import DressMultiSelect from '@/components/ui/DressMultiSelect';
+import BrandSelector from './BrandSelector';
+import ThemeSelector from './ThemeSelector';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 
 export default function DressSelectionStep(): React.ReactElement {
@@ -10,6 +12,7 @@ export default function DressSelectionStep(): React.ReactElement {
   const clearSelectedDresses = useWizardStore((s) => s.clearSelectedDresses);
   const dressesMap = useWizardStore((s) => s.dressesMap);
   const addDressesToMap = useWizardStore((s) => s.addDressesToMap);
+  const selectedBrandSlug = useWizardStore((s) => s.selectedBrandSlug);
   const setStep = useWizardStore((s) => s.setStep);
 
   return (
@@ -21,12 +24,16 @@ export default function DressSelectionStep(): React.ReactElement {
         Select the dresses to feature in your blog post
       </p>
 
+      <BrandSelector />
+      <ThemeSelector />
+
       <DressMultiSelect
         selectedIds={selectedDressIds}
         onToggle={toggleDress}
         onClear={clearSelectedDresses}
         dressesMap={dressesMap}
         addDressesToMap={addDressesToMap}
+        brand={selectedBrandSlug ?? undefined}
       />
 
       {/* Selection count */}

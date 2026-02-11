@@ -11,16 +11,21 @@ import {
   fetchDressCacheStats,
   clearDressCache,
   syncDresses,
+  fetchAdminBrandLabels,
+  createBrandLabel,
+  updateBrandLabel,
+  deleteBrandLabel,
 } from '@/lib/admin-api';
-import type { AgentConfig, ModelOption } from '@/lib/admin-api';
-import { Save, Check, AlertCircle, Key, Bot, Loader2, Trash2, Database, Package, RefreshCw, FileText } from 'lucide-react';
+import type { AgentConfig, ModelOption, AdminBrandLabel } from '@/lib/admin-api';
+import { Save, Check, AlertCircle, Key, Bot, Loader2, Trash2, Database, Package, RefreshCw, FileText, Palette, Plus, Tag } from 'lucide-react';
 import SearchSelect from '@/components/ui/SearchSelect';
 import Toggle from '@/components/ui/Toggle';
 import type { SearchSelectGroup } from '@/components/ui/SearchSelect';
 import DressMultiSelect from '@/components/ui/DressMultiSelect';
+import ThemesTab from './ThemesTab';
 import type { Dress } from '@/types';
 
-type SettingsTab = 'api' | 'agents' | 'products' | 'cache' | 'blog';
+type SettingsTab = 'api' | 'agents' | 'products' | 'themes' | 'cache' | 'blog';
 
 interface SettingsPageProps {
   token: string;
@@ -55,6 +60,15 @@ export default function SettingsPage({ token }: SettingsPageProps): React.ReactE
   const [dressClearStatus, setDressClearStatus] = useState<'idle' | 'clearing' | 'cleared' | 'error'>('idle');
   const [dressSyncStatus, setDressSyncStatus] = useState<'idle' | 'syncing' | 'synced' | 'error'>('idle');
   const [dressSyncMessage, setDressSyncMessage] = useState('');
+
+  // Brand labels
+  const [brandLabels, setBrandLabels] = useState<AdminBrandLabel[]>([]);
+  const [brandLabelEdits, setBrandLabelEdits] = useState<Record<number, Partial<AdminBrandLabel>>>({});
+  const [brandLabelSaveStatus, setBrandLabelSaveStatus] = useState<Record<number, 'idle' | 'saving' | 'saved' | 'error'>>({});
+  const [brandLabelDeleteConfirm, setBrandLabelDeleteConfirm] = useState<number | null>(null);
+  const [newBrandSlug, setNewBrandSlug] = useState('');
+  const [newBrandName, setNewBrandName] = useState('');
+  const [brandCreateStatus, setBrandCreateStatus] = useState<'idle' | 'saving' | 'error'>('idle');
 
   const modelGroups: SearchSelectGroup[] = Object.entries(
     models.reduce<Record<string, ModelOption[]>>((acc, m) => {
@@ -249,11 +263,19 @@ export default function SettingsPage({ token }: SettingsPageProps): React.ReactE
     }
   }, [token]);
 
+  const loadBrandLabels = useCallback(async (): Promise<void> => {
+    const result = await fetchAdminBrandLabels(token);
+    if (result.success && result.data) {
+      setBrandLabels(result.data);
+    }
+  }, [token]);
+
   useEffect(() => {
     if (authorized) {
       loadDressCacheStats();
+      loadBrandLabels();
     }
-  }, [authorized, loadDressCacheStats]);
+  }, [authorized, loadDressCacheStats, loadBrandLabels]);
 
   async function handleClearDressCache(): Promise<void> {
     setDressClearStatus('clearing');
@@ -396,6 +418,64 @@ export default function SettingsPage({ token }: SettingsPageProps): React.ReactE
     }
   }
 
+  // --- Brand Labels ---
+
+  function getBrandLabelValue(id: number, field: keyof AdminBrandLabel): string {
+    const edit = brandLabelEdits[id];
+    if (edit && field in edit) return edit[field] as string;
+    const label = brandLabels.find((b) => b.id === id);
+    return label ? (label[field] as string) : '';
+  }
+
+  async function handleToggleBrandLabel(label: AdminBrandLabel): Promise<void> {
+    const result = await updateBrandLabel(token, label.id, { isActive: !label.isActive });
+    if (result.success && result.data) {
+      setBrandLabels((prev) => prev.map((b) => (b.id === label.id ? result.data! : b)));
+    }
+  }
+
+  async function handleSaveBrandLabel(id: number): Promise<void> {
+    const edit = brandLabelEdits[id];
+    if (!edit) return;
+    setBrandLabelSaveStatus((prev) => ({ ...prev, [id]: 'saving' }));
+    const result = await updateBrandLabel(token, id, { displayName: edit.displayName });
+    if (result.success && result.data) {
+      setBrandLabelSaveStatus((prev) => ({ ...prev, [id]: 'saved' }));
+      setBrandLabels((prev) => prev.map((b) => (b.id === id ? result.data! : b)));
+      setBrandLabelEdits((prev) => { const next = { ...prev }; delete next[id]; return next; });
+      setTimeout(() => setBrandLabelSaveStatus((prev) => ({ ...prev, [id]: 'idle' })), 2000);
+    } else {
+      setBrandLabelSaveStatus((prev) => ({ ...prev, [id]: 'error' }));
+      setTimeout(() => setBrandLabelSaveStatus((prev) => ({ ...prev, [id]: 'idle' })), 3000);
+    }
+  }
+
+  async function handleDeleteBrandLabel(id: number): Promise<void> {
+    const result = await deleteBrandLabel(token, id);
+    if (result.success) {
+      setBrandLabels((prev) => prev.filter((b) => b.id !== id));
+      setBrandLabelDeleteConfirm(null);
+    }
+  }
+
+  async function handleCreateBrandLabel(): Promise<void> {
+    if (!newBrandSlug.trim() || !newBrandName.trim()) return;
+    setBrandCreateStatus('saving');
+    const result = await createBrandLabel(token, {
+      slug: newBrandSlug.trim(),
+      displayName: newBrandName.trim(),
+    });
+    if (result.success && result.data) {
+      setBrandLabels((prev) => [...prev, result.data!]);
+      setNewBrandSlug('');
+      setNewBrandName('');
+      setBrandCreateStatus('idle');
+    } else {
+      setBrandCreateStatus('error');
+      setTimeout(() => setBrandCreateStatus('idle'), 3000);
+    }
+  }
+
   // --- Render ---
 
   if (authorized === null) {
@@ -448,6 +528,13 @@ export default function SettingsPage({ token }: SettingsPageProps): React.ReactE
           >
             <Package size={15} />
             Product API
+          </button>
+          <button
+            className={`settings-tab ${activeTab === 'themes' ? 'settings-tab--active' : ''}`}
+            onClick={() => setActiveTab('themes')}
+          >
+            <Palette size={15} />
+            Themes
           </button>
           <button
             className={`settings-tab ${activeTab === 'cache' ? 'settings-tab--active' : ''}`}
@@ -714,7 +801,125 @@ export default function SettingsPage({ token }: SettingsPageProps): React.ReactE
                 <p className="error-text">Failed to save dress filter</p>
               )}
             </div>
+
+            {/* Brand Labels */}
+            <div className="settings-card">
+              <h3 className="settings-card__title">
+                <Tag size={15} style={{ display: 'inline', verticalAlign: '-2px', marginRight: 6 }} />
+                Brand Labels
+              </h3>
+              <p className="settings-field__label" style={{ marginBottom: 12 }}>
+                Map product API slugs to display names. These are used for brand filtering and agent brand exclusivity.
+              </p>
+
+              {brandLabels.length > 0 && (
+                <table className="brand-labels__table">
+                  <thead>
+                    <tr>
+                      <th className="brand-labels__th">Slug</th>
+                      <th className="brand-labels__th">Display Name</th>
+                      <th className="brand-labels__th">Active</th>
+                      <th className="brand-labels__th" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {brandLabels.map((label) => {
+                      const status = brandLabelSaveStatus[label.id] ?? 'idle';
+                      const hasEdits = label.id in brandLabelEdits;
+                      const isDeleting = brandLabelDeleteConfirm === label.id;
+
+                      return (
+                        <tr key={label.id} style={!label.isActive ? { opacity: 0.5 } : undefined}>
+                          <td className="brand-labels__td brand-labels__td--slug">{label.slug}</td>
+                          <td className="brand-labels__td">
+                            <input
+                              className="brand-labels__name-input"
+                              type="text"
+                              value={getBrandLabelValue(label.id, 'displayName')}
+                              onChange={(e) =>
+                                setBrandLabelEdits((prev) => ({
+                                  ...prev,
+                                  [label.id]: { ...prev[label.id], displayName: e.target.value },
+                                }))
+                              }
+                            />
+                          </td>
+                          <td className="brand-labels__td">
+                            <Toggle
+                              checked={label.isActive}
+                              onChange={() => handleToggleBrandLabel(label)}
+                            />
+                          </td>
+                          <td className="brand-labels__td brand-labels__td--actions">
+                            {isDeleting ? (
+                              <>
+                                <button className="btn btn--outline btn--danger btn--sm" onClick={() => handleDeleteBrandLabel(label.id)}>
+                                  Yes
+                                </button>
+                                <button className="btn btn--ghost btn--sm" onClick={() => setBrandLabelDeleteConfirm(null)}>
+                                  No
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                {hasEdits && (
+                                  <button
+                                    className="btn btn--primary btn--sm"
+                                    onClick={() => handleSaveBrandLabel(label.id)}
+                                    disabled={status === 'saving'}
+                                  >
+                                    {status === 'saving' ? <Loader2 size={12} className="spin" /> : status === 'saved' ? <Check size={12} /> : <Save size={12} />}
+                                  </button>
+                                )}
+                                <button className="btn btn--ghost btn--sm" onClick={() => setBrandLabelDeleteConfirm(label.id)}>
+                                  <Trash2 size={12} />
+                                </button>
+                              </>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
+
+              <div className="brand-labels__create-row">
+                <input
+                  className="input"
+                  type="text"
+                  placeholder="slug (e.g. essense-dress)"
+                  value={newBrandSlug}
+                  onChange={(e) => setNewBrandSlug(e.target.value)}
+                  style={{ flex: 1 }}
+                />
+                <input
+                  className="input"
+                  type="text"
+                  placeholder="Display Name"
+                  value={newBrandName}
+                  onChange={(e) => setNewBrandName(e.target.value)}
+                  style={{ flex: 1 }}
+                />
+                <button
+                  className="btn btn--primary"
+                  onClick={handleCreateBrandLabel}
+                  disabled={!newBrandSlug.trim() || !newBrandName.trim() || brandCreateStatus === 'saving'}
+                >
+                  {brandCreateStatus === 'saving' ? <Loader2 size={14} className="spin" /> : <Plus size={14} />}
+                  Add
+                </button>
+              </div>
+              {brandCreateStatus === 'error' && (
+                <p className="error-text" style={{ marginTop: 8 }}>Failed to create brand label</p>
+              )}
+            </div>
           </section>
+        )}
+
+        {/* Themes Tab */}
+        {activeTab === 'themes' && (
+          <ThemesTab token={token} />
         )}
 
         {/* Cache Tab */}

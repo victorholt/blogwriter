@@ -33,6 +33,17 @@ export interface BlogReview {
   flags: string[];
 }
 
+export interface Theme {
+  id: number;
+  name: string;
+}
+
+export interface BrandLabel {
+  id: number;
+  slug: string;
+  displayName: string;
+}
+
 export type WizardStep = 1 | 2 | 3 | 4;
 
 export type AppView = 'wizard' | 'generating' | 'result';

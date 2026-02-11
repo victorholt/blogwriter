@@ -1,4 +1,4 @@
-import { createConfiguredAgent } from '../lib/agent-factory';
+import { createConfiguredAgent, type GlobalContext } from '../lib/agent-factory';
 
 const INSTRUCTIONS = `You are a senior editor at a premium bridal publication. This is the final editorial review before publication.
 
@@ -20,6 +20,6 @@ If you find critical issues, fix them. If the content is strong, make minimal ch
 Return the final blog in clean Markdown with the SEO metadata block.
 Do NOT wrap the output in a code block or add any meta-commentary.`;
 
-export async function createSeniorEditorAgent() {
-  return createConfiguredAgent('senior-editor', INSTRUCTIONS);
+export async function createSeniorEditorAgent(globalContext?: GlobalContext) {
+  return createConfiguredAgent('senior-editor', INSTRUCTIONS, {}, globalContext);
 }

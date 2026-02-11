@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { db } from '../db';
-import { appSettings, blogSessions } from '../db/schema';
+import { appSettings, blogSessions, themes, brandLabels } from '../db/schema';
 import { eq } from 'drizzle-orm';
 import { createBlogWriterAgent } from '../mastra/agents/blog-writer';
 import { createBlogEditorAgent } from '../mastra/agents/blog-editor';
@@ -31,6 +31,8 @@ const generateSchema = z.object({
   }),
   selectedDressIds: z.array(z.string()).min(1),
   additionalInstructions: z.string().optional(),
+  themeId: z.number().optional(),
+  brandLabelSlug: z.string().optional(),
 });
 
 // POST /api/blog/generate - Create session
@@ -42,13 +44,15 @@ router.post('/generate', async (req, res) => {
   }
 
   try {
-    const { storeUrl, brandVoice, selectedDressIds, additionalInstructions } = parsed.data;
+    const { storeUrl, brandVoice, selectedDressIds, additionalInstructions, themeId, brandLabelSlug } = parsed.data;
 
     const [session] = await db.insert(blogSessions).values({
       storeUrl,
       brandVoice: JSON.stringify(brandVoice),
       selectedDressIds: JSON.stringify(selectedDressIds),
       additionalInstructions: additionalInstructions || '',
+      themeId: themeId ? String(themeId) : null,
+      brandLabelSlug: brandLabelSlug || null,
       status: 'generating',
     }).returning();
 
@@ -100,6 +104,25 @@ router.get('/:sessionId/stream', async (req, res) => {
   if (!generateLinks) contentDirectives += 'Do NOT include any hyperlinks in the blog post.\n';
   const effectiveInstructions = contentDirectives + additionalInstructions;
 
+  // Load global context for agent brand exclusivity and theme
+  const allBrandLabels = await db
+    .select({ displayName: brandLabels.displayName })
+    .from(brandLabels)
+    .where(eq(brandLabels.isActive, true));
+  const allowedBrands = allBrandLabels.map((b) => b.displayName);
+
+  let themeDescription: string | undefined;
+  if (session.themeId) {
+    const [theme] = await db
+      .select({ description: themes.description })
+      .from(themes)
+      .where(eq(themes.id, parseInt(session.themeId)))
+      .limit(1);
+    themeDescription = theme?.description;
+  }
+
+  const globalContext = { allowedBrands, themeDescription };
+
   // Set up SSE
   res.writeHead(200, {
     'Content-Type': 'text/event-stream',
@@ -146,7 +169,7 @@ router.get('/:sessionId/stream', async (req, res) => {
         traceLog(traceId, sessionId, 'blog-writer', 'agent-input', { prompt: inputPrompt });
       }
 
-      const agent = await createBlogWriterAgent(brandVoice, selectedDressIds, effectiveInstructions, { generateImages, generateLinks });
+      const agent = await createBlogWriterAgent(brandVoice, selectedDressIds, effectiveInstructions, { generateImages, generateLinks }, globalContext);
       const result = await agent.stream([
         { role: 'user' as const, content: inputPrompt },
       ]);
@@ -200,7 +223,7 @@ router.get('/:sessionId/stream', async (req, res) => {
         agentInput = `IMPORTANT — The client has provided these additional instructions that you MUST follow throughout your work:\n${effectiveInstructions}\n\n---\n\n${currentOutput}`;
       }
 
-      const agent = await opt.creator();
+      const agent = await opt.creator(globalContext);
       const result = await agent.stream([
         { role: 'user' as const, content: agentInput },
       ]);

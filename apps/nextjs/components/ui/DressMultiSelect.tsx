@@ -12,6 +12,7 @@ interface DressMultiSelectProps {
   dressesMap: Map<string, Dress>;
   addDressesToMap: (dresses: Dress[]) => void;
   unfiltered?: boolean;
+  brand?: string;
 }
 
 const PAGE_SIZE = 20;
@@ -23,6 +24,7 @@ export default function DressMultiSelect({
   dressesMap,
   addDressesToMap,
   unfiltered = false,
+  brand,
 }: DressMultiSelectProps): React.ReactElement {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -76,6 +78,7 @@ export default function DressMultiSelect({
         limit: PAGE_SIZE,
         search: searchQuery || undefined,
         unfiltered: unfiltered || undefined,
+        brand: brand || undefined,
       });
       if (result.success && result.data) {
         const fetched = result.data.dresses;
@@ -87,7 +90,7 @@ export default function DressMultiSelect({
     } finally {
       setLoading(false);
     }
-  }, [addDressesToMap, unfiltered]);
+  }, [addDressesToMap, unfiltered, brand]);
 
   // Load initial page when dropdown opens
   useEffect(() => {
@@ -97,6 +100,14 @@ export default function DressMultiSelect({
     // Only trigger on open, not on search (search is debounced separately)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+
+  // Re-fetch when brand changes
+  useEffect(() => {
+    if (open) {
+      loadDresses(search, 1, false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [brand]);
 
   // Debounced search
   useEffect(() => {

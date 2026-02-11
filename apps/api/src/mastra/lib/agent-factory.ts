@@ -27,10 +27,16 @@ function buildContextPreamble(): string {
   return `[Context] Today's date is ${month} ${year}. Always reference the current year (${year}) when mentioning trends, seasons, or timely content. Never reference past years as current.\n\n`;
 }
 
+export interface GlobalContext {
+  allowedBrands?: string[];
+  themeDescription?: string;
+}
+
 export async function createConfiguredAgent(
   agentId: string,
   defaultInstructions: string,
   tools: Record<string, any> = {},
+  globalContext?: GlobalContext,
 ): Promise<Agent> {
   const config = await getAgentModelConfig(agentId);
   const apiKey = await getOpenRouterApiKey();
@@ -43,7 +49,19 @@ export async function createConfiguredAgent(
 
   // DB instructions override code defaults (if set)
   const baseInstructions = config.instructions || defaultInstructions;
-  const instructions = buildContextPreamble() + baseInstructions;
+
+  let contextPreamble = buildContextPreamble();
+
+  if (globalContext?.allowedBrands?.length) {
+    const brandList = globalContext.allowedBrands.join(', ');
+    contextPreamble += `[Brand Exclusivity] You must ONLY mention or reference these wedding dress brands: ${brandList}. Do NOT mention, recommend, or compare with any other wedding dress brands or designers from other companies. If you are unsure whether a brand is allowed, do not mention it.\n\n`;
+  }
+
+  if (globalContext?.themeDescription) {
+    contextPreamble += `[Blog Theme] ${globalContext.themeDescription}\n\n`;
+  }
+
+  const instructions = contextPreamble + baseInstructions;
 
   return new Agent({
     name: agentId,

@@ -1,4 +1,4 @@
-import { createConfiguredAgent } from '../lib/agent-factory';
+import { createConfiguredAgent, type GlobalContext } from '../lib/agent-factory';
 
 const INSTRUCTIONS = `You are a content quality reviewer. Evaluate the final blog post and produce a structured assessment.
 
@@ -24,6 +24,6 @@ Return your output in this exact format:
 Then return the final blog post (unchanged if quality score >= 7, or with fixes if below 7).
 Include the SEO metadata block from the previous step.`;
 
-export async function createBlogReviewerAgent() {
-  return createConfiguredAgent('blog-reviewer', INSTRUCTIONS);
+export async function createBlogReviewerAgent(globalContext?: GlobalContext) {
+  return createConfiguredAgent('blog-reviewer', INSTRUCTIONS, {}, globalContext);
 }

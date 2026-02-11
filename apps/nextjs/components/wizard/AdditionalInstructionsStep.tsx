@@ -1,16 +1,10 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useWizardStore } from '@/stores/wizard-store';
-import { startBlogGeneration } from '@/lib/api';
-import { ArrowLeft, Sparkles, Globe, Shirt, Image, Link2 } from 'lucide-react';
-import type { Dress } from '@/types';
-
-/** Convert slugs like "stella-york" to "Stella York" */
-function formatDesigner(raw: string): string {
-  return raw
-    .replace(/[-_]/g, ' ')
-    .replace(/\b\w/g, (c) => c.toUpperCase());
-}
+import { startBlogGeneration, fetchThemes, fetchBrandLabels } from '@/lib/api';
+import { ArrowLeft, Sparkles, Globe, Image, Link2, Tag, Palette } from 'lucide-react';
+import type { Dress, Theme, BrandLabel } from '@/types';
 
 export default function AdditionalInstructionsStep(): React.ReactElement {
   const additionalInstructions = useWizardStore((s) => s.additionalInstructions);
@@ -21,9 +15,23 @@ export default function AdditionalInstructionsStep(): React.ReactElement {
   const dressesMap = useWizardStore((s) => s.dressesMap);
   const generateImages = useWizardStore((s) => s.generateImages);
   const generateLinks = useWizardStore((s) => s.generateLinks);
+  const selectedThemeId = useWizardStore((s) => s.selectedThemeId);
+  const selectedBrandSlug = useWizardStore((s) => s.selectedBrandSlug);
+  const debugMode = useWizardStore((s) => s.debugMode);
   const setStep = useWizardStore((s) => s.setStep);
   const setView = useWizardStore((s) => s.setView);
   const setSessionId = useWizardStore((s) => s.setSessionId);
+
+  const [themes, setThemes] = useState<Theme[]>([]);
+  const [brands, setBrands] = useState<BrandLabel[]>([]);
+
+  useEffect(() => {
+    fetchThemes().then((r) => { if (r.success && r.data) setThemes(r.data); });
+    fetchBrandLabels().then((r) => { if (r.success && r.data) setBrands(r.data); });
+  }, []);
+
+  const selectedThemeName = themes.find((t) => t.id === selectedThemeId)?.name;
+  const selectedBrandName = brands.find((b) => b.slug === selectedBrandSlug)?.displayName;
 
   const selectedDresses = Array.from(selectedDressIds)
     .map((id) => dressesMap.get(id))
@@ -37,6 +45,8 @@ export default function AdditionalInstructionsStep(): React.ReactElement {
       brandVoice,
       selectedDressIds: Array.from(selectedDressIds),
       additionalInstructions,
+      themeId: selectedThemeId ?? undefined,
+      brandLabelSlug: selectedBrandSlug ?? undefined,
     });
 
     if (result.success && result.data) {
@@ -74,6 +84,9 @@ export default function AdditionalInstructionsStep(): React.ReactElement {
             <Globe size={13} />
             <span>{storeUrl || 'No URL provided'}</span>
           </div>
+          {brandVoice?.summary && (
+            <p className="session-summary__voice-summary">{brandVoice.summary}</p>
+          )}
           {brandVoice && brandVoice.tone.length > 0 && (
             <div className="session-summary__tones">
               {brandVoice.tone.map((t) => (
@@ -83,6 +96,29 @@ export default function AdditionalInstructionsStep(): React.ReactElement {
           )}
         </div>
 
+        {/* Theme & Brand Label */}
+        {(selectedThemeName || selectedBrandName) && (
+          <>
+            <div className="session-summary__divider" />
+            <div className="session-summary__section">
+              {selectedThemeName && (
+                <div className="session-summary__meta-row">
+                  <Palette size={13} />
+                  <span className="session-summary__meta-label">Theme:</span>
+                  <span className="session-summary__meta-value">{selectedThemeName}</span>
+                </div>
+              )}
+              {selectedBrandName && (
+                <div className="session-summary__meta-row">
+                  <Tag size={13} />
+                  <span className="session-summary__meta-label">Brand:</span>
+                  <span className="session-summary__meta-value">{selectedBrandName}</span>
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
         <div className="session-summary__divider" />
 
         {/* Selected Dresses */}
@@ -90,51 +126,33 @@ export default function AdditionalInstructionsStep(): React.ReactElement {
           <div className="session-summary__section-label">
             Dresses ({selectedDresses.length})
           </div>
-          <div className="session-summary__dresses">
+          <div className="session-summary__dress-badges">
             {selectedDresses.map((dress) => (
-              <div key={dress.externalId} className="session-summary__dress">
-                {dress.imageUrl ? (
-                  <img
-                    className="session-summary__dress-thumb"
-                    src={dress.imageUrl}
-                    alt={dress.name}
-                  />
-                ) : (
-                  <span className="session-summary__dress-thumb session-summary__dress-thumb--fallback">
-                    <Shirt size={16} />
-                  </span>
-                )}
-                <div className="session-summary__dress-info">
-                  <span className="session-summary__dress-name">{dress.name}</span>
-                  {(dress.designer || dress.styleId) && (
-                    <span className="session-summary__dress-meta">
-                      {dress.designer && formatDesigner(dress.designer)}
-                      {dress.designer && dress.styleId && ' · '}
-                      {dress.styleId}
-                    </span>
-                  )}
-                </div>
-              </div>
+              <span key={dress.externalId} className="session-summary__dress-badge">
+                {dress.styleId || dress.name}
+              </span>
             ))}
           </div>
         </div>
 
-        <div className="session-summary__divider" />
-
-        {/* Settings */}
-        <div className="session-summary__section">
-          <div className="session-summary__section-label">Settings</div>
-          <div className="session-summary__settings">
-            <span className={`session-summary__setting-pill ${generateImages ? 'session-summary__setting-pill--on' : ''}`}>
-              <Image size={12} />
-              Images {generateImages ? 'On' : 'Off'}
-            </span>
-            <span className={`session-summary__setting-pill ${generateLinks ? 'session-summary__setting-pill--on' : ''}`}>
-              <Link2 size={12} />
-              Links {generateLinks ? 'On' : 'Off'}
-            </span>
-          </div>
-        </div>
+        {debugMode && (
+          <>
+            <div className="session-summary__divider" />
+            <div className="session-summary__section">
+              <div className="session-summary__section-label">Settings</div>
+              <div className="session-summary__settings">
+                <span className={`session-summary__setting-pill ${generateImages ? 'session-summary__setting-pill--on' : ''}`}>
+                  <Image size={12} />
+                  Images {generateImages ? 'On' : 'Off'}
+                </span>
+                <span className={`session-summary__setting-pill ${generateLinks ? 'session-summary__setting-pill--on' : ''}`}>
+                  <Link2 size={12} />
+                  Links {generateLinks ? 'On' : 'Off'}
+                </span>
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Navigation */}

@@ -1,5 +1,5 @@
 import { db } from './index';
-import { agentModelConfigs, appSettings } from './schema';
+import { agentModelConfigs, appSettings, brandLabels } from './schema';
 import { sql } from 'drizzle-orm';
 
 const DEFAULT_MODEL = 'openrouter/anthropic/claude-sonnet-4.5';
@@ -11,6 +11,7 @@ const DEFAULT_AGENTS = [
   { agentId: 'seo-specialist', agentLabel: 'SEO Specialist', modelId: DEFAULT_MODEL, temperature: '0.4', maxTokens: '4096' },
   { agentId: 'senior-editor', agentLabel: 'Senior Editor', modelId: DEFAULT_MODEL, temperature: '0.5', maxTokens: '4096' },
   { agentId: 'blog-reviewer', agentLabel: 'Blog Reviewer', modelId: DEFAULT_MODEL, temperature: '0.3', maxTokens: '4096' },
+  { agentId: 'text-enhancer', agentLabel: 'Text Enhancer', modelId: DEFAULT_MODEL, temperature: '0.7', maxTokens: '2048' },
 ];
 
 const DEFAULT_SETTINGS = [
@@ -46,4 +47,20 @@ export async function seedDatabase(): Promise<void> {
       .onConflictDoNothing({ target: appSettings.key });
   }
   console.log(`[Seed] App settings: ${DEFAULT_SETTINGS.length} defaults ensured`);
+
+  // Seed brand labels (ON CONFLICT DO NOTHING)
+  const DEFAULT_BRAND_LABELS = [
+    { slug: 'essense-dress', displayName: 'Essense of Australia', sortOrder: 1 },
+    { slug: 'martina-dress', displayName: 'Martina Liana', sortOrder: 2 },
+    { slug: 'luxe-dress', displayName: 'Martina Liana Luxe', sortOrder: 3 },
+    { slug: 'sorella-dress', displayName: 'Sorella Vita', sortOrder: 4 },
+    { slug: 'wander-dress', displayName: 'All Who Wander', sortOrder: 5 },
+    { slug: 'stella-dress', displayName: 'Stella York', sortOrder: 6 },
+  ];
+  for (const label of DEFAULT_BRAND_LABELS) {
+    await db.insert(brandLabels)
+      .values(label)
+      .onConflictDoNothing({ target: brandLabels.slug });
+  }
+  console.log(`[Seed] Brand labels: ${DEFAULT_BRAND_LABELS.length} defaults ensured`);
 }

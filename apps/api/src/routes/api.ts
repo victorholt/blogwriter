@@ -3,6 +3,7 @@ import brandVoiceRoutes from './brand-voice'
 import adminRoutes from './admin'
 import dressRoutes from './dresses'
 import blogRoutes from './blog'
+import themeRoutes from './themes'
 import { db } from '../db'
 import { appSettings } from '../db/schema'
 import { eq, inArray } from 'drizzle-orm'
@@ -17,6 +18,9 @@ router.use('/dresses', dressRoutes)
 
 // Blog Generation
 router.use('/blog', blogRoutes)
+
+// Themes
+router.use('/themes', themeRoutes)
 
 // Admin
 router.use('/admin', adminRoutes)

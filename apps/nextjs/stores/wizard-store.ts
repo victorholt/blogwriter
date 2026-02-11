@@ -19,6 +19,10 @@ interface WizardState {
   brandVoice: BrandVoice | null;
   brandVoiceConfirmed: boolean;
 
+  // Step 3: Theme & Brand
+  selectedThemeId: number | null;
+  selectedBrandSlug: string | null;
+
   // Step 3: Dresses
   availableDresses: Dress[];
   selectedDressIds: Set<string>;
@@ -94,6 +98,8 @@ interface WizardState {
   setTimelineStyle: (style: 'preview-bar' | 'timeline' | 'stepper') => void;
   setGenerateImages: (enabled: boolean) => void;
   setGenerateLinks: (enabled: boolean) => void;
+  setSelectedTheme: (id: number | null) => void;
+  setSelectedBrand: (slug: string | null) => void;
   resetGenerationForRetry: () => void;
   invalidateUrlDependentState: () => void;
   reset: () => void;
@@ -119,6 +125,8 @@ const initialState = {
   dressTotalPages: 1,
   dressCategories: [] as string[],
   dressesMap: new Map<string, Dress>(),
+  selectedThemeId: null as number | null,
+  selectedBrandSlug: null as string | null,
   additionalInstructions: '',
   sessionId: null as string | null,
   generationAgent: '',
@@ -243,6 +251,8 @@ export const useWizardStore = create<WizardState>()(
       setTimelineStyle: (style) => set({ timelineStyle: style }),
       setGenerateImages: (enabled) => set({ generateImages: enabled }),
       setGenerateLinks: (enabled) => set({ generateLinks: enabled }),
+      setSelectedTheme: (id) => set({ selectedThemeId: id }),
+      setSelectedBrand: (slug) => set({ selectedBrandSlug: slug, selectedDressIds: new Set<string>() }),
 
       resetGenerationForRetry: () =>
         set({
@@ -313,6 +323,8 @@ export const useWizardStore = create<WizardState>()(
         brandVoiceTraceId: state.brandVoiceTraceId,
         brandVoice: state.brandVoice,
         brandVoiceConfirmed: state.brandVoiceConfirmed,
+        selectedThemeId: state.selectedThemeId,
+        selectedBrandSlug: state.selectedBrandSlug,
         selectedDressIds: state.selectedDressIds,
         dressesMap: state.dressesMap,
         additionalInstructions: state.additionalInstructions,

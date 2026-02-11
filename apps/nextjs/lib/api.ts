@@ -1,4 +1,4 @@
-import type { BrandVoice, Dress, DressFacet, ApiResponse, DebugEvent, AgentLogEntry } from '@/types';
+import type { BrandVoice, Dress, DressFacet, Theme, BrandLabel, ApiResponse, DebugEvent, AgentLogEntry } from '@/types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://blogwriter.test:4444';
 
@@ -70,6 +70,7 @@ export async function fetchDresses(params: {
   category?: string;
   search?: string;
   unfiltered?: boolean;
+  brand?: string;
 }): Promise<ApiResponse<{ dresses: Dress[]; total: number; page: number; totalPages: number }>> {
   const qs = new URLSearchParams(
     Object.entries(params)
@@ -87,11 +88,23 @@ export async function fetchDressFacets(): Promise<ApiResponse<DressFacet[]>> {
 
 // --- Blog Generation ---
 
+export async function fetchThemes(): Promise<ApiResponse<Theme[]>> {
+  const res = await fetch(`${API_BASE}/api/themes`);
+  return res.json();
+}
+
+export async function fetchBrandLabels(): Promise<ApiResponse<BrandLabel[]>> {
+  const res = await fetch(`${API_BASE}/api/dresses/brands`);
+  return res.json();
+}
+
 export async function startBlogGeneration(data: {
   storeUrl: string;
   brandVoice: BrandVoice;
   selectedDressIds: string[];
   additionalInstructions: string;
+  themeId?: number;
+  brandLabelSlug?: string;
 }): Promise<ApiResponse<{ sessionId: string }>> {
   const res = await fetch(`${API_BASE}/api/blog/generate`, {
     method: 'POST',

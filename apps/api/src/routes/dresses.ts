@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { eq } from 'drizzle-orm';
 import { db } from '../db';
-import { appSettings } from '../db/schema';
+import { appSettings, brandLabels } from '../db/schema';
 import {
   loadProductApiConfig,
   fetchProducts,
@@ -21,6 +21,7 @@ router.get('/', async (req, res) => {
   try {
     const search = (req.query.search as string) || '';
     const category = (req.query.category as string) || '';
+    const brand = (req.query.brand as string) || '';
     const unfiltered = req.query.unfiltered === 'true';
 
     // Load allowed style IDs filter (unless unfiltered requested)
@@ -47,7 +48,7 @@ router.get('/', async (req, res) => {
     const offset = (page - 1) * limit;
 
     // Try cache first
-    const cached = await getCachedDresses({ limit, offset, search, category, allowedStyleIds });
+    const cached = await getCachedDresses({ limit, offset, search, category, allowedStyleIds, brand: brand || undefined });
 
     if (cached) {
       const totalPages = Math.max(1, Math.ceil(cached.total / limit));
@@ -71,7 +72,7 @@ router.get('/', async (req, res) => {
     let dresses = result.dresses;
 
     // Cache the fetched dresses in background (don't await)
-    cacheDresses(dresses).catch((err) =>
+    cacheDresses(dresses, config.type).catch((err) =>
       console.error('[Dresses] Background cache write failed:', err),
     );
 
@@ -118,6 +119,26 @@ router.get('/', async (req, res) => {
       success: false,
       error: err instanceof Error ? err.message : 'Failed to fetch dresses',
     });
+  }
+});
+
+// GET /api/dresses/brands — public, returns active brand labels
+router.get('/brands', async (_req, res) => {
+  try {
+    const rows = await db
+      .select({
+        id: brandLabels.id,
+        slug: brandLabels.slug,
+        displayName: brandLabels.displayName,
+      })
+      .from(brandLabels)
+      .where(eq(brandLabels.isActive, true))
+      .orderBy(brandLabels.sortOrder);
+
+    return res.json({ success: true, data: rows });
+  } catch (err) {
+    console.error('[Dresses] Error fetching brand labels:', err);
+    return res.status(500).json({ success: false, error: 'Failed to fetch brand labels' });
   }
 });
 
