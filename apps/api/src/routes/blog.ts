@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { db } from '../db';
-import { blogSessions } from '../db/schema';
+import { appSettings, blogSessions } from '../db/schema';
 import { eq } from 'drizzle-orm';
 import { createBlogWriterAgent } from '../mastra/agents/blog-writer';
 import { createBlogEditorAgent } from '../mastra/agents/blog-editor';
@@ -12,6 +12,11 @@ import { isInsightsEnabled, startTrace, log as traceLog, getSessionTraces } from
 import { isAgentEnabled } from '../mastra/lib/model-resolver';
 
 const router = Router();
+
+async function getSettingBool(key: string, defaultVal: boolean): Promise<boolean> {
+  const rows = await db.select().from(appSettings).where(eq(appSettings.key, key)).limit(1);
+  return rows.length > 0 ? rows[0].value === 'true' : defaultVal;
+}
 
 const generateSchema = z.object({
   storeUrl: z.string().min(1),
@@ -85,6 +90,16 @@ router.get('/:sessionId/stream', async (req, res) => {
   const selectedDressIds = JSON.parse(session.selectedDressIds || '[]');
   const additionalInstructions = session.additionalInstructions || '';
 
+  // Fetch blog content settings
+  const generateImages = await getSettingBool('blog_generate_images', true);
+  const generateLinks = await getSettingBool('blog_generate_links', true);
+
+  // Build content directives that all agents must follow
+  let contentDirectives = '';
+  if (!generateImages) contentDirectives += 'Do NOT include any images or image markdown in the blog post.\n';
+  if (!generateLinks) contentDirectives += 'Do NOT include any hyperlinks in the blog post.\n';
+  const effectiveInstructions = contentDirectives + additionalInstructions;
+
   // Set up SSE
   res.writeHead(200, {
     'Content-Type': 'text/event-stream',
@@ -124,14 +139,14 @@ router.get('/:sessionId/stream', async (req, res) => {
       sendEvent(res, 'agent-start', { agent: 'blog-writer', agentLabel: 'Blog Writer', step: stepNum, totalSteps, traceId });
 
       let inputPrompt = `Write a blog post featuring these wedding dresses. Use the fetch-dress-details tool to get information about the dresses with IDs: ${selectedDressIds.join(', ')}`;
-      if (additionalInstructions.trim()) {
-        inputPrompt += `\n\nIMPORTANT — The client has provided these additional instructions that you MUST follow:\n${additionalInstructions}`;
+      if (effectiveInstructions.trim()) {
+        inputPrompt += `\n\nIMPORTANT — The client has provided these additional instructions that you MUST follow:\n${effectiveInstructions}`;
       }
       if (insightsOn && traceId) {
         traceLog(traceId, sessionId, 'blog-writer', 'agent-input', { prompt: inputPrompt });
       }
 
-      const agent = await createBlogWriterAgent(brandVoice, selectedDressIds, additionalInstructions);
+      const agent = await createBlogWriterAgent(brandVoice, selectedDressIds, effectiveInstructions, { generateImages, generateLinks });
       const result = await agent.stream([
         { role: 'user' as const, content: inputPrompt },
       ]);
@@ -179,9 +194,15 @@ router.get('/:sessionId/stream', async (req, res) => {
         traceLog(traceId, sessionId, opt.id, 'agent-input', { prompt: currentOutput, charCount: currentOutput.length });
       }
 
+      // Build user message: include additional instructions so every agent respects them
+      let agentInput = currentOutput;
+      if (effectiveInstructions.trim()) {
+        agentInput = `IMPORTANT — The client has provided these additional instructions that you MUST follow throughout your work:\n${effectiveInstructions}\n\n---\n\n${currentOutput}`;
+      }
+
       const agent = await opt.creator();
       const result = await agent.stream([
-        { role: 'user' as const, content: currentOutput },
+        { role: 'user' as const, content: agentInput },
       ]);
 
       let text = '';

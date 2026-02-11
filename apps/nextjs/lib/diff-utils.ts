@@ -92,6 +92,80 @@ export function computeDiff(oldText: string, newText: string): DiffSegment[] {
   return segments;
 }
 
+/**
+ * Wrap text in an HTML tag, splitting at markdown block boundaries
+ * so the tags don't prevent markdown from recognising headings,
+ * list items, blockquotes, etc.
+ */
+function wrapBlockAware(text: string, tag: string, cls: string): string {
+  const open = `<${tag} class="${cls}">`;
+  const close = `</${tag}>`;
+
+  // Pure inline text (no block boundaries) — wrap directly
+  if (!text.includes('\n\n') && !/^#{1,6}\s/m.test(text)) {
+    return `${open}${text}${close}`;
+  }
+
+  // Split into blocks at double-newline boundaries
+  const blocks = text.split(/(\n\n+)/);
+  let result = '';
+
+  for (const block of blocks) {
+    // Preserve paragraph-break whitespace as-is
+    if (/^\n+$/.test(block)) {
+      result += block;
+      continue;
+    }
+
+    // Heading: place tag after # markers
+    const headingMatch = block.match(/^(#{1,6}\s+)([\s\S]*)/);
+    if (headingMatch) {
+      result += `${headingMatch[1]}${open}${headingMatch[2]}${close}`;
+      continue;
+    }
+
+    // List item: place tag after bullet
+    const listMatch = block.match(/^([-*]\s+|\d+\.\s+)([\s\S]*)/);
+    if (listMatch) {
+      result += `${listMatch[1]}${open}${listMatch[2]}${close}`;
+      continue;
+    }
+
+    // Blockquote: place tag after >
+    const quoteMatch = block.match(/^(>\s+)([\s\S]*)/);
+    if (quoteMatch) {
+      result += `${quoteMatch[1]}${open}${quoteMatch[2]}${close}`;
+      continue;
+    }
+
+    // Plain paragraph — wrap entirely
+    result += `${open}${block}${close}`;
+  }
+
+  return result;
+}
+
+/**
+ * Build an annotated markdown string with <ins>/<del> tags for diff
+ * highlighting. Designed to be fed through react-markdown + rehype-raw
+ * so the blog renders with editorial styling and diff overlays.
+ */
+export function buildAnnotatedMarkdown(segments: DiffSegment[]): string {
+  let result = '';
+
+  for (const seg of segments) {
+    if (seg.type === 'equal') {
+      result += seg.text;
+    } else if (seg.type === 'removed') {
+      result += wrapBlockAware(seg.text, 'del', 'diff-hl diff-hl--removed');
+    } else {
+      result += wrapBlockAware(seg.text, 'ins', 'diff-hl diff-hl--added');
+    }
+  }
+
+  return result;
+}
+
 export interface AttributionSegment {
   text: string;
   /** The agent that introduced or last modified this text */

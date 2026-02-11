@@ -23,6 +23,9 @@ const DEFAULT_SETTINGS = [
   { key: 'allowed_dress_ids', value: '' },
   { key: 'debug_mode', value: 'false' },
   { key: 'insights_enabled', value: 'true' },
+  { key: 'blog_timeline_style', value: 'preview-bar' },
+  { key: 'blog_generate_images', value: 'true' },
+  { key: 'blog_generate_links', value: 'true' },
 ];
 
 export async function seedDatabase(): Promise<void> {

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { useWizardStore } from '@/stores/wizard-store';
-import { createBlogStream, fetchDebugMode } from '@/lib/api';
+import { createBlogStream, fetchDebugMode, fetchBlogSettings } from '@/lib/api';
 import StepIndicator from '@/components/wizard/StepIndicator';
 import StoreInfoStep from '@/components/wizard/StoreInfoStep';
 import BrandVoiceStep from '@/components/wizard/BrandVoiceStep';
@@ -124,13 +124,21 @@ function GeneratingWithSSE(): React.ReactElement {
 export default function Home(): React.ReactElement {
   const view = useWizardStore((s) => s.view);
   const setDebugMode = useWizardStore((s) => s.setDebugMode);
+  const setTimelineStyle = useWizardStore((s) => s.setTimelineStyle);
+  const setGenerateImages = useWizardStore((s) => s.setGenerateImages);
+  const setGenerateLinks = useWizardStore((s) => s.setGenerateLinks);
 
-  // Fetch debug mode status on mount
+  // Fetch app settings on mount
   useEffect(() => {
     fetchDebugMode().then((result) => {
       setDebugMode(result.debugMode);
     });
-  }, [setDebugMode]);
+    fetchBlogSettings().then((result) => {
+      setTimelineStyle(result.timelineStyle);
+      setGenerateImages(result.generateImages);
+      setGenerateLinks(result.generateLinks);
+    });
+  }, [setDebugMode, setTimelineStyle, setGenerateImages, setGenerateLinks]);
 
   if (view === 'generating') {
     return <GeneratingWithSSE />;

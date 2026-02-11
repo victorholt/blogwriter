@@ -11,7 +11,23 @@ export function buildWriterInstructions(
   },
   selectedDressIds: string[],
   additionalInstructions: string,
+  options?: { generateImages?: boolean; generateLinks?: boolean },
 ): string {
+  const includeImages = options?.generateImages !== false;
+  const includeLinks = options?.generateLinks !== false;
+
+  const imageRequirements = includeImages
+    ? `- For each dress you feature, include its image using Markdown: ![Dress Name](imageUrl)
+- Place each image inline within the paragraph that discusses that dress — NOT on its own line between paragraphs
+- Ensure there is at least a full paragraph of text (3+ sentences) surrounding each image so text wraps around it naturally
+- Spread images throughout the post with substantial text between them — do NOT cluster images near each other
+- Do NOT put all images at the end — weave them into the narrative`
+    : `- Do NOT include any images or image markdown (![...](url)) in the blog post`;
+
+  const linkRequirements = includeLinks
+    ? ''
+    : `\n- Do NOT include any hyperlinks or markdown links ([text](url)) in the blog post`;
+
   return `You are a professional wedding blog writer. Write an engaging, SEO-friendly blog post about wedding dresses.
 
 Brand Voice: ${brandVoice.summary}
@@ -33,11 +49,7 @@ Requirements:
 - Match the brand's tone
 - Write in Markdown format
 - Include a compelling introduction and conclusion
-- For each dress you feature, include its image using Markdown: ![Dress Name](imageUrl)
-- Place each image inline within the paragraph that discusses that dress — NOT on its own line between paragraphs
-- Ensure there is at least a full paragraph of text (3+ sentences) surrounding each image so text wraps around it naturally
-- Spread images throughout the post with substantial text between them — do NOT cluster images near each other
-- Do NOT put all images at the end — weave them into the narrative`;
+${imageRequirements}${linkRequirements}`;
 }
 
 export async function createBlogWriterAgent(
@@ -50,8 +62,9 @@ export async function createBlogWriterAgent(
   },
   selectedDressIds: string[],
   additionalInstructions: string,
+  options?: { generateImages?: boolean; generateLinks?: boolean },
 ) {
-  const instructions = buildWriterInstructions(brandVoice, selectedDressIds, additionalInstructions);
+  const instructions = buildWriterInstructions(brandVoice, selectedDressIds, additionalInstructions, options);
   return createConfiguredAgent('blog-writer', instructions, {
     'fetch-dress-details': fetchDressDetails,
   });

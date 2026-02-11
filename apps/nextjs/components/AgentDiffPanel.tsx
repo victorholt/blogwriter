@@ -2,9 +2,10 @@
 
 import { useState, useMemo } from 'react';
 import { useWizardStore } from '@/stores/wizard-store';
-import { computeDiff, AGENT_COLORS } from '@/lib/diff-utils';
+import { computeDiff, buildAnnotatedMarkdown, AGENT_COLORS } from '@/lib/diff-utils';
 import { Columns2, Rows3, Equal } from 'lucide-react';
 import Markdown from 'react-markdown';
+import rehypeRaw from 'rehype-raw';
 import type { DiffSegment } from '@/lib/diff-utils';
 
 type DiffViewMode = 'inline' | 'side-by-side';
@@ -151,7 +152,7 @@ function DiffView({
   }
 
   return (
-    <InlineDiff
+    <RichDiff
       diff={diff}
       leftLabel={leftLabel}
       rightLabel={rightLabel}
@@ -162,7 +163,7 @@ function DiffView({
   );
 }
 
-function InlineDiff({
+function RichDiff({
   diff,
   leftLabel,
   rightLabel,
@@ -180,6 +181,11 @@ function InlineDiff({
   const leftColor = AGENT_COLORS[leftAgent] || AGENT_COLORS['blog-writer'];
   const rightColor = AGENT_COLORS[rightAgent] || AGENT_COLORS['blog-editor'];
 
+  const annotatedMarkdown = useMemo(
+    () => buildAnnotatedMarkdown(diff),
+    [diff],
+  );
+
   return (
     <div className="diff__inline">
       <div className="diff__legend">
@@ -192,32 +198,18 @@ function InlineDiff({
           {rightLabel} ({changeStats.added} words added)
         </span>
       </div>
-      <div className="diff__content diff__content--rich">
-        {diff.map((seg, i) => {
-          if (seg.type === 'equal') {
-            return <span key={i}>{seg.text}</span>;
-          }
-          if (seg.type === 'removed') {
-            return (
-              <span
-                key={i}
-                className="diff__removed"
-                style={{ borderColor: leftColor.border, background: leftColor.bg }}
-              >
-                {seg.text}
-              </span>
-            );
-          }
-          return (
-            <span
-              key={i}
-              className="diff__added"
-              style={{ borderColor: rightColor.border, background: rightColor.bg }}
-            >
-              {seg.text}
-            </span>
-          );
-        })}
+      <div
+        className="diff__content result__content"
+        style={{
+          '--diff-removed-bg': leftColor.bg,
+          '--diff-removed-border': leftColor.border,
+          '--diff-added-bg': rightColor.bg,
+          '--diff-added-border': rightColor.border,
+        } as React.CSSProperties}
+      >
+        <Markdown rehypePlugins={[rehypeRaw]}>
+          {annotatedMarkdown}
+        </Markdown>
       </div>
     </div>
   );

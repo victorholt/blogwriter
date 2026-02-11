@@ -13,14 +13,14 @@ import {
   syncDresses,
 } from '@/lib/admin-api';
 import type { AgentConfig, ModelOption } from '@/lib/admin-api';
-import { Save, Check, AlertCircle, Key, Bot, Loader2, Trash2, Database, Package, RefreshCw } from 'lucide-react';
+import { Save, Check, AlertCircle, Key, Bot, Loader2, Trash2, Database, Package, RefreshCw, FileText } from 'lucide-react';
 import SearchSelect from '@/components/ui/SearchSelect';
 import Toggle from '@/components/ui/Toggle';
 import type { SearchSelectGroup } from '@/components/ui/SearchSelect';
 import DressMultiSelect from '@/components/ui/DressMultiSelect';
 import type { Dress } from '@/types';
 
-type SettingsTab = 'api' | 'agents' | 'products' | 'cache';
+type SettingsTab = 'api' | 'agents' | 'products' | 'cache' | 'blog';
 
 interface SettingsPageProps {
   token: string;
@@ -130,6 +130,42 @@ export default function SettingsPage({ token }: SettingsPageProps): React.ReactE
     if (result.success && result.data) {
       const data = result.data;
       setAllSettings((prev: Record<string, string>) => ({ ...prev, ...data }));
+    }
+  }
+
+  // --- Blog Settings ---
+
+  async function handleToggleGenerateImages(): Promise<void> {
+    const newValue = allSettings.blog_generate_images === 'false' ? 'true' : 'false';
+    const result = await updateSettings(token, { blog_generate_images: newValue });
+    if (result.success && result.data) {
+      setAllSettings((prev) => ({ ...prev, ...result.data }));
+    }
+  }
+
+  async function handleToggleGenerateLinks(): Promise<void> {
+    const newValue = allSettings.blog_generate_links === 'false' ? 'true' : 'false';
+    const result = await updateSettings(token, { blog_generate_links: newValue });
+    if (result.success && result.data) {
+      setAllSettings((prev) => ({ ...prev, ...result.data }));
+    }
+  }
+
+  const TIMELINE_STYLE_OPTIONS: SearchSelectGroup[] = [
+    {
+      label: 'Display Styles',
+      options: [
+        { label: 'Preview Bar', value: 'preview-bar' },
+        { label: 'Vertical Timeline', value: 'timeline' },
+        { label: 'Horizontal Stepper', value: 'stepper' },
+      ],
+    },
+  ];
+
+  async function handleTimelineStyleChange(value: string): Promise<void> {
+    const result = await updateSettings(token, { blog_timeline_style: value });
+    if (result.success && result.data) {
+      setAllSettings((prev) => ({ ...prev, ...result.data }));
     }
   }
 
@@ -419,6 +455,13 @@ export default function SettingsPage({ token }: SettingsPageProps): React.ReactE
           >
             <Database size={15} />
             Cache
+          </button>
+          <button
+            className={`settings-tab ${activeTab === 'blog' ? 'settings-tab--active' : ''}`}
+            onClick={() => setActiveTab('blog')}
+          >
+            <FileText size={15} />
+            Blog
           </button>
         </div>
 
@@ -754,6 +797,49 @@ export default function SettingsPage({ token }: SettingsPageProps): React.ReactE
               {dressClearStatus === 'error' && (
                 <p className="error-text">Failed to clear dress cache</p>
               )}
+            </div>
+          </section>
+        )}
+
+        {/* Blog Settings Tab */}
+        {activeTab === 'blog' && (
+          <section className="settings-section">
+            <h2 className="settings-section__heading">
+              <FileText size={18} />
+              Blog Settings
+            </h2>
+
+            <div className="settings-card">
+              <div className="settings-field">
+                <label className="settings-field__label">Generation Timeline Style</label>
+                <p className="settings-field__current" style={{ fontFamily: 'inherit' }}>
+                  Controls how blog generation progress is displayed to users.
+                </p>
+                <SearchSelect
+                  value={allSettings.blog_timeline_style || 'preview-bar'}
+                  onChange={handleTimelineStyleChange}
+                  groups={TIMELINE_STYLE_OPTIONS}
+                  placeholder="Select display style..."
+                />
+              </div>
+            </div>
+
+            <div className="settings-card">
+              <Toggle
+                checked={allSettings.blog_generate_images !== 'false'}
+                onChange={() => handleToggleGenerateImages()}
+                label="Generate Images"
+                description="When disabled, blog posts will not include dress images."
+              />
+            </div>
+
+            <div className="settings-card">
+              <Toggle
+                checked={allSettings.blog_generate_links !== 'false'}
+                onChange={() => handleToggleGenerateLinks()}
+                label="Generate Links"
+                description="When disabled, blog posts will not include hyperlinks."
+              />
             </div>
           </section>
         )}

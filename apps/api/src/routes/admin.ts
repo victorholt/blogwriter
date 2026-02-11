@@ -169,6 +169,9 @@ const updateSettingsSchema = z.object({
   allowed_dress_ids: z.string().optional(),
   debug_mode: z.enum(['true', 'false']).optional(),
   insights_enabled: z.enum(['true', 'false']).optional(),
+  blog_timeline_style: z.enum(['preview-bar', 'timeline', 'stepper']).optional(),
+  blog_generate_images: z.enum(['true', 'false']).optional(),
+  blog_generate_links: z.enum(['true', 'false']).optional(),
 });
 
 router.put('/:token/settings', async (req, res) => {

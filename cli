@@ -23,6 +23,7 @@ Commands:
     down        Stop and remove containers
     clean       Remove containers, volumes, and local images
     build       Build or rebuild containers
+    install     Install npm dependencies (all or specific service)
     logs        View container logs
     exec        Execute a command in a container
     shell       Open a shell in a container
@@ -35,6 +36,8 @@ Commands:
 
 Examples:
     ./cli up
+    ./cli install           # install deps in api + nextjs
+    ./cli install nextjs    # install deps in nextjs only
     ./cli logs api
     ./cli shell nextjs
     ./cli exec api npm install
@@ -62,6 +65,9 @@ case "${COMMAND}" in
         ;;
     build)
         source "${SCRIPT_DIR}/bin/cli/commands/build.sh"
+        ;;
+    install)
+        source "${SCRIPT_DIR}/bin/cli/commands/install.sh"
         ;;
     logs)
         source "${SCRIPT_DIR}/bin/cli/commands/logs.sh"

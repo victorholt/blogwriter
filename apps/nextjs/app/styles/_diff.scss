@@ -126,32 +126,45 @@
 .diff__content {
   padding: 16px 24px;
   margin: 0;
-  font-family: var(--font-body, Georgia, serif);
-  font-size: 1rem;
-  line-height: 1.8;
-  color: var(--color-gray-700);
-  max-height: 600px;
-  overflow-y: auto;
 
-  &--rich {
-    white-space: normal;
-    word-wrap: break-word;
+  // When combined with result__content, inherit blog preview styling
+  // and disable the drop-cap (first paragraph may start with <del>)
+  &.result__content {
+    > p:first-of-type::first-letter {
+      float: none;
+      font-size: inherit;
+      line-height: inherit;
+      margin: 0;
+      font-weight: inherit;
+    }
   }
 }
 
-.diff__removed {
-  text-decoration: line-through;
-  border-bottom: 2px solid;
+// --------------------------------------------------------
+// Rich Diff Highlights (<ins>/<del> from rehype-raw)
+// --------------------------------------------------------
+
+.diff-hl {
   border-radius: 2px;
   padding: 1px 2px;
-  opacity: 0.75;
+
+  &--removed {
+    text-decoration: line-through;
+    border-bottom: 2px solid var(--diff-removed-border);
+    background: var(--diff-removed-bg);
+    opacity: 0.7;
+  }
+
+  &--added {
+    border-bottom: 2px solid var(--diff-added-border);
+    background: var(--diff-added-bg);
+    font-weight: 500;
+  }
 }
 
-.diff__added {
-  border-bottom: 2px solid;
-  border-radius: 2px;
-  padding: 1px 2px;
-  font-weight: 500;
+// Reset browser default underline on <ins>
+ins.diff-hl {
+  text-decoration: none;
 }
 
 // --------------------------------------------------------

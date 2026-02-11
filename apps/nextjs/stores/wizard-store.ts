@@ -53,6 +53,11 @@ interface WizardState {
   // Debug
   debugMode: boolean;
 
+  // Blog settings
+  timelineStyle: 'preview-bar' | 'timeline' | 'stepper';
+  generateImages: boolean;
+  generateLinks: boolean;
+
   // Actions
   setStep: (step: WizardStep) => void;
   setView: (view: AppView) => void;
@@ -86,6 +91,10 @@ interface WizardState {
   setBlogTraceId: (agentId: string, traceId: string) => void;
   setAgentOutput: (agentId: string, output: string) => void;
   setDebugMode: (enabled: boolean) => void;
+  setTimelineStyle: (style: 'preview-bar' | 'timeline' | 'stepper') => void;
+  setGenerateImages: (enabled: boolean) => void;
+  setGenerateLinks: (enabled: boolean) => void;
+  resetGenerationForRetry: () => void;
   invalidateUrlDependentState: () => void;
   reset: () => void;
 }
@@ -125,6 +134,9 @@ const initialState = {
   blogTraceIds: {} as Record<string, string>,
   agentOutputs: {} as Record<string, string>,
   debugMode: false,
+  timelineStyle: 'preview-bar' as const,
+  generateImages: true,
+  generateLinks: true,
 };
 
 // Custom storage adapter that handles Set/Map serialization
@@ -228,6 +240,26 @@ export const useWizardStore = create<WizardState>()(
       setAgentOutput: (agentId, output) =>
         set((state) => ({ agentOutputs: { ...state.agentOutputs, [agentId]: output } })),
       setDebugMode: (enabled) => set({ debugMode: enabled }),
+      setTimelineStyle: (style) => set({ timelineStyle: style }),
+      setGenerateImages: (enabled) => set({ generateImages: enabled }),
+      setGenerateLinks: (enabled) => set({ generateLinks: enabled }),
+
+      resetGenerationForRetry: () =>
+        set({
+          sessionId: null,
+          generationAgent: '',
+          generationAgentLabel: '',
+          generationStep: 0,
+          generationTotalSteps: 0,
+          generationPipeline: [],
+          generationChunks: '',
+          generationError: null,
+          generatedBlog: null,
+          seoMetadata: null,
+          review: null,
+          blogTraceIds: {},
+          agentOutputs: {},
+        }),
 
       invalidateUrlDependentState: () =>
         set({

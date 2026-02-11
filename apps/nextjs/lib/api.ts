@@ -116,6 +116,21 @@ export async function fetchDebugMode(): Promise<{ debugMode: boolean }> {
   }
 }
 
+export type TimelineStyle = 'preview-bar' | 'timeline' | 'stepper';
+
+export async function fetchBlogSettings(): Promise<{
+  timelineStyle: TimelineStyle;
+  generateImages: boolean;
+  generateLinks: boolean;
+}> {
+  try {
+    const res = await fetch(`${API_BASE}/api/settings/blog`);
+    return res.json();
+  } catch {
+    return { timelineStyle: 'preview-bar', generateImages: true, generateLinks: true };
+  }
+}
+
 export async function fetchBrandVoiceTrace(traceId: string): Promise<ApiResponse<AgentLogEntry[]>> {
   const res = await fetch(`${API_BASE}/api/brand-voice/trace/${traceId}`);
   return res.json();

@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { useWizardStore } from '@/stores/wizard-store';
-import { Copy, Check, RotateCcw, Star, AlertTriangle, ChevronDown, Search, ImageOff } from 'lucide-react';
+import { Copy, Check, RotateCcw, Star, AlertTriangle, ChevronDown, Search, ImageOff, Image } from 'lucide-react';
 import Markdown from 'react-markdown';
 import AgentInsight from '@/components/AgentInsight';
 import AgentDiffPanel from '@/components/AgentDiffPanel';
@@ -10,6 +10,30 @@ import AttributionOverlay from '@/components/AttributionOverlay';
 import CompareDropdown from '@/components/CompareDropdown';
 import type { CompareMode } from '@/components/CompareDropdown';
 import { copyRichText } from '@/lib/copy-utils';
+
+/**
+ * Preprocess markdown to convert bracket placeholders and real links
+ * into a format we can highlight in the renderer.
+ *
+ * Converts: [INTERNAL_LINK: schedule your bridal appointment]
+ * Into:     [schedule your bridal appointment](placeholder:internal_link)
+ *
+ * Real markdown links [text](url) are left as-is (the custom `a` renderer handles them).
+ */
+function preprocessLinks(markdown: string): string {
+  return markdown.replace(
+    /\[([A-Z][A-Z_]+):\s*([^\]]+)\](?!\()/g,
+    (_match, label: string, text: string) =>
+      `[${text.trim()}](placeholder:${label.toLowerCase()})`,
+  );
+}
+
+/** Convert slugs like "sorella-dress" to "Sorella Dress" */
+function formatBrandName(raw: string): string {
+  return raw
+    .replace(/[-_]/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
 
 export default function ResultView(): React.ReactElement {
   const generatedBlog = useWizardStore((s) => s.generatedBlog);
@@ -20,11 +44,41 @@ export default function ResultView(): React.ReactElement {
   const agentOutputs = useWizardStore((s) => s.agentOutputs);
   const generationPipeline = useWizardStore((s) => s.generationPipeline);
   const debugMode = useWizardStore((s) => s.debugMode);
+  const dressesMap = useWizardStore((s) => s.dressesMap);
+  const generateImages = useWizardStore((s) => s.generateImages);
+
+  // Build imageUrl → Dress lookup for structured captions
+  const imageUrlToDress = useMemo(() => {
+    const map = new Map<string, { designer?: string; styleId?: string; alt?: string }>();
+    for (const dress of dressesMap.values()) {
+      if (dress.imageUrl) {
+        map.set(dress.imageUrl, {
+          designer: dress.designer,
+          styleId: dress.styleId,
+          alt: dress.name,
+        });
+      }
+    }
+    return map;
+  }, [dressesMap]);
 
   const [copied, setCopied] = useState(false);
+  const [includeImages, setIncludeImages] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem('blogwriter:includeImages') === 'true';
+  });
   const [reviewOpen, setReviewOpen] = useState(false);
   const [seoOpen, setSeoOpen] = useState(false);
   const [compareMode, setCompareMode] = useState<CompareMode>({ type: 'none' });
+
+  // Persist includeImages to localStorage; force off when debug mode is disabled
+  useEffect(() => {
+    if (!debugMode) {
+      setIncludeImages(false);
+      return;
+    }
+    localStorage.setItem('blogwriter:includeImages', String(includeImages));
+  }, [includeImages, debugMode]);
 
   // Agents that have stored outputs (for the compare dropdown)
   // Use pipeline order if available, fall back to known agent order
@@ -46,7 +100,7 @@ export default function ResultView(): React.ReactElement {
   async function handleCopy(): Promise<void> {
     if (!generatedBlog) return;
     try {
-      await copyRichText(generatedBlog);
+      await copyRichText(generatedBlog, { includeImages, dressMap: imageUrlToDress });
     } catch {
       // Fallback already handled inside copyRichText
     }
@@ -61,7 +115,6 @@ export default function ResultView(): React.ReactElement {
   }
 
   const [brokenImages, setBrokenImages] = useState<Set<string>>(new Set());
-  const imageIndexRef = useRef(0);
 
   const handleImageError = useCallback((src: string) => {
     setBrokenImages((prev) => {
@@ -70,9 +123,6 @@ export default function ResultView(): React.ReactElement {
       return next;
     });
   }, []);
-
-  // Reset image counter each render so it's consistent
-  imageIndexRef.current = 0;
 
   return (
     <div className="page-shell">
@@ -86,6 +136,19 @@ export default function ResultView(): React.ReactElement {
             {copied ? <Check size={14} /> : <Copy size={14} />}
             <span>{copied ? 'Copied!' : 'Copy to Clipboard'}</span>
           </button>
+          {debugMode && generateImages && (
+            <>
+              <div className="result__action-divider" />
+              <button
+                className={`result__action-btn ${includeImages ? 'result__action-btn--active' : ''}`}
+                onClick={() => setIncludeImages(!includeImages)}
+                title={includeImages ? 'Images will be included when copying' : 'Images excluded from copy'}
+              >
+                {includeImages ? <Image size={14} /> : <ImageOff size={14} />}
+                <span>{includeImages ? 'Images On' : 'Images Off'}</span>
+              </button>
+            </>
+          )}
           {debugMode && hasMultipleOutputs && (
             <>
               <div className="result__action-divider" />
@@ -116,11 +179,11 @@ export default function ResultView(): React.ReactElement {
             <Markdown
               components={{
                 img: ({ src, alt }) => {
-                  const idx = imageIndexRef.current++;
-                  const side = idx % 2 === 0 ? 'right' : 'left';
                   const isBroken = src ? brokenImages.has(src) : true;
+                  const dress = src ? imageUrlToDress.get(src) : undefined;
+
                   return (
-                    <span className={`result__figure result__figure--${side}`}>
+                    <span className="result__figure" data-figure="true">
                       {isBroken ? (
                         <span className="result__figure-placeholder">
                           <ImageOff size={24} />
@@ -130,18 +193,60 @@ export default function ResultView(): React.ReactElement {
                         <img
                           src={src}
                           alt={alt || ''}
-                          width={260}
-                          height={350}
                           onError={() => src && handleImageError(src)}
                         />
                       )}
+                      {dress?.designer || dress?.styleId ? (
+                        <span className="result__figure-meta">
+                          {dress.designer && (
+                            <span className="result__figure-brand">{formatBrandName(dress.designer)}</span>
+                          )}
+                          {dress.styleId && (
+                            <span className="result__figure-style">{dress.styleId}</span>
+                          )}
+                        </span>
+                      ) : null}
                       {alt && <span className="result__figure-caption">{alt}</span>}
                     </span>
                   );
                 },
+                a: ({ href, children }) => {
+                  const isPlaceholder = href?.startsWith('placeholder:');
+
+                  return (
+                    <span className={`result__link ${isPlaceholder ? 'result__link--placeholder' : ''}`}>
+                      {children}
+                      <span className="result__link-badge">{isPlaceholder ? 'needs link' : 'ai generated'}</span>
+                    </span>
+                  );
+                },
+                p: ({ children }) => {
+                  // Detect image-only paragraphs and render as a grid block
+                  const childArray = React.Children.toArray(children);
+                  const meaningful = childArray.filter(
+                    (child) => !(typeof child === 'string' && child.trim() === ''),
+                  );
+                  const imageCount = meaningful.filter(
+                    (child) =>
+                      React.isValidElement(child) &&
+                      typeof child.props === 'object' &&
+                      child.props !== null &&
+                      'data-figure' in child.props,
+                  ).length;
+
+                  if (imageCount > 0 && imageCount === meaningful.length) {
+                    const count = Math.min(imageCount, 4);
+                    return (
+                      <div className={`result__image-block result__image-block--${count}`}>
+                        {children}
+                      </div>
+                    );
+                  }
+                  return <p>{children}</p>;
+                },
               }}
             >
-              {generatedBlog}
+              {preprocessLinks(generatedBlog)}
             </Markdown>
           ) : (
             <p className="result__empty">No blog content generated.</p>
