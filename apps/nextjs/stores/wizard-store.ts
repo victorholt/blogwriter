@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import type { BrandVoice, BlogReview, Dress, WizardStep, AppView } from '@/types';
+import { persist } from 'zustand/middleware';
+import type { BrandVoice, BlogReview, Dress, WizardStep, AppView, DebugEvent } from '@/types';
 
 interface WizardState {
   // Navigation
@@ -9,6 +10,10 @@ interface WizardState {
   // Step 1: Store Info
   storeUrl: string;
   isAnalyzing: boolean;
+  analysisStatusLog: string[];
+  analysisComplete: boolean;
+  analysisDebugData: DebugEvent[];
+  brandVoiceTraceId: string | null;
 
   // Step 2: Brand Voice
   brandVoice: BrandVoice | null;
@@ -33,6 +38,7 @@ interface WizardState {
   generationAgent: string;
   generationStep: number;
   generationTotalSteps: number;
+  blogTraceIds: Record<string, string>;
 
   // Result
   generatedBlog: string | null;
@@ -42,11 +48,19 @@ interface WizardState {
   generationAgentLabel: string;
   generationError: string | null;
 
+  // Debug
+  debugMode: boolean;
+
   // Actions
   setStep: (step: WizardStep) => void;
   setView: (view: AppView) => void;
   setStoreUrl: (url: string) => void;
   setIsAnalyzing: (loading: boolean) => void;
+  appendStatusLog: (message: string) => void;
+  clearStatusLog: () => void;
+  setAnalysisComplete: (complete: boolean) => void;
+  appendDebugData: (event: DebugEvent) => void;
+  setBrandVoiceTraceId: (id: string | null) => void;
   setBrandVoice: (bv: BrandVoice) => void;
   confirmBrandVoice: () => void;
   setAvailableDresses: (dresses: Dress[]) => void;
@@ -66,6 +80,9 @@ interface WizardState {
   clearChunks: () => void;
   setGeneratedBlog: (blog: string, seo?: { title: string; description: string; keywords: string[] }, review?: BlogReview) => void;
   setGenerationError: (error: string) => void;
+  setBlogTraceId: (agentId: string, traceId: string) => void;
+  setDebugMode: (enabled: boolean) => void;
+  invalidateUrlDependentState: () => void;
   reset: () => void;
 }
 
@@ -74,9 +91,13 @@ const initialState = {
   view: 'wizard' as AppView,
   storeUrl: '',
   isAnalyzing: false,
-  brandVoice: null,
+  analysisStatusLog: [] as string[],
+  analysisComplete: false,
+  analysisDebugData: [] as DebugEvent[],
+  brandVoiceTraceId: null as string | null,
+  brandVoice: null as BrandVoice | null,
   brandVoiceConfirmed: false,
-  availableDresses: [],
+  availableDresses: [] as Dress[],
   selectedDressIds: new Set<string>(),
   isDressesLoading: false,
   dressSearchQuery: '',
@@ -86,62 +107,174 @@ const initialState = {
   dressCategories: [] as string[],
   dressesMap: new Map<string, Dress>(),
   additionalInstructions: '',
-  sessionId: null,
+  sessionId: null as string | null,
   generationAgent: '',
   generationAgentLabel: '',
   generationStep: 0,
   generationTotalSteps: 0,
   generationChunks: '',
-  generationError: null,
-  generatedBlog: null,
-  seoMetadata: null,
-  review: null,
+  generationError: null as string | null,
+  generatedBlog: null as string | null,
+  seoMetadata: null as { title: string; description: string; keywords: string[] } | null,
+  review: null as BlogReview | null,
+  blogTraceIds: {} as Record<string, string>,
+  debugMode: false,
 };
 
-export const useWizardStore = create<WizardState>((set) => ({
-  ...initialState,
+// Custom storage adapter that handles Set/Map serialization
+const customStorage = {
+  getItem: (name: string) => {
+    const raw = localStorage.getItem(name);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
 
-  setStep: (step) => set({ currentStep: step }),
-  setView: (view) => set({ view }),
-  setStoreUrl: (url) => set({ storeUrl: url }),
-  setIsAnalyzing: (loading) => set({ isAnalyzing: loading }),
-  setBrandVoice: (bv) => set({ brandVoice: bv }),
-  confirmBrandVoice: () => set({ brandVoiceConfirmed: true }),
-
-  setAvailableDresses: (dresses) => set({ availableDresses: dresses }),
-  toggleDress: (id) =>
-    set((state) => {
-      const next = new Set(state.selectedDressIds);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
+    // Deserialize Set and Map from JSON-safe formats
+    if (parsed?.state) {
+      if (Array.isArray(parsed.state.selectedDressIds)) {
+        parsed.state.selectedDressIds = new Set(parsed.state.selectedDressIds);
       }
-      return { selectedDressIds: next };
-    }),
-  setDressesLoading: (loading) => set({ isDressesLoading: loading }),
-  setDressSearch: (query) => set({ dressSearchQuery: query }),
-  setDressCategory: (category) => set({ dressCategory: category }),
-  setDressPage: (page) => set({ dressPage: page }),
-  setDressPagination: (totalPages) => set({ dressTotalPages: totalPages }),
-  setDressCategories: (categories) => set({ dressCategories: categories }),
-  addDressesToMap: (dresses) =>
-    set((state) => {
-      const next = new Map(state.dressesMap);
-      for (const d of dresses) next.set(d.externalId, d);
-      return { dressesMap: next };
-    }),
-  clearSelectedDresses: () => set({ selectedDressIds: new Set<string>() }),
+      if (Array.isArray(parsed.state.dressesMap)) {
+        parsed.state.dressesMap = new Map(parsed.state.dressesMap);
+      }
+    }
 
-  setAdditionalInstructions: (text) => set({ additionalInstructions: text }),
-  setSessionId: (id) => set({ sessionId: id }),
-  updateGeneration: (agent, agentLabel, step, total) =>
-    set({ generationAgent: agent, generationAgentLabel: agentLabel, generationStep: step, generationTotalSteps: total }),
-  appendChunk: (chunk) => set((state) => ({ generationChunks: state.generationChunks + chunk })),
-  clearChunks: () => set({ generationChunks: '' }),
-  setGeneratedBlog: (blog, seo, review) =>
-    set({ generatedBlog: blog, seoMetadata: seo ?? null, review: review ?? null }),
-  setGenerationError: (error) => set({ generationError: error }),
+    return parsed;
+  },
+  setItem: (name: string, value: unknown) => {
+    const val = value as { state: Record<string, unknown> };
+    const serializable = { ...val, state: { ...val.state } };
 
-  reset: () => set({ ...initialState, selectedDressIds: new Set<string>(), dressesMap: new Map<string, Dress>() }),
-}));
+    // Serialize Set and Map to JSON-safe formats
+    if (serializable.state.selectedDressIds instanceof Set) {
+      serializable.state.selectedDressIds = [...serializable.state.selectedDressIds];
+    }
+    if (serializable.state.dressesMap instanceof Map) {
+      serializable.state.dressesMap = [...serializable.state.dressesMap.entries()];
+    }
+
+    localStorage.setItem(name, JSON.stringify(serializable));
+  },
+  removeItem: (name: string) => {
+    localStorage.removeItem(name);
+  },
+};
+
+export const useWizardStore = create<WizardState>()(
+  persist(
+    (set) => ({
+      ...initialState,
+
+      setStep: (step) => set({ currentStep: step }),
+      setView: (view) => set({ view }),
+      setStoreUrl: (url) => set({ storeUrl: url }),
+      setIsAnalyzing: (loading) => set({ isAnalyzing: loading }),
+      appendStatusLog: (message) =>
+        set((state) => ({ analysisStatusLog: [...state.analysisStatusLog, message] })),
+      clearStatusLog: () => set({ analysisStatusLog: [], analysisComplete: false, analysisDebugData: [], brandVoiceTraceId: null }),
+      setAnalysisComplete: (complete) => set({ analysisComplete: complete }),
+      appendDebugData: (event) =>
+        set((state) => ({ analysisDebugData: [...state.analysisDebugData, event] })),
+      setBrandVoiceTraceId: (id) => set({ brandVoiceTraceId: id }),
+      setBrandVoice: (bv) => set({ brandVoice: bv }),
+      confirmBrandVoice: () => set({ brandVoiceConfirmed: true }),
+
+      setAvailableDresses: (dresses) => set({ availableDresses: dresses }),
+      toggleDress: (id) =>
+        set((state) => {
+          const next = new Set(state.selectedDressIds);
+          if (next.has(id)) {
+            next.delete(id);
+          } else {
+            next.add(id);
+          }
+          return { selectedDressIds: next };
+        }),
+      setDressesLoading: (loading) => set({ isDressesLoading: loading }),
+      setDressSearch: (query) => set({ dressSearchQuery: query }),
+      setDressCategory: (category) => set({ dressCategory: category }),
+      setDressPage: (page) => set({ dressPage: page }),
+      setDressPagination: (totalPages) => set({ dressTotalPages: totalPages }),
+      setDressCategories: (categories) => set({ dressCategories: categories }),
+      addDressesToMap: (dresses) =>
+        set((state) => {
+          const next = new Map(state.dressesMap);
+          for (const d of dresses) next.set(d.externalId, d);
+          return { dressesMap: next };
+        }),
+      clearSelectedDresses: () => set({ selectedDressIds: new Set<string>() }),
+
+      setAdditionalInstructions: (text) => set({ additionalInstructions: text }),
+      setSessionId: (id) => set({ sessionId: id }),
+      updateGeneration: (agent, agentLabel, step, total) =>
+        set({ generationAgent: agent, generationAgentLabel: agentLabel, generationStep: step, generationTotalSteps: total }),
+      appendChunk: (chunk) => set((state) => ({ generationChunks: state.generationChunks + chunk })),
+      clearChunks: () => set({ generationChunks: '' }),
+      setGeneratedBlog: (blog, seo, review) =>
+        set({ generatedBlog: blog, seoMetadata: seo ?? null, review: review ?? null }),
+      setGenerationError: (error) => set({ generationError: error }),
+      setBlogTraceId: (agentId, traceId) =>
+        set((state) => ({ blogTraceIds: { ...state.blogTraceIds, [agentId]: traceId } })),
+      setDebugMode: (enabled) => set({ debugMode: enabled }),
+
+      invalidateUrlDependentState: () =>
+        set({
+          analysisComplete: false,
+          analysisStatusLog: [],
+          analysisDebugData: [],
+          brandVoiceTraceId: null,
+          brandVoice: null,
+          brandVoiceConfirmed: false,
+          sessionId: null,
+          generatedBlog: null,
+          seoMetadata: null,
+          review: null,
+          generationChunks: '',
+          generationAgent: '',
+          generationAgentLabel: '',
+          generationStep: 0,
+          generationTotalSteps: 0,
+          generationError: null,
+          blogTraceIds: {},
+        }),
+
+      reset: () => {
+        // Clear persisted storage then reset state
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('blogwriter-wizard');
+        }
+        set({
+          ...initialState,
+          selectedDressIds: new Set<string>(),
+          dressesMap: new Map<string, Dress>(),
+          analysisStatusLog: [],
+          analysisDebugData: [],
+          blogTraceIds: {},
+        });
+      },
+    }),
+    {
+      name: 'blogwriter-wizard',
+      storage: customStorage as any,
+      partialize: (state) => ({
+        currentStep: state.currentStep,
+        view: state.view,
+        storeUrl: state.storeUrl,
+        analysisStatusLog: state.analysisStatusLog,
+        analysisComplete: state.analysisComplete,
+        analysisDebugData: state.analysisDebugData,
+        brandVoiceTraceId: state.brandVoiceTraceId,
+        brandVoice: state.brandVoice,
+        brandVoiceConfirmed: state.brandVoiceConfirmed,
+        selectedDressIds: state.selectedDressIds,
+        dressesMap: state.dressesMap,
+        additionalInstructions: state.additionalInstructions,
+        sessionId: state.sessionId,
+        generatedBlog: state.generatedBlog,
+        seoMetadata: state.seoMetadata,
+        review: state.review,
+        blogTraceIds: state.blogTraceIds,
+        debugMode: state.debugMode,
+      }),
+    },
+  ),
+);

@@ -84,6 +84,13 @@
     margin-bottom: 16px;
   }
 
+  &__title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
   &__fields {
     display: flex;
     flex-direction: column;

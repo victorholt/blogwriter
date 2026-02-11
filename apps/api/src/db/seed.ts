@@ -21,6 +21,8 @@ const DEFAULT_SETTINGS = [
   { key: 'product_api_type', value: 'essense-dress' },
   { key: 'product_api_app', value: 'essense-designs' },
   { key: 'allowed_dress_ids', value: '' },
+  { key: 'debug_mode', value: 'false' },
+  { key: 'insights_enabled', value: 'true' },
 ];
 
 export async function seedDatabase(): Promise<void> {

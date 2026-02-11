@@ -15,6 +15,7 @@ import {
 import type { AgentConfig, ModelOption } from '@/lib/admin-api';
 import { Save, Check, AlertCircle, Key, Bot, Loader2, Trash2, Database, Package, RefreshCw } from 'lucide-react';
 import SearchSelect from '@/components/ui/SearchSelect';
+import Toggle from '@/components/ui/Toggle';
 import type { SearchSelectGroup } from '@/components/ui/SearchSelect';
 import DressMultiSelect from '@/components/ui/DressMultiSelect';
 import type { Dress } from '@/types';
@@ -107,6 +108,28 @@ export default function SettingsPage({ token }: SettingsPageProps): React.ReactE
     } else {
       setSettingsSaveStatus('error');
       setTimeout(() => setSettingsSaveStatus('idle'), 3000);
+    }
+  }
+
+  // --- Debug Mode ---
+
+  async function handleToggleDebug(): Promise<void> {
+    const newValue = allSettings.debug_mode === 'true' ? 'false' : 'true';
+    const result = await updateSettings(token, { debug_mode: newValue });
+    if (result.success && result.data) {
+      const data = result.data;
+      setAllSettings((prev: Record<string, string>) => ({ ...prev, ...data }));
+    }
+  }
+
+  // --- Insights Enabled ---
+
+  async function handleToggleInsights(): Promise<void> {
+    const newValue = allSettings.insights_enabled === 'true' ? 'false' : 'true';
+    const result = await updateSettings(token, { insights_enabled: newValue });
+    if (result.success && result.data) {
+      const data = result.data;
+      setAllSettings((prev: Record<string, string>) => ({ ...prev, ...data }));
     }
   }
 
@@ -425,6 +448,24 @@ export default function SettingsPage({ token }: SettingsPageProps): React.ReactE
               {settingsSaveStatus === 'error' && (
                 <p className="error-text">Failed to save API key</p>
               )}
+            </div>
+
+            <div className="settings-card">
+              <Toggle
+                checked={allSettings.debug_mode === 'true'}
+                onChange={() => handleToggleDebug()}
+                label="Debug Mode"
+                description="When enabled, brand voice analysis streams diagnostic data (scraped content, raw AI response)."
+              />
+            </div>
+
+            <div className="settings-card">
+              <Toggle
+                checked={allSettings.insights_enabled !== 'false'}
+                onChange={() => handleToggleInsights()}
+                label="Agent Insights Collection"
+                description="When disabled, agent trace data is not collected. Disable to reduce overhead if insights impact performance."
+              />
             </div>
           </section>
         )}

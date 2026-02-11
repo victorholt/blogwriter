@@ -1,4 +1,4 @@
-import type { BrandVoice, Dress, DressFacet, ApiResponse } from '@/types';
+import type { BrandVoice, Dress, DressFacet, ApiResponse, DebugEvent, AgentLogEntry } from '@/types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://blogwriter.test:4444';
 
@@ -16,6 +16,7 @@ export async function analyzeBrandVoice(url: string): Promise<ApiResponse<BrandV
 export async function analyzeBrandVoiceStream(
   url: string,
   onStatus: (message: string) => void,
+  onDebug?: (data: DebugEvent) => void,
 ): Promise<ApiResponse<BrandVoice>> {
   const res = await fetch(`${API_BASE}/api/brand-voice/analyze-stream`, {
     method: 'POST',
@@ -48,7 +49,9 @@ export async function analyzeBrandVoiceStream(
         if (event.type === 'status') {
           onStatus(event.data);
         } else if (event.type === 'result') {
-          result = { success: true, data: event.data.data, cached: event.data.cached };
+          result = { success: true, data: event.data.data, cached: event.data.cached, traceId: event.data.traceId };
+        } else if (event.type === 'debug' && onDebug) {
+          onDebug(event.data);
         } else if (event.type === 'error') {
           result = { success: false, error: event.data };
         }
@@ -100,4 +103,25 @@ export async function startBlogGeneration(data: {
 
 export function createBlogStream(sessionId: string): EventSource {
   return new EventSource(`${API_BASE}/api/blog/${sessionId}/stream`);
+}
+
+// --- Debug / Trace ---
+
+export async function fetchDebugMode(): Promise<{ debugMode: boolean }> {
+  try {
+    const res = await fetch(`${API_BASE}/api/settings/debug-mode`);
+    return res.json();
+  } catch {
+    return { debugMode: false };
+  }
+}
+
+export async function fetchBrandVoiceTrace(traceId: string): Promise<ApiResponse<AgentLogEntry[]>> {
+  const res = await fetch(`${API_BASE}/api/brand-voice/trace/${traceId}`);
+  return res.json();
+}
+
+export async function fetchBlogSessionTraces(sessionId: string): Promise<ApiResponse<AgentLogEntry[]>> {
+  const res = await fetch(`${API_BASE}/api/blog/${sessionId}/traces`);
+  return res.json();
 }

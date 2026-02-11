@@ -28,6 +28,7 @@ Commands:
     shell       Open a shell in a container
     status      Show container status
     restart     Restart containers
+    db          Database commands (migrate, generate, push)
     certs       Generate SSL certificates (self-signed or Let's Encrypt)
     certs-renew Renew Let's Encrypt certificates
     help        Show this help message
@@ -37,6 +38,8 @@ Examples:
     ./cli logs api
     ./cli shell nextjs
     ./cli exec api npm install
+    ./cli db migrate
+    ./cli db generate
     ./cli certs
     ./cli certs-renew
 
@@ -74,6 +77,9 @@ case "${COMMAND}" in
         ;;
     restart)
         source "${SCRIPT_DIR}/bin/cli/commands/restart.sh"
+        ;;
+    db)
+        source "${SCRIPT_DIR}/bin/cli/commands/db.sh"
         ;;
     certs)
         source "${SCRIPT_DIR}/bin/cli/commands/certs.sh"

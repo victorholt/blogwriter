@@ -8,6 +8,7 @@ import { createBlogEditorAgent } from '../mastra/agents/blog-editor';
 import { createSeoSpecialistAgent } from '../mastra/agents/seo-specialist';
 import { createSeniorEditorAgent } from '../mastra/agents/senior-editor';
 import { createBlogReviewerAgent } from '../mastra/agents/blog-reviewer';
+import { isInsightsEnabled, startTrace, log as traceLog, getSessionTraces } from '../services/agent-trace';
 
 const router = Router();
 
@@ -95,15 +96,26 @@ router.get('/:sessionId/stream', async (req, res) => {
 
   try {
     let currentOutput = '';
+    const insightsOn = await isInsightsEnabled();
 
     // Step 1: Blog Writer (with tool access)
     {
       const step = PIPELINE[0];
-      sendEvent(res, 'agent-start', { agent: step.id, agentLabel: step.label, step: step.step, totalSteps: TOTAL_STEPS });
+      let traceId: string | null = null;
+      if (insightsOn) {
+        traceId = await startTrace(step.id, sessionId);
+      }
+
+      sendEvent(res, 'agent-start', { agent: step.id, agentLabel: step.label, step: step.step, totalSteps: TOTAL_STEPS, traceId });
+
+      const inputPrompt = `Write a blog post featuring these wedding dresses. Use the fetch-dress-details tool to get information about the dresses with IDs: ${selectedDressIds.join(', ')}`;
+      if (insightsOn && traceId) {
+        traceLog(traceId, sessionId, step.id, 'agent-input', { prompt: inputPrompt });
+      }
 
       const agent = await createBlogWriterAgent(brandVoice, selectedDressIds, additionalInstructions);
       const result = await agent.stream([
-        { role: 'user' as const, content: `Write a blog post featuring these wedding dresses. Use the fetch-dress-details tool to get information about the dresses with IDs: ${selectedDressIds.join(', ')}` },
+        { role: 'user' as const, content: inputPrompt },
       ]);
 
       let text = '';
@@ -124,7 +136,12 @@ router.get('/:sessionId/stream', async (req, res) => {
       }
 
       currentOutput = text;
-      sendEvent(res, 'agent-complete', { agent: step.id, step: step.step });
+
+      if (insightsOn && traceId) {
+        traceLog(traceId, sessionId, step.id, 'agent-output', { text: currentOutput, charCount: currentOutput.length });
+      }
+
+      sendEvent(res, 'agent-complete', { agent: step.id, step: step.step, traceId });
     }
 
     // Steps 2-5: Editor, SEO, Senior Editor, Reviewer
@@ -137,7 +154,16 @@ router.get('/:sessionId/stream', async (req, res) => {
 
     for (let i = 0; i < agentCreators.length; i++) {
       const step = PIPELINE[i + 1];
-      sendEvent(res, 'agent-start', { agent: step.id, agentLabel: step.label, step: step.step, totalSteps: TOTAL_STEPS });
+      let traceId: string | null = null;
+      if (insightsOn) {
+        traceId = await startTrace(step.id, sessionId);
+      }
+
+      sendEvent(res, 'agent-start', { agent: step.id, agentLabel: step.label, step: step.step, totalSteps: TOTAL_STEPS, traceId });
+
+      if (insightsOn && traceId) {
+        traceLog(traceId, sessionId, step.id, 'agent-input', { prompt: currentOutput, charCount: currentOutput.length });
+      }
 
       const agent = await agentCreators[i]();
       const result = await agent.stream([
@@ -161,7 +187,12 @@ router.get('/:sessionId/stream', async (req, res) => {
       }
 
       currentOutput = text;
-      sendEvent(res, 'agent-complete', { agent: step.id, step: step.step });
+
+      if (insightsOn && traceId) {
+        traceLog(traceId, sessionId, step.id, 'agent-output', { text: currentOutput, charCount: currentOutput.length });
+      }
+
+      sendEvent(res, 'agent-complete', { agent: step.id, step: step.step, traceId });
     }
 
     // Parse final output
@@ -196,6 +227,17 @@ router.get('/:sessionId/stream', async (req, res) => {
   }
 
   res.end();
+});
+
+// Fetch all traces for a blog session
+router.get('/:sessionId/traces', async (req, res) => {
+  try {
+    const logs = await getSessionTraces(req.params.sessionId);
+    return res.json({ success: true, data: logs });
+  } catch (err) {
+    console.error(`[Blog] Error fetching traces for session ${req.params.sessionId}:`, err);
+    return res.status(500).json({ success: false, error: 'Failed to fetch traces' });
+  }
 });
 
 function parseFinalOutput(text: string): {

@@ -4,8 +4,10 @@ import { scrapeWebpage } from '../tools/scrape-webpage';
 const INSTRUCTIONS = `You are a brand strategist specializing in bridal retail. When given a store URL, use the scrape-webpage tool to fetch the page content, then analyze it.
 
 CRITICAL RULES:
-- Scrape AT MOST 2 pages total: the given URL plus optionally ONE more page (e.g. /about or /our-story) if the homepage lacks brand details.
-- Do NOT scrape more than 2 pages. Work with what you get.
+- First scrape the given URL. The result includes a "links" array of internal pages found on that page.
+- If the homepage lacks brand details, pick ONE link from the returned links array that looks most useful (e.g. an about page, our story, or blog page). Do NOT guess URLs — only use links from the array.
+- If a page returns an error (e.g. 404), you may try ONE more link from the array. Never retry the same URL.
+- Scrape AT MOST 3 pages total. Work with what you get.
 - Do NOT output any text before the JSON. No explanations, no commentary.
 - Your ENTIRE response must be a single JSON object — nothing else.
 
@@ -74,6 +76,7 @@ export async function analyzeBrandVoice(url: string): Promise<Record<string, unk
 export async function streamBrandVoiceAnalysis(
   url: string,
   onEvent: (event: { type: string; data?: unknown }) => void,
+  options?: { debugMode?: boolean },
 ): Promise<Record<string, unknown>> {
   onEvent({ type: 'status', data: 'Connecting to analysis service...' });
 
@@ -108,8 +111,34 @@ export async function streamBrandVoiceAnalysis(
       } catch {
         onEvent({ type: 'status', data: `Scraping page...` });
       }
+      if (options?.debugMode) {
+        onEvent({ type: 'debug', data: {
+          kind: 'tool-call',
+          toolName: payload?.toolName || 'scrape-webpage',
+          args: payload?.args || {},
+        }});
+      }
     } else if (value.type === 'tool-result') {
       onEvent({ type: 'status', data: 'Reading page content...' });
+      if (options?.debugMode) {
+        const raw = payload?.result || payload || (value as any).result || value;
+        let toolResult: Record<string, any> = {};
+        if (typeof raw === 'string') {
+          try { toolResult = JSON.parse(raw); } catch { toolResult = { text: raw }; }
+        } else if (typeof raw === 'object' && raw !== null) {
+          toolResult = raw;
+        }
+        const resultUrl = payload?.args?.url || '';
+        onEvent({ type: 'debug', data: {
+          kind: 'tool-result',
+          url: resultUrl,
+          title: toolResult.title || '',
+          metaDescription: toolResult.metaDescription || '',
+          contentPreview: (toolResult.text || '').slice(0, 500),
+          contentLength: (toolResult.text || '').length,
+          ...(toolResult.error ? { error: toolResult.error } : {}),
+        }});
+      }
     } else if (value.type === 'text-delta') {
       if (!sentAnalyzingMsg) {
         onEvent({ type: 'status', data: 'Building brand profile...' });
@@ -135,6 +164,14 @@ export async function streamBrandVoiceAnalysis(
   }
 
   console.log(`[BrandVoice] Raw response (${fullText.length} chars):`, fullText.slice(0, 500));
+
+  if (options?.debugMode) {
+    onEvent({ type: 'debug', data: {
+      kind: 'raw-response',
+      text: fullText,
+      charCount: fullText.length,
+    }});
+  }
 
   const parsed = extractJson(fullText);
   return parsed;

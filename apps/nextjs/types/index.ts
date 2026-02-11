@@ -41,4 +41,42 @@ export interface ApiResponse<T> {
   success: boolean;
   data?: T;
   error?: string;
+  cached?: boolean;
+  traceId?: string | null;
+}
+
+// Debug mode types for brand voice analysis
+export interface DebugToolCall {
+  kind: 'tool-call';
+  toolName: string;
+  args: Record<string, unknown>;
+}
+
+export interface DebugToolResult {
+  kind: 'tool-result';
+  url?: string;
+  title: string;
+  metaDescription: string;
+  contentPreview: string;
+  contentLength: number;
+  error?: string;
+}
+
+export interface DebugRawResponse {
+  kind: 'raw-response';
+  text: string;
+  charCount: number;
+}
+
+export type DebugEvent = DebugToolCall | DebugToolResult | DebugRawResponse;
+
+// Agent tracing types
+export interface AgentLogEntry {
+  id: string;
+  traceId: string;
+  sessionId: string | null;
+  agentId: string;
+  eventType: 'tool-call' | 'tool-result' | 'agent-input' | 'agent-output' | 'error';
+  data: Record<string, unknown>;
+  createdAt: string;
 }

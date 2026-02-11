@@ -12,6 +12,7 @@ export const scrapeWebpage = createTool({
     title: z.string(),
     text: z.string(),
     metaDescription: z.string().optional(),
+    links: z.array(z.string()).optional(),
     error: z.string().optional(),
   }),
   execute: async ({ context }) => {
@@ -31,6 +32,27 @@ export const scrapeWebpage = createTool({
       const html = await response.text();
       const $ = cheerio.load(html.slice(0, 100_000)); // Limit to 100KB
 
+      // Extract internal links before removing nav/header (they contain the site links)
+      let baseUrl: URL;
+      try { baseUrl = new URL(context.url); } catch { baseUrl = new URL('https://example.com'); }
+      const seen = new Set<string>();
+      const links: string[] = [];
+      $('a[href]').each((_, el) => {
+        const href = $(el).attr('href');
+        if (!href) return;
+        try {
+          const resolved = new URL(href, context.url);
+          // Only same-origin, non-hash, non-file links
+          if (resolved.origin !== baseUrl.origin) return;
+          if (resolved.pathname === '/' || resolved.pathname === baseUrl.pathname) return;
+          if (resolved.pathname.match(/\.(jpg|jpeg|png|gif|svg|pdf|css|js|ico)$/i)) return;
+          const key = resolved.origin + resolved.pathname;
+          if (seen.has(key)) return;
+          seen.add(key);
+          links.push(resolved.origin + resolved.pathname);
+        } catch { /* skip invalid URLs */ }
+      });
+
       // Remove non-content elements
       $('script, style, nav, footer, header, iframe, noscript, svg').remove();
 
@@ -41,7 +63,8 @@ export const scrapeWebpage = createTool({
         '';
       const text = $('body').text().replace(/\s+/g, ' ').trim().slice(0, 8_000);
 
-      return { title, text, metaDescription };
+      // Return up to 15 internal links for the agent to choose from
+      return { title, text, metaDescription, links: links.slice(0, 15) };
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
       return { title: '', text: '', error: message };

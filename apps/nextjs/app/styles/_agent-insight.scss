@@ -1,0 +1,129 @@
+// ============================================================
+// AgentInsight — Collapsible trace viewer
+// ============================================================
+
+.agent-insight {
+  margin-top: 12px;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+
+  &__toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 14px;
+    background: var(--color-gray-50, #f9fafb);
+    border: none;
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--color-gray-500);
+    text-align: left;
+
+    &:hover {
+      background: var(--color-gray-100, #f3f4f6);
+    }
+  }
+
+  &__icon {
+    display: flex;
+    align-items: center;
+    color: var(--color-gray-400);
+  }
+
+  &__label {
+    font-weight: 600;
+    color: var(--color-gray-600);
+  }
+
+  &__count {
+    margin-left: auto;
+    font-size: 11px;
+    color: var(--color-gray-400);
+  }
+
+  &__content {
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    border-top: 1px solid var(--color-gray-200);
+    max-height: 600px;
+    overflow-y: auto;
+  }
+
+  &__loading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--color-gray-400);
+    padding: 8px 0;
+  }
+
+  &__card {
+    border: 1px solid var(--color-gray-200);
+    border-radius: 6px;
+    padding: 10px 12px;
+    background: var(--color-paper, #fff);
+
+    &--error {
+      border-color: var(--color-red, #ef4444);
+      background: #fef2f2;
+    }
+  }
+
+  &__card-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-gray-600);
+    margin-bottom: 6px;
+  }
+
+  &__meta {
+    font-size: 11px;
+    font-style: italic;
+    color: var(--color-gray-400);
+    margin: 2px 0 6px;
+  }
+
+  &__pre {
+    background: var(--color-gray-50, #f9fafb);
+    border: 1px solid var(--color-gray-200);
+    border-radius: 4px;
+    padding: 8px 10px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 11px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 300px;
+    overflow-y: auto;
+    margin: 4px 0;
+  }
+
+  &__stat {
+    font-size: 11px;
+    color: var(--color-gray-400);
+  }
+
+  &__expand-btn {
+    display: inline-block;
+    margin-top: 4px;
+    padding: 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 11px;
+    color: var(--color-blue, #3b82f6);
+    font-weight: 500;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}

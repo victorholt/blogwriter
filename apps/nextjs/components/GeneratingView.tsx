@@ -2,6 +2,7 @@
 
 import { useWizardStore } from '@/stores/wizard-store';
 import { Check, Loader2, Circle, AlertCircle } from 'lucide-react';
+import AgentInsight from '@/components/AgentInsight';
 
 const PIPELINE_AGENTS = [
   { id: 'blog-writer', label: 'Blog Writer', description: 'Drafting the blog post with dress details' },
@@ -28,6 +29,7 @@ export default function GeneratingView(): React.ReactElement {
   const generationTotalSteps = useWizardStore((s) => s.generationTotalSteps);
   const generationChunks = useWizardStore((s) => s.generationChunks);
   const generationError = useWizardStore((s) => s.generationError);
+  const blogTraceIds = useWizardStore((s) => s.blogTraceIds);
 
   return (
     <div className="page-shell">
@@ -51,26 +53,33 @@ export default function GeneratingView(): React.ReactElement {
               const isActive = status === 'active' && !generationError;
 
               return (
-                <div
-                  key={agent.id}
-                  className={`generating__step generating__step--${status}`}
-                  style={{ '--step-index': idx } as React.CSSProperties}
-                >
-                  <div className="generating__step-icon">
-                    {status === 'complete' ? (
-                      <span className="generating__check-icon">
-                        <Check size={14} />
-                      </span>
-                    ) : isActive ? (
-                      <Loader2 size={16} className="spin" />
-                    ) : (
-                      <Circle size={16} />
-                    )}
+                <div key={agent.id}>
+                  <div
+                    className={`generating__step generating__step--${status}`}
+                    style={{ '--step-index': idx } as React.CSSProperties}
+                  >
+                    <div className="generating__step-icon">
+                      {status === 'complete' ? (
+                        <span className="generating__check-icon">
+                          <Check size={14} />
+                        </span>
+                      ) : isActive ? (
+                        <Loader2 size={16} className="spin" />
+                      ) : (
+                        <Circle size={16} />
+                      )}
+                    </div>
+                    <div className="generating__step-info">
+                      <span className="generating__step-label">{agent.label}</span>
+                      <span className="generating__step-desc">{agent.description}</span>
+                    </div>
                   </div>
-                  <div className="generating__step-info">
-                    <span className="generating__step-label">{agent.label}</span>
-                    <span className="generating__step-desc">{agent.description}</span>
-                  </div>
+                  {status === 'complete' && blogTraceIds[agent.id] && (
+                    <AgentInsight
+                      traceId={blogTraceIds[agent.id]}
+                      agentLabel={agent.label}
+                    />
+                  )}
                 </div>
               );
             })}

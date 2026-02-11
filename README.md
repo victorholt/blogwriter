@@ -51,6 +51,27 @@ Docker-based project with multi-service architecture.
 ./cli restart [service]
 ```
 
+## 🗄️ Database Migrations
+
+This project uses [Drizzle ORM](https://orm.drizzle.team/) for database management. Migration files live in `apps/api/drizzle/`.
+
+```bash
+# Run pending migrations
+./cli db migrate
+
+# Generate migration files after changing the schema (apps/api/src/db/schema.ts)
+./cli db generate
+
+# Push schema changes directly without migration files (useful for dev)
+./cli db push
+```
+
+**Workflow for schema changes:**
+1. Edit the schema in `apps/api/src/db/schema.ts`
+2. Generate a migration: `./cli db generate`
+3. Review the generated SQL in `apps/api/drizzle/`
+4. Apply it: `./cli db migrate`
+
 ## 📁 Project Structure
 
 ```

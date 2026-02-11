@@ -1,7 +1,7 @@
 'use client';
 
 import { useWizardStore } from '@/stores/wizard-store';
-import { Store, Volume2, Star, FileEdit, Check } from 'lucide-react';
+import { Store, Volume2, Star, FileEdit, Check, RotateCcw } from 'lucide-react';
 import type { WizardStep } from '@/types';
 
 const STEPS: { id: WizardStep; label: string; icon: typeof Store }[] = [
@@ -14,6 +14,7 @@ const STEPS: { id: WizardStep; label: string; icon: typeof Store }[] = [
 export default function StepIndicator(): React.ReactElement {
   const currentStep = useWizardStore((s) => s.currentStep);
   const setStep = useWizardStore((s) => s.setStep);
+  const reset = useWizardStore((s) => s.reset);
 
   function handleStepClick(stepId: WizardStep): void {
     if (stepId < currentStep) {
@@ -42,11 +43,10 @@ export default function StepIndicator(): React.ReactElement {
               Step {currentStep} of {STEPS.length} &mdash; {activeStep.label}
             </span>
           </div>
-          {currentStep < STEPS.length && (
-            <span className="step-indicator-mobile__next">
-              Next: {STEPS[currentStep].label}
-            </span>
-          )}
+          <button type="button" onClick={reset} className="step-indicator__reset">
+            <RotateCcw size={12} />
+            <span className="step-indicator__reset__text">Start Over</span>
+          </button>
         </div>
       </div>
 
@@ -75,6 +75,10 @@ export default function StepIndicator(): React.ReactElement {
             </button>
           );
         })}
+        <button type="button" onClick={reset} className="step-indicator__reset">
+          <RotateCcw size={12} />
+          <span className="step-indicator__reset__text">Start Over</span>
+        </button>
       </nav>
     </>
   );

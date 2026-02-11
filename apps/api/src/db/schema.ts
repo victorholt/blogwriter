@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp } from 'drizzle-orm/pg-core';
+import { pgTable, serial, text, timestamp, index } from 'drizzle-orm/pg-core';
 
 export const agentModelConfigs = pgTable('agent_model_configs', {
   id: serial('id').primaryKey(),
@@ -49,6 +49,19 @@ export const cachedDresses = pgTable('cached_dresses', {
   cachedAt: timestamp('cached_at').defaultNow().notNull(),
   expiresAt: timestamp('expires_at').notNull(),
 });
+
+export const agentLogs = pgTable('agent_logs', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  traceId: text('trace_id').notNull(),
+  sessionId: text('session_id'),
+  agentId: text('agent_id').notNull(),
+  eventType: text('event_type').notNull(),
+  data: text('data').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => [
+  index('idx_agent_logs_trace_id').on(table.traceId),
+  index('idx_agent_logs_session_id').on(table.sessionId),
+]);
 
 export const appSettings = pgTable('app_settings', {
   id: serial('id').primaryKey(),

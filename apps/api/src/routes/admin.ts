@@ -7,6 +7,7 @@ import { validateAdminToken } from '../middleware/admin-auth';
 import { invalidateCache } from '../mastra/lib/model-resolver';
 import { clearDressCache, syncDressesFromApi, getCacheStats } from '../services/dress-cache';
 import { loadProductApiConfig } from '../services/product-api-client';
+import { invalidateInsightsCache } from '../services/agent-trace';
 
 const router = Router();
 
@@ -164,6 +165,8 @@ const updateSettingsSchema = z.object({
   product_api_type: z.string().optional(),
   product_api_app: z.string().optional(),
   allowed_dress_ids: z.string().optional(),
+  debug_mode: z.enum(['true', 'false']).optional(),
+  insights_enabled: z.enum(['true', 'false']).optional(),
 });
 
 router.put('/:token/settings', async (req, res) => {
@@ -186,6 +189,10 @@ router.put('/:token/settings', async (req, res) => {
 
     // Invalidate model resolver cache so the new API key takes effect immediately
     invalidateCache();
+    // Invalidate insights cache if insights_enabled was changed
+    if (updates.insights_enabled !== undefined) {
+      invalidateInsightsCache();
+    }
 
     // Return masked values
     const settings = await db.select().from(appSettings);

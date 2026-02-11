@@ -4,12 +4,15 @@ import { useState } from 'react';
 import { useWizardStore } from '@/stores/wizard-store';
 import { Copy, Check, RotateCcw, Star, AlertTriangle, ChevronDown, Search } from 'lucide-react';
 import Markdown from 'react-markdown';
+import AgentInsight from '@/components/AgentInsight';
 
 export default function ResultView(): React.ReactElement {
   const generatedBlog = useWizardStore((s) => s.generatedBlog);
   const seoMetadata = useWizardStore((s) => s.seoMetadata);
   const review = useWizardStore((s) => s.review);
   const reset = useWizardStore((s) => s.reset);
+  const blogTraceIds = useWizardStore((s) => s.blogTraceIds);
+  const debugMode = useWizardStore((s) => s.debugMode);
 
   const [copied, setCopied] = useState(false);
   const [reviewOpen, setReviewOpen] = useState(false);
@@ -169,6 +172,20 @@ export default function ResultView(): React.ReactElement {
             </div>
           )}
         </div>
+
+        {/* Agent Insights (only visible in debug mode) */}
+        {debugMode && Object.keys(blogTraceIds).length > 0 && (
+          <div className="result__insights">
+            <h3 className="result__insights-title">Agent Insights</h3>
+            {Object.entries(blogTraceIds).map(([agentId, traceId]) => (
+              <AgentInsight
+                key={agentId}
+                traceId={traceId}
+                agentLabel={agentId.split('-').map(w => w[0].toUpperCase() + w.slice(1)).join(' ')}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

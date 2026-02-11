@@ -1,9 +1,10 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { db } from '../db';
-import { brandVoiceCache } from '../db/schema';
+import { appSettings, brandVoiceCache } from '../db/schema';
 import { eq } from 'drizzle-orm';
 import { analyzeBrandVoice, streamBrandVoiceAnalysis } from '../mastra/agents/brand-voice-analyzer';
+import { isInsightsEnabled, startTrace, log as traceLog, getTrace } from '../services/agent-trace';
 
 const router = Router();
 
@@ -117,11 +118,37 @@ router.post('/analyze-stream', async (req, res) => {
       return;
     }
 
+    // Check if debug mode is enabled
+    const debugSetting = await db
+      .select()
+      .from(appSettings)
+      .where(eq(appSettings.key, 'debug_mode'))
+      .limit(1);
+    const debugMode = debugSetting[0]?.value === 'true';
+
+    // Set up tracing
+    const insightsOn = await isInsightsEnabled();
+    let traceId: string | null = null;
+    if (insightsOn) {
+      traceId = await startTrace('brand-voice-analyzer');
+      traceLog(traceId, null, 'brand-voice-analyzer', 'agent-input', { url });
+    }
+
     // Stream the analysis
     console.log(`[BrandVoice] Streaming analysis for ${url}...`);
     const analysis = await streamBrandVoiceAnalysis(url, (event) => {
       sendEvent(event.type, event.data);
-    });
+
+      // Log debug events to trace
+      if (insightsOn && traceId && event.type === 'debug') {
+        traceLog(traceId, null, 'brand-voice-analyzer', (event.data as any)?.kind ?? 'debug', event.data);
+      }
+    }, { debugMode });
+
+    // Log final output to trace
+    if (insightsOn && traceId) {
+      traceLog(traceId, null, 'brand-voice-analyzer', 'agent-output', analysis);
+    }
 
     // Cache result (7-day TTL)
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
@@ -136,7 +163,7 @@ router.post('/analyze-stream', async (req, res) => {
       await db.insert(brandVoiceCache).values({ url, analysisResult: analysisJson, expiresAt });
     }
 
-    sendEvent('result', { data: analysis, cached: false });
+    sendEvent('result', { data: analysis, cached: false, traceId });
     res.end();
   } catch (err) {
     console.error(`[BrandVoice] Stream error for ${url}:`, err);
@@ -146,6 +173,17 @@ router.post('/analyze-stream', async (req, res) => {
         : 'Something went wrong while analyzing the website. Please try again.';
     sendEvent('error', message);
     res.end();
+  }
+});
+
+// Fetch trace logs for a brand voice analysis
+router.get('/trace/:traceId', async (req, res) => {
+  try {
+    const logs = await getTrace(req.params.traceId);
+    return res.json({ success: true, data: logs });
+  } catch (err) {
+    console.error(`[BrandVoice] Error fetching trace ${req.params.traceId}:`, err);
+    return res.status(500).json({ success: false, error: 'Failed to fetch trace' });
   }
 });
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { useWizardStore } from '@/stores/wizard-store';
-import { createBlogStream } from '@/lib/api';
+import { createBlogStream, fetchDebugMode } from '@/lib/api';
 import StepIndicator from '@/components/wizard/StepIndicator';
 import StoreInfoStep from '@/components/wizard/StoreInfoStep';
 import BrandVoiceStep from '@/components/wizard/BrandVoiceStep';
@@ -47,6 +47,7 @@ function GeneratingWithSSE(): React.ReactElement {
   const setGeneratedBlog = useWizardStore((s) => s.setGeneratedBlog);
   const setGenerationError = useWizardStore((s) => s.setGenerationError);
   const setView = useWizardStore((s) => s.setView);
+  const setBlogTraceId = useWizardStore((s) => s.setBlogTraceId);
   const connectedRef = useRef(false);
 
   useEffect(() => {
@@ -63,6 +64,10 @@ function GeneratingWithSSE(): React.ReactElement {
           case 'agent-start':
             updateGeneration(data.agent, data.agentLabel, data.step, data.totalSteps);
             clearChunks();
+            // Store traceId for this agent step
+            if (data.traceId) {
+              setBlogTraceId(data.agent, data.traceId);
+            }
             break;
 
           case 'agent-chunk':
@@ -98,13 +103,21 @@ function GeneratingWithSSE(): React.ReactElement {
       es.close();
       connectedRef.current = false;
     };
-  }, [sessionId, updateGeneration, appendChunk, clearChunks, setGeneratedBlog, setGenerationError, setView]);
+  }, [sessionId, updateGeneration, appendChunk, clearChunks, setGeneratedBlog, setGenerationError, setView, setBlogTraceId]);
 
   return <GeneratingView />;
 }
 
 export default function Home(): React.ReactElement {
   const view = useWizardStore((s) => s.view);
+  const setDebugMode = useWizardStore((s) => s.setDebugMode);
+
+  // Fetch debug mode status on mount
+  useEffect(() => {
+    fetchDebugMode().then((result) => {
+      setDebugMode(result.debugMode);
+    });
+  }, [setDebugMode]);
 
   if (view === 'generating') {
     return <GeneratingWithSSE />;
