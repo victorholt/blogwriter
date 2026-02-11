@@ -153,10 +153,14 @@ function getInsightContent(event: DebugEvent): { icon: typeof Globe; title: stri
   }
 }
 
+const VIEWPORT_PADDING = 16;
+
 export default function InsightPopup({ event }: InsightPopupProps): React.ReactElement {
   const [open, setOpen] = useState(false);
   const popupRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
 
+  // Close on click outside
   useEffect(() => {
     if (!open) return;
     function handleClickOutside(e: MouseEvent) {
@@ -166,6 +170,38 @@ export default function InsightPopup({ event }: InsightPopupProps): React.ReactE
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [open]);
+
+  // Position the panel within the viewport
+  useEffect(() => {
+    if (!open || !panelRef.current || !popupRef.current) return;
+    const panel = panelRef.current;
+    const trigger = popupRef.current;
+    const triggerRect = trigger.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - triggerRect.bottom - VIEWPORT_PADDING;
+    const spaceAbove = triggerRect.top - VIEWPORT_PADDING;
+
+    // Reset so we can measure natural height
+    panel.style.top = '';
+    panel.style.bottom = '';
+    panel.style.maxHeight = '';
+
+    const naturalHeight = panel.scrollHeight;
+
+    if (naturalHeight <= spaceBelow) {
+      // Fits below — default position
+      panel.style.top = 'calc(100% + 6px)';
+      panel.style.maxHeight = `${spaceBelow}px`;
+    } else if (spaceAbove > spaceBelow) {
+      // More room above — flip
+      panel.style.bottom = 'calc(100% + 6px)';
+      panel.style.top = 'auto';
+      panel.style.maxHeight = `${spaceAbove}px`;
+    } else {
+      // More room below but constrained
+      panel.style.top = 'calc(100% + 6px)';
+      panel.style.maxHeight = `${spaceBelow}px`;
+    }
   }, [open]);
 
   const { icon: Icon, title, body } = getInsightContent(event);
@@ -182,7 +218,7 @@ export default function InsightPopup({ event }: InsightPopupProps): React.ReactE
       </button>
 
       {open && (
-        <div className="insight-popup__panel">
+        <div className="insight-popup__panel" ref={panelRef}>
           <div className="insight-popup__header">
             <Icon size={14} />
             <span className="insight-popup__title">{title}</span>

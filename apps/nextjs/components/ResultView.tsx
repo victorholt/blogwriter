@@ -1,10 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useWizardStore } from '@/stores/wizard-store';
-import { Copy, Check, RotateCcw, Star, AlertTriangle, ChevronDown, Search } from 'lucide-react';
+import { Copy, Check, RotateCcw, Star, AlertTriangle, ChevronDown, Search, ImageOff } from 'lucide-react';
 import Markdown from 'react-markdown';
 import AgentInsight from '@/components/AgentInsight';
+import AgentDiffPanel from '@/components/AgentDiffPanel';
+import AttributionOverlay from '@/components/AttributionOverlay';
+import CompareDropdown from '@/components/CompareDropdown';
+import type { CompareMode } from '@/components/CompareDropdown';
+import { copyRichText } from '@/lib/copy-utils';
 
 export default function ResultView(): React.ReactElement {
   const generatedBlog = useWizardStore((s) => s.generatedBlog);
@@ -12,17 +17,41 @@ export default function ResultView(): React.ReactElement {
   const review = useWizardStore((s) => s.review);
   const reset = useWizardStore((s) => s.reset);
   const blogTraceIds = useWizardStore((s) => s.blogTraceIds);
+  const agentOutputs = useWizardStore((s) => s.agentOutputs);
+  const generationPipeline = useWizardStore((s) => s.generationPipeline);
   const debugMode = useWizardStore((s) => s.debugMode);
 
   const [copied, setCopied] = useState(false);
   const [reviewOpen, setReviewOpen] = useState(false);
   const [seoOpen, setSeoOpen] = useState(false);
+  const [compareMode, setCompareMode] = useState<CompareMode>({ type: 'none' });
+
+  // Agents that have stored outputs (for the compare dropdown)
+  // Use pipeline order if available, fall back to known agent order
+  const AGENT_ORDER = ['blog-writer', 'blog-editor', 'seo-specialist', 'senior-editor', 'blog-reviewer'];
+  const AGENT_LABELS: Record<string, string> = {
+    'blog-writer': 'Blog Writer',
+    'blog-editor': 'Blog Editor',
+    'seo-specialist': 'SEO Specialist',
+    'senior-editor': 'Senior Editor',
+    'blog-reviewer': 'Blog Reviewer',
+  };
+  const compareAgents = generationPipeline.length > 0
+    ? generationPipeline.filter((a) => agentOutputs[a.id])
+    : AGENT_ORDER
+        .filter((id) => agentOutputs[id])
+        .map((id) => ({ id, label: AGENT_LABELS[id] || id }));
+  const hasMultipleOutputs = compareAgents.length >= 2;
 
   async function handleCopy(): Promise<void> {
     if (!generatedBlog) return;
-    await navigator.clipboard.writeText(generatedBlog);
+    try {
+      await copyRichText(generatedBlog);
+    } catch {
+      // Fallback already handled inside copyRichText
+    }
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setTimeout(() => setCopied(false), 2500);
   }
 
   function getScoreColor(score: number): string {
@@ -31,35 +60,89 @@ export default function ResultView(): React.ReactElement {
     return 'var(--color-red, #ef4444)';
   }
 
-  const blogTitle = seoMetadata?.title || 'Your Blog Post';
+  const [brokenImages, setBrokenImages] = useState<Set<string>>(new Set());
+  const imageIndexRef = useRef(0);
+
+  const handleImageError = useCallback((src: string) => {
+    setBrokenImages((prev) => {
+      const next = new Set(prev);
+      next.add(src);
+      return next;
+    });
+  }, []);
+
+  // Reset image counter each render so it's consistent
+  imageIndexRef.current = 0;
 
   return (
     <div className="page-shell">
       <div className="paper result">
-        {/* Header */}
-        <div className="result__header">
-          <div className="result__header-text">
-            <h1 className="result__title">{blogTitle}</h1>
-            {seoMetadata?.description && (
-              <p className="result__subtitle">{seoMetadata.description}</p>
-            )}
-          </div>
-          <div className="result__actions">
-            <button className="btn btn--outline" onClick={handleCopy}>
-              {copied ? <Check size={14} /> : <Copy size={14} />}
-              {copied ? 'Copied!' : 'Copy Markdown'}
-            </button>
-            <button className="btn btn--primary" onClick={reset}>
-              <RotateCcw size={14} />
-              Start Over
-            </button>
-          </div>
+        {/* Top action bar */}
+        <div className="result__action-bar">
+          <button
+            className={`result__action-btn ${copied ? 'result__action-btn--copied' : ''}`}
+            onClick={handleCopy}
+          >
+            {copied ? <Check size={14} /> : <Copy size={14} />}
+            <span>{copied ? 'Copied!' : 'Copy to Clipboard'}</span>
+          </button>
+          {debugMode && hasMultipleOutputs && (
+            <>
+              <div className="result__action-divider" />
+              <CompareDropdown
+                value={compareMode}
+                onChange={setCompareMode}
+                agents={compareAgents}
+              />
+            </>
+          )}
+          <div className="result__action-divider" />
+          <button className="result__action-btn" onClick={reset}>
+            <RotateCcw size={14} />
+            <span>Start Over</span>
+          </button>
         </div>
 
-        {/* Blog Content — the hero */}
+        {/* Blog Content — switches based on compare mode */}
         <div className="result__content">
-          {generatedBlog ? (
-            <Markdown>{generatedBlog}</Markdown>
+          {compareMode.type === 'attribution' && generatedBlog ? (
+            <AttributionOverlay />
+          ) : compareMode.type === 'diff' ? (
+            <AgentDiffPanel
+              leftAgent={compareMode.left}
+              rightAgent={compareMode.right}
+            />
+          ) : generatedBlog ? (
+            <Markdown
+              components={{
+                img: ({ src, alt }) => {
+                  const idx = imageIndexRef.current++;
+                  const side = idx % 2 === 0 ? 'right' : 'left';
+                  const isBroken = src ? brokenImages.has(src) : true;
+                  return (
+                    <span className={`result__figure result__figure--${side}`}>
+                      {isBroken ? (
+                        <span className="result__figure-placeholder">
+                          <ImageOff size={24} />
+                          <span>{alt || 'Image'}</span>
+                        </span>
+                      ) : (
+                        <img
+                          src={src}
+                          alt={alt || ''}
+                          width={260}
+                          height={350}
+                          onError={() => src && handleImageError(src)}
+                        />
+                      )}
+                      {alt && <span className="result__figure-caption">{alt}</span>}
+                    </span>
+                  );
+                },
+              }}
+            >
+              {generatedBlog}
+            </Markdown>
           ) : (
             <p className="result__empty">No blog content generated.</p>
           )}

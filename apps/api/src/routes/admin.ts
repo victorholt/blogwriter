@@ -97,6 +97,7 @@ const updateAgentSchema = z.object({
   temperature: z.string().optional(),
   maxTokens: z.string().optional(),
   instructions: z.string().optional(),
+  enabled: z.boolean().optional(),
 });
 
 router.put('/:token/agents/:agentId', async (req, res) => {
@@ -107,7 +108,7 @@ router.put('/:token/agents/:agentId', async (req, res) => {
   }
 
   const { agentId } = req.params;
-  const { modelId, temperature, maxTokens, instructions } = parsed.data;
+  const { modelId, temperature, maxTokens, instructions, enabled } = parsed.data;
 
   try {
     const result = await db
@@ -117,6 +118,7 @@ router.put('/:token/agents/:agentId', async (req, res) => {
         ...(temperature !== undefined && { temperature }),
         ...(maxTokens !== undefined && { maxTokens }),
         ...(instructions !== undefined && { instructions: instructions || null }),
+        ...(enabled !== undefined && { enabled }),
         updatedAt: new Date(),
       })
       .where(eq(agentModelConfigs.agentId, agentId))

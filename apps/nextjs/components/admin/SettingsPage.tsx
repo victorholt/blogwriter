@@ -165,6 +165,19 @@ export default function SettingsPage({ token }: SettingsPageProps): React.ReactE
     }));
   }
 
+  async function handleToggleAgent(agentId: string): Promise<void> {
+    const agent = agents.find((a) => a.agentId === agentId);
+    if (!agent) return;
+    const newEnabled = !agent.enabled;
+    const result = await updateAgentConfig(token, agentId, {
+      modelId: agent.modelId,
+      enabled: newEnabled,
+    });
+    if (result.success && result.data) {
+      setAgents((prev) => prev.map((a) => (a.agentId === agentId ? result.data! : a)));
+    }
+  }
+
   async function handleSaveAgent(agentId: string): Promise<void> {
     setAgentSaveStatus((prev) => ({ ...prev, [agentId]: 'saving' }));
 
@@ -481,10 +494,19 @@ export default function SettingsPage({ token }: SettingsPageProps): React.ReactE
             {agents.map((agent) => {
               const status = agentSaveStatus[agent.agentId] ?? 'idle';
               const hasEdits = agent.agentId in agentEdits;
+              const isRequired = agent.agentId === 'blog-writer' || agent.agentId === 'brand-voice-analyzer';
 
               return (
-                <div key={agent.agentId} className="settings-card">
-                  <h3 className="settings-card__title">{agent.agentLabel}</h3>
+                <div key={agent.agentId} className={`settings-card${!agent.enabled && !isRequired ? ' settings-card--disabled' : ''}`}>
+                  <div className="settings-card__title-row">
+                    <h3 className="settings-card__title">{agent.agentLabel}</h3>
+                    {!isRequired && (
+                      <Toggle
+                        checked={agent.enabled}
+                        onChange={() => handleToggleAgent(agent.agentId)}
+                      />
+                    )}
+                  </div>
 
                   <div className="settings-card__fields">
                     <div className="settings-field">

@@ -1,0 +1,508 @@
+// ============================================================
+// Agent Diff Panel & Attribution Overlay
+// ============================================================
+
+// --------------------------------------------------------
+// Diff Controls
+// --------------------------------------------------------
+
+.diff__controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.diff__selectors {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.diff__vs {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-gray-400);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.diff__view-toggle {
+  display: flex;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.diff__view-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 28px;
+  background: white;
+  border: none;
+  color: var(--color-gray-400);
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+
+  &:not(:last-child) {
+    border-right: 1px solid var(--color-gray-200);
+  }
+
+  &:hover {
+    color: var(--color-gray-600);
+    background: var(--color-gray-50);
+  }
+
+  &--active {
+    color: var(--color-blue);
+    background: rgba(59, 130, 246, 0.08);
+  }
+}
+
+.diff__empty {
+  text-align: center;
+  color: var(--color-gray-400);
+  font-size: 13px;
+  padding: 16px 0;
+}
+
+.diff__no-changes {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px 16px;
+  color: var(--color-gray-400);
+  font-size: 14px;
+  border: 1px dashed var(--color-gray-200);
+  border-radius: var(--radius-md);
+}
+
+// --------------------------------------------------------
+// Inline Diff View
+// --------------------------------------------------------
+
+.diff__inline {
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.diff__legend {
+  display: flex;
+  gap: 16px;
+  padding: 8px 12px;
+  background: var(--color-gray-50);
+  border-bottom: 1px solid var(--color-gray-200);
+  font-size: 12px;
+  color: var(--color-gray-500);
+}
+
+.diff__legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.diff__legend-swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  border: 2px solid;
+
+  &--removed {
+    background: rgba(239, 68, 68, 0.10);
+  }
+
+  &--added {
+    background: rgba(34, 197, 94, 0.10);
+  }
+}
+
+.diff__content {
+  padding: 16px 24px;
+  margin: 0;
+  font-family: var(--font-body, Georgia, serif);
+  font-size: 1rem;
+  line-height: 1.8;
+  color: var(--color-gray-700);
+  max-height: 600px;
+  overflow-y: auto;
+
+  &--rich {
+    white-space: normal;
+    word-wrap: break-word;
+  }
+}
+
+.diff__removed {
+  text-decoration: line-through;
+  border-bottom: 2px solid;
+  border-radius: 2px;
+  padding: 1px 2px;
+  opacity: 0.75;
+}
+
+.diff__added {
+  border-bottom: 2px solid;
+  border-radius: 2px;
+  padding: 1px 2px;
+  font-weight: 500;
+}
+
+// --------------------------------------------------------
+// Side-by-Side Diff View
+// --------------------------------------------------------
+
+.diff__side-by-side-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.diff__stats {
+  display: flex;
+  gap: 16px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.diff__stat {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.diff__side-by-side {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--color-gray-200);
+}
+
+.diff__side {
+  background: white;
+  display: flex;
+  flex-direction: column;
+}
+
+.diff__side-header {
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-gray-600);
+  background: var(--color-gray-50);
+  border-bottom: 2px solid;
+}
+
+.diff__side-content {
+  padding: 16px;
+  margin: 0;
+  font-family: var(--font-body, Georgia, serif);
+  font-size: 0.875rem;
+  line-height: 1.7;
+  color: var(--color-gray-700);
+  max-height: 600px;
+  overflow-y: auto;
+
+  &--rich {
+    white-space: normal;
+    word-wrap: break-word;
+
+    h1, h2, h3, h4, h5, h6 {
+      font-family: var(--font-heading, 'Playfair Display', serif);
+      color: var(--color-gray-800);
+      margin-top: 1.2em;
+      margin-bottom: 0.5em;
+      line-height: 1.3;
+    }
+
+    h1 { font-size: 1.5rem; }
+    h2 { font-size: 1.25rem; }
+    h3 { font-size: 1.1rem; }
+
+    p {
+      margin: 0.8em 0;
+    }
+
+    ul, ol {
+      padding-left: 1.5em;
+      margin: 0.8em 0;
+    }
+
+    li {
+      margin: 0.3em 0;
+    }
+
+    strong {
+      font-weight: 600;
+    }
+
+    em {
+      font-style: italic;
+    }
+
+    img {
+      max-width: 100%;
+      height: auto;
+      border-radius: var(--radius-sm);
+    }
+
+    blockquote {
+      border-left: 3px solid var(--color-gray-200);
+      padding-left: 12px;
+      color: var(--color-gray-500);
+      font-style: italic;
+      margin: 0.8em 0;
+    }
+  }
+}
+
+// --------------------------------------------------------
+// Attribution Overlay
+// --------------------------------------------------------
+
+.attribution {
+  padding: 0;
+}
+
+.attribution__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  background: var(--color-gray-50);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+}
+
+.attribution__legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-gray-600);
+}
+
+.attribution__legend-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.attribution__text {
+  font-family: var(--font-body, Georgia, serif);
+  font-size: 1.125rem;
+  line-height: 1.8;
+  color: var(--color-gray-700);
+}
+
+.attribution__segment {
+  padding: 1px 0;
+  transition: background 0.15s;
+  cursor: default;
+
+  &--modified {
+    cursor: help;
+    border-bottom-style: dashed !important;
+  }
+
+  &--modified:hover {
+    filter: brightness(0.95);
+  }
+}
+
+// Attribution Tooltip
+.attribution__tooltip {
+  position: fixed;
+  z-index: 1000;
+  transform: translate(-50%, -100%);
+  max-width: 360px;
+  padding: 10px 14px;
+  background: var(--color-gray-800);
+  color: white;
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  font-size: 12px;
+  line-height: 1.5;
+  pointer-events: none;
+
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 6px solid var(--color-gray-800);
+  }
+}
+
+.attribution__tooltip-header {
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.attribution__tooltip-prev-label {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 2px;
+}
+
+.attribution__tooltip-prev-text {
+  font-family: var(--font-body, Georgia, serif);
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.75);
+  font-style: italic;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+// --------------------------------------------------------
+// Action button active state
+// --------------------------------------------------------
+
+.result__action-btn--active {
+  color: var(--color-blue);
+  background: rgba(59, 130, 246, 0.08);
+}
+
+// --------------------------------------------------------
+// Compare Dropdown
+// --------------------------------------------------------
+
+.compare-dropdown {
+  position: relative;
+
+  &__chevron {
+    flex-shrink: 0;
+    color: var(--color-gray-400);
+    transition: transform 0.2s;
+    margin-left: 2px;
+
+    &--open {
+      transform: rotate(180deg);
+    }
+  }
+
+  &__menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    z-index: 50;
+    min-width: 220px;
+    background: var(--color-paper);
+    border: 1px solid var(--color-gray-200);
+    border-radius: var(--radius-md);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1), 0 2px 8px rgba(0, 0, 0, 0.06);
+    padding: 4px 0;
+    animation: compare-dropdown-in 0.15s ease-out;
+  }
+
+  &__item {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 12px;
+    font-size: 13px;
+    color: var(--color-gray-700);
+    cursor: pointer;
+    border: none;
+    background: none;
+    text-align: left;
+    transition: background 0.1s;
+
+    &:hover {
+      background: var(--color-gray-50);
+    }
+
+    &--selected {
+      color: var(--color-blue);
+      font-weight: 500;
+    }
+
+    &--selected:hover {
+      background: var(--color-blue-light, rgba(59, 130, 246, 0.06));
+    }
+  }
+
+  &__divider {
+    height: 1px;
+    background: var(--color-gray-100);
+    margin: 4px 0;
+  }
+
+  &__section-label {
+    padding: 6px 12px 4px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--color-gray-400);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  &__pair-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  &__dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+}
+
+@keyframes compare-dropdown-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// --------------------------------------------------------
+// Agent Tag (used in diff controls header)
+// --------------------------------------------------------
+
+.diff__agent-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-gray-700);
+  background: white;
+  border: 1px solid var(--color-gray-200);
+  border-left: 3px solid;
+  border-radius: var(--radius-sm);
+}
+
+// --------------------------------------------------------
+// Diff Panel wrapper
+// --------------------------------------------------------
+
+.diff-panel {
+  padding: 0;
+}

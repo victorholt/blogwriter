@@ -7,6 +7,7 @@ export interface AgentConfig {
   temperature: number;
   maxTokens: number;
   instructions: string | null;
+  enabled: boolean;
 }
 
 let configCache: Map<string, AgentConfig> = new Map();
@@ -28,6 +29,7 @@ async function refreshCache(): Promise<void> {
         temperature: parseFloat(c.temperature ?? '0.7'),
         maxTokens: parseInt(c.maxTokens ?? '4096', 10),
         instructions: c.instructions ?? null,
+        enabled: c.enabled,
       },
     ]),
   );
@@ -51,8 +53,14 @@ export async function getAgentModelConfig(agentId: string): Promise<AgentConfig>
       temperature: 0.7,
       maxTokens: 4096,
       instructions: null,
+      enabled: true,
     }
   );
+}
+
+export async function isAgentEnabled(agentId: string): Promise<boolean> {
+  const config = await getAgentModelConfig(agentId);
+  return config.enabled;
 }
 
 export async function getOpenRouterApiKey(): Promise<string> {

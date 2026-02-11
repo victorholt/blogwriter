@@ -15,6 +15,13 @@
       "when": 1770783325911,
       "tag": "0001_fine_exiles",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1770806451369,
+      "tag": "0002_flashy_jetstream",
+      "breakpoints": true
     }
   ]
 }

@@ -1,26 +1,17 @@
 'use client';
 
+import { useState, useMemo } from 'react';
 import { useWizardStore } from '@/stores/wizard-store';
-import { Check, Loader2, Circle, AlertCircle } from 'lucide-react';
-import AgentInsight from '@/components/AgentInsight';
+import { Check, Loader2, Circle, AlertCircle, ChevronDown, Eye } from 'lucide-react';
+import Markdown from 'react-markdown';
 
-const PIPELINE_AGENTS = [
-  { id: 'blog-writer', label: 'Blog Writer', description: 'Drafting the blog post with dress details' },
-  { id: 'blog-editor', label: 'Blog Editor', description: 'Polishing grammar, flow, and tone' },
-  { id: 'seo-specialist', label: 'SEO Specialist', description: 'Optimizing for search engines' },
-  { id: 'senior-editor', label: 'Senior Editor', description: 'Final editorial review' },
-  { id: 'blog-reviewer', label: 'Blog Reviewer', description: 'Quality assessment and scoring' },
-];
-
-function getStepStatus(agentId: string, currentAgent: string, currentStep: number): 'pending' | 'active' | 'complete' {
-  const agentIndex = PIPELINE_AGENTS.findIndex((a) => a.id === agentId);
-  const currentIndex = PIPELINE_AGENTS.findIndex((a) => a.id === currentAgent);
-
-  if (agentIndex < currentIndex) return 'complete';
-  if (agentIndex === currentIndex && currentStep > 0) return 'active';
-  if (currentStep > agentIndex + 1) return 'complete';
-  return 'pending';
-}
+const AGENT_DESCRIPTIONS: Record<string, string> = {
+  'blog-writer': 'Drafting the blog post with dress details',
+  'blog-editor': 'Polishing grammar, flow, and tone',
+  'seo-specialist': 'Optimizing for search engines',
+  'senior-editor': 'Final editorial review',
+  'blog-reviewer': 'Quality assessment and scoring',
+};
 
 export default function GeneratingView(): React.ReactElement {
   const generationAgent = useWizardStore((s) => s.generationAgent);
@@ -29,7 +20,30 @@ export default function GeneratingView(): React.ReactElement {
   const generationTotalSteps = useWizardStore((s) => s.generationTotalSteps);
   const generationChunks = useWizardStore((s) => s.generationChunks);
   const generationError = useWizardStore((s) => s.generationError);
-  const blogTraceIds = useWizardStore((s) => s.blogTraceIds);
+  const generationPipeline = useWizardStore((s) => s.generationPipeline);
+  const agentOutputs = useWizardStore((s) => s.agentOutputs);
+
+  const [previewOpen, setPreviewOpen] = useState(false);
+
+  // When chunks are empty between agents, show the last completed agent's output
+  const previewText = useMemo(() => {
+    if (generationChunks) return generationChunks;
+    // Find the most recent completed agent output as fallback
+    const completedAgents = generationPipeline.filter((a) => agentOutputs[a.id]);
+    if (completedAgents.length > 0) {
+      return agentOutputs[completedAgents[completedAgents.length - 1].id];
+    }
+    return '';
+  }, [generationChunks, generationPipeline, agentOutputs]);
+
+  function getStepStatus(agentId: string): 'pending' | 'active' | 'complete' {
+    const agentIdx = generationPipeline.findIndex((a) => a.id === agentId);
+    const currentIdx = generationPipeline.findIndex((a) => a.id === generationAgent);
+
+    if (agentIdx < currentIdx) return 'complete';
+    if (agentIdx === currentIdx) return 'active';
+    return 'pending';
+  }
 
   return (
     <div className="page-shell">
@@ -46,10 +60,10 @@ export default function GeneratingView(): React.ReactElement {
 
           {/* Pipeline Steps */}
           <div className="generating__pipeline">
-            {PIPELINE_AGENTS.map((agent, idx) => {
+            {generationPipeline.map((agent, idx) => {
               const status = generationError
-                ? (getStepStatus(agent.id, generationAgent, generationStep) === 'complete' ? 'complete' : 'pending')
-                : getStepStatus(agent.id, generationAgent, generationStep);
+                ? (getStepStatus(agent.id) === 'complete' ? 'complete' : 'pending')
+                : getStepStatus(agent.id);
               const isActive = status === 'active' && !generationError;
 
               return (
@@ -71,15 +85,11 @@ export default function GeneratingView(): React.ReactElement {
                     </div>
                     <div className="generating__step-info">
                       <span className="generating__step-label">{agent.label}</span>
-                      <span className="generating__step-desc">{agent.description}</span>
+                      <span className="generating__step-desc">
+                        {AGENT_DESCRIPTIONS[agent.id] || ''}
+                      </span>
                     </div>
                   </div>
-                  {status === 'complete' && blogTraceIds[agent.id] && (
-                    <AgentInsight
-                      traceId={blogTraceIds[agent.id]}
-                      agentLabel={agent.label}
-                    />
-                  )}
                 </div>
               );
             })}
@@ -93,16 +103,32 @@ export default function GeneratingView(): React.ReactElement {
             </div>
           )}
 
-          {/* Streaming Preview */}
-          {generationChunks && !generationError && (
-            <div className="generating__preview">
-              <div className="generating__preview-header">
-                <Loader2 size={14} className="spin" />
-                <span>{generationAgentLabel || 'Agent'} is writing...</span>
-              </div>
-              <div className="generating__preview-text">
-                {generationChunks.slice(-800)}
-              </div>
+          {/* Collapsible Streaming Preview */}
+          {previewText && !generationError && (
+            <div className={`generating__preview ${previewOpen ? 'generating__preview--open' : ''}`}>
+              <button
+                type="button"
+                className="generating__preview-header"
+                onClick={() => setPreviewOpen(!previewOpen)}
+              >
+                <div className="generating__preview-header-left">
+                  <Loader2 size={14} className="spin" />
+                  <span>{generationAgentLabel || 'Agent'} is writing...</span>
+                </div>
+                <div className="generating__preview-header-right">
+                  <Eye size={14} />
+                  <span>{previewOpen ? 'Hide' : 'Preview'}</span>
+                  <ChevronDown
+                    size={14}
+                    className={`generating__preview-chevron ${previewOpen ? 'generating__preview-chevron--open' : ''}`}
+                  />
+                </div>
+              </button>
+              {previewOpen && (
+                <div className="generating__preview-content">
+                  <Markdown>{previewText.slice(-2000)}</Markdown>
+                </div>
+              )}
             </div>
           )}
         </div>

@@ -9,6 +9,7 @@ import { createSeoSpecialistAgent } from '../mastra/agents/seo-specialist';
 import { createSeniorEditorAgent } from '../mastra/agents/senior-editor';
 import { createBlogReviewerAgent } from '../mastra/agents/blog-reviewer';
 import { isInsightsEnabled, startTrace, log as traceLog, getSessionTraces } from '../services/agent-trace';
+import { isAgentEnabled } from '../mastra/lib/model-resolver';
 
 const router = Router();
 
@@ -61,15 +62,13 @@ function sendEvent(res: any, type: string, data: any): void {
   res.write(`data: ${JSON.stringify({ type, ...data })}\n\n`);
 }
 
-// Pipeline agent definitions
-const PIPELINE = [
-  { id: 'blog-writer', label: 'Blog Writer', step: 1 },
-  { id: 'blog-editor', label: 'Blog Editor', step: 2 },
-  { id: 'seo-specialist', label: 'SEO Specialist', step: 3 },
-  { id: 'senior-editor', label: 'Senior Editor', step: 4 },
-  { id: 'blog-reviewer', label: 'Blog Reviewer', step: 5 },
+// Pipeline agent definitions (blog-writer is always required)
+const OPTIONAL_AGENTS = [
+  { id: 'blog-editor', label: 'Blog Editor', creator: createBlogEditorAgent },
+  { id: 'seo-specialist', label: 'SEO Specialist', creator: createSeoSpecialistAgent },
+  { id: 'senior-editor', label: 'Senior Editor', creator: createSeniorEditorAgent },
+  { id: 'blog-reviewer', label: 'Blog Reviewer', creator: createBlogReviewerAgent },
 ];
-const TOTAL_STEPS = PIPELINE.length;
 
 // GET /api/blog/:sessionId/stream - SSE pipeline stream
 router.get('/:sessionId/stream', async (req, res) => {
@@ -98,19 +97,38 @@ router.get('/:sessionId/stream', async (req, res) => {
     let currentOutput = '';
     const insightsOn = await isInsightsEnabled();
 
-    // Step 1: Blog Writer (with tool access)
+    // Build active pipeline: blog-writer is always first, then enabled optional agents
+    const enabledOptional = [];
+    for (const opt of OPTIONAL_AGENTS) {
+      if (await isAgentEnabled(opt.id)) {
+        enabledOptional.push(opt);
+      }
+    }
+    const totalSteps = 1 + enabledOptional.length;
+
+    // Send full pipeline info upfront so frontend shows all agents immediately
+    const pipelineAgents = [
+      { id: 'blog-writer', label: 'Blog Writer' },
+      ...enabledOptional.map((opt) => ({ id: opt.id, label: opt.label })),
+    ];
+    sendEvent(res, 'pipeline-info', { agents: pipelineAgents, totalSteps });
+
+    // Step 1: Blog Writer (always runs, has tool access)
     {
-      const step = PIPELINE[0];
+      const stepNum = 1;
       let traceId: string | null = null;
       if (insightsOn) {
-        traceId = await startTrace(step.id, sessionId);
+        traceId = await startTrace('blog-writer', sessionId);
       }
 
-      sendEvent(res, 'agent-start', { agent: step.id, agentLabel: step.label, step: step.step, totalSteps: TOTAL_STEPS, traceId });
+      sendEvent(res, 'agent-start', { agent: 'blog-writer', agentLabel: 'Blog Writer', step: stepNum, totalSteps, traceId });
 
-      const inputPrompt = `Write a blog post featuring these wedding dresses. Use the fetch-dress-details tool to get information about the dresses with IDs: ${selectedDressIds.join(', ')}`;
+      let inputPrompt = `Write a blog post featuring these wedding dresses. Use the fetch-dress-details tool to get information about the dresses with IDs: ${selectedDressIds.join(', ')}`;
+      if (additionalInstructions.trim()) {
+        inputPrompt += `\n\nIMPORTANT — The client has provided these additional instructions that you MUST follow:\n${additionalInstructions}`;
+      }
       if (insightsOn && traceId) {
-        traceLog(traceId, sessionId, step.id, 'agent-input', { prompt: inputPrompt });
+        traceLog(traceId, sessionId, 'blog-writer', 'agent-input', { prompt: inputPrompt });
       }
 
       const agent = await createBlogWriterAgent(brandVoice, selectedDressIds, additionalInstructions);
@@ -126,7 +144,7 @@ router.get('/:sessionId/stream', async (req, res) => {
         if (value.type === 'text-delta') {
           const chunk = (value as any).payload?.text ?? '';
           text += chunk;
-          if (chunk) sendEvent(res, 'agent-chunk', { agent: step.id, chunk });
+          if (chunk) sendEvent(res, 'agent-chunk', { agent: 'blog-writer', chunk });
         }
       }
 
@@ -138,34 +156,30 @@ router.get('/:sessionId/stream', async (req, res) => {
       currentOutput = text;
 
       if (insightsOn && traceId) {
-        traceLog(traceId, sessionId, step.id, 'agent-output', { text: currentOutput, charCount: currentOutput.length });
+        traceLog(traceId, sessionId, 'blog-writer', 'agent-output', { text: currentOutput, charCount: currentOutput.length });
       }
 
-      sendEvent(res, 'agent-complete', { agent: step.id, step: step.step, traceId });
+      // Send agent's full output so frontend can store per-agent versions for diff
+      const writerParsed = parseFinalOutput(currentOutput);
+      sendEvent(res, 'agent-complete', { agent: 'blog-writer', step: stepNum, traceId, output: writerParsed.blog });
     }
 
-    // Steps 2-5: Editor, SEO, Senior Editor, Reviewer
-    const agentCreators = [
-      createBlogEditorAgent,
-      createSeoSpecialistAgent,
-      createSeniorEditorAgent,
-      createBlogReviewerAgent,
-    ];
-
-    for (let i = 0; i < agentCreators.length; i++) {
-      const step = PIPELINE[i + 1];
+    // Remaining enabled agents
+    for (let i = 0; i < enabledOptional.length; i++) {
+      const opt = enabledOptional[i];
+      const stepNum = i + 2;
       let traceId: string | null = null;
       if (insightsOn) {
-        traceId = await startTrace(step.id, sessionId);
+        traceId = await startTrace(opt.id, sessionId);
       }
 
-      sendEvent(res, 'agent-start', { agent: step.id, agentLabel: step.label, step: step.step, totalSteps: TOTAL_STEPS, traceId });
+      sendEvent(res, 'agent-start', { agent: opt.id, agentLabel: opt.label, step: stepNum, totalSteps, traceId });
 
       if (insightsOn && traceId) {
-        traceLog(traceId, sessionId, step.id, 'agent-input', { prompt: currentOutput, charCount: currentOutput.length });
+        traceLog(traceId, sessionId, opt.id, 'agent-input', { prompt: currentOutput, charCount: currentOutput.length });
       }
 
-      const agent = await agentCreators[i]();
+      const agent = await opt.creator();
       const result = await agent.stream([
         { role: 'user' as const, content: currentOutput },
       ]);
@@ -178,7 +192,7 @@ router.get('/:sessionId/stream', async (req, res) => {
         if (value.type === 'text-delta') {
           const chunk = (value as any).payload?.text ?? '';
           text += chunk;
-          if (chunk) sendEvent(res, 'agent-chunk', { agent: step.id, chunk });
+          if (chunk) sendEvent(res, 'agent-chunk', { agent: opt.id, chunk });
         }
       }
 
@@ -189,10 +203,12 @@ router.get('/:sessionId/stream', async (req, res) => {
       currentOutput = text;
 
       if (insightsOn && traceId) {
-        traceLog(traceId, sessionId, step.id, 'agent-output', { text: currentOutput, charCount: currentOutput.length });
+        traceLog(traceId, sessionId, opt.id, 'agent-output', { text: currentOutput, charCount: currentOutput.length });
       }
 
-      sendEvent(res, 'agent-complete', { agent: step.id, step: step.step, traceId });
+      // Send agent's full output so frontend can store per-agent versions for diff
+      const agentParsed = parseFinalOutput(currentOutput);
+      sendEvent(res, 'agent-complete', { agent: opt.id, step: stepNum, traceId, output: agentParsed.blog });
     }
 
     // Parse final output

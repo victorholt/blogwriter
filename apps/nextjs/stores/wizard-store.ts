@@ -38,6 +38,7 @@ interface WizardState {
   generationAgent: string;
   generationStep: number;
   generationTotalSteps: number;
+  generationPipeline: { id: string; label: string }[];
   blogTraceIds: Record<string, string>;
 
   // Result
@@ -47,6 +48,7 @@ interface WizardState {
   generationChunks: string;
   generationAgentLabel: string;
   generationError: string | null;
+  agentOutputs: Record<string, string>;
 
   // Debug
   debugMode: boolean;
@@ -75,12 +77,14 @@ interface WizardState {
   clearSelectedDresses: () => void;
   setAdditionalInstructions: (text: string) => void;
   setSessionId: (id: string) => void;
+  addPipelineAgent: (id: string, label: string) => void;
   updateGeneration: (agent: string, agentLabel: string, step: number, total: number) => void;
   appendChunk: (chunk: string) => void;
   clearChunks: () => void;
   setGeneratedBlog: (blog: string, seo?: { title: string; description: string; keywords: string[] }, review?: BlogReview) => void;
   setGenerationError: (error: string) => void;
   setBlogTraceId: (agentId: string, traceId: string) => void;
+  setAgentOutput: (agentId: string, output: string) => void;
   setDebugMode: (enabled: boolean) => void;
   invalidateUrlDependentState: () => void;
   reset: () => void;
@@ -112,12 +116,14 @@ const initialState = {
   generationAgentLabel: '',
   generationStep: 0,
   generationTotalSteps: 0,
+  generationPipeline: [] as { id: string; label: string }[],
   generationChunks: '',
   generationError: null as string | null,
   generatedBlog: null as string | null,
   seoMetadata: null as { title: string; description: string; keywords: string[] } | null,
   review: null as BlogReview | null,
   blogTraceIds: {} as Record<string, string>,
+  agentOutputs: {} as Record<string, string>,
   debugMode: false,
 };
 
@@ -205,6 +211,11 @@ export const useWizardStore = create<WizardState>()(
 
       setAdditionalInstructions: (text) => set({ additionalInstructions: text }),
       setSessionId: (id) => set({ sessionId: id }),
+      addPipelineAgent: (id, label) =>
+        set((state) => {
+          if (state.generationPipeline.some((a) => a.id === id)) return state;
+          return { generationPipeline: [...state.generationPipeline, { id, label }] };
+        }),
       updateGeneration: (agent, agentLabel, step, total) =>
         set({ generationAgent: agent, generationAgentLabel: agentLabel, generationStep: step, generationTotalSteps: total }),
       appendChunk: (chunk) => set((state) => ({ generationChunks: state.generationChunks + chunk })),
@@ -214,6 +225,8 @@ export const useWizardStore = create<WizardState>()(
       setGenerationError: (error) => set({ generationError: error }),
       setBlogTraceId: (agentId, traceId) =>
         set((state) => ({ blogTraceIds: { ...state.blogTraceIds, [agentId]: traceId } })),
+      setAgentOutput: (agentId, output) =>
+        set((state) => ({ agentOutputs: { ...state.agentOutputs, [agentId]: output } })),
       setDebugMode: (enabled) => set({ debugMode: enabled }),
 
       invalidateUrlDependentState: () =>
@@ -233,8 +246,10 @@ export const useWizardStore = create<WizardState>()(
           generationAgentLabel: '',
           generationStep: 0,
           generationTotalSteps: 0,
+          generationPipeline: [],
           generationError: null,
           blogTraceIds: {},
+          agentOutputs: {},
         }),
 
       reset: () => {
@@ -249,6 +264,7 @@ export const useWizardStore = create<WizardState>()(
           analysisStatusLog: [],
           analysisDebugData: [],
           blogTraceIds: {},
+          agentOutputs: {},
         });
       },
     }),
@@ -273,6 +289,8 @@ export const useWizardStore = create<WizardState>()(
         seoMetadata: state.seoMetadata,
         review: state.review,
         blogTraceIds: state.blogTraceIds,
+        agentOutputs: state.agentOutputs,
+        generationPipeline: state.generationPipeline,
         debugMode: state.debugMode,
       }),
     },

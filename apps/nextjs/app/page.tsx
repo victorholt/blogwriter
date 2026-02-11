@@ -48,6 +48,8 @@ function GeneratingWithSSE(): React.ReactElement {
   const setGenerationError = useWizardStore((s) => s.setGenerationError);
   const setView = useWizardStore((s) => s.setView);
   const setBlogTraceId = useWizardStore((s) => s.setBlogTraceId);
+  const setAgentOutput = useWizardStore((s) => s.setAgentOutput);
+  const addPipelineAgent = useWizardStore((s) => s.addPipelineAgent);
   const connectedRef = useRef(false);
 
   useEffect(() => {
@@ -61,7 +63,15 @@ function GeneratingWithSSE(): React.ReactElement {
         const data = JSON.parse(event.data);
 
         switch (data.type) {
+          case 'pipeline-info':
+            // Add all pipeline agents upfront so the timeline is complete
+            for (const agent of data.agents) {
+              addPipelineAgent(agent.id, agent.label);
+            }
+            break;
+
           case 'agent-start':
+            addPipelineAgent(data.agent, data.agentLabel);
             updateGeneration(data.agent, data.agentLabel, data.step, data.totalSteps);
             clearChunks();
             // Store traceId for this agent step
@@ -75,7 +85,10 @@ function GeneratingWithSSE(): React.ReactElement {
             break;
 
           case 'agent-complete':
-            // Step completed, will transition on next agent-start
+            // Store this agent's full output for diff comparison
+            if (data.output) {
+              setAgentOutput(data.agent, data.output);
+            }
             break;
 
           case 'complete':
@@ -103,7 +116,7 @@ function GeneratingWithSSE(): React.ReactElement {
       es.close();
       connectedRef.current = false;
     };
-  }, [sessionId, updateGeneration, appendChunk, clearChunks, setGeneratedBlog, setGenerationError, setView, setBlogTraceId]);
+  }, [sessionId, updateGeneration, appendChunk, clearChunks, setGeneratedBlog, setGenerationError, setView, setBlogTraceId, setAgentOutput, addPipelineAgent]);
 
   return <GeneratingView />;
 }

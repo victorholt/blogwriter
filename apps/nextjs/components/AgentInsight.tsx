@@ -22,7 +22,7 @@ export default function AgentInsight({ traceId, agentLabel, inline, live }: Agen
   // Determine what data to show
   const hasInline = inline && inline.length > 0;
   const hasTrace = traceId != null;
-  const eventCount = hasInline ? inline.length : (traceData?.length ?? 0);
+  const eventCount = hasInline ? inline.length : (traceData?.length ?? null);
 
   // Don't render if debug mode is off
   if (!debugMode) return null;
@@ -60,7 +60,9 @@ export default function AgentInsight({ traceId, agentLabel, inline, live }: Agen
           {live ? <Loader2 size={14} className="spin" /> : (expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}
         </span>
         <span className="agent-insight__label">{agentLabel}</span>
-        <span className="agent-insight__count">{eventCount} events</span>
+        <span className="agent-insight__count">
+          {eventCount !== null ? `${eventCount} events` : 'View trace'}
+        </span>
       </button>
 
       {expanded && (

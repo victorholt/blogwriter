@@ -82,13 +82,27 @@
     font-weight: 600;
     color: var(--color-gray-800);
     margin-bottom: 16px;
+
+    .settings-card__title-row & {
+      margin-bottom: 0;
+    }
   }
 
   &__title-row {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 8px;
     margin-bottom: 12px;
+  }
+
+  &--disabled {
+    opacity: 0.5;
+
+    .settings-card__fields,
+    .settings-card__footer {
+      pointer-events: none;
+    }
   }
 
   &__fields {

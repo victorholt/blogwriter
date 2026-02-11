@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, index } from 'drizzle-orm/pg-core';
+import { pgTable, serial, text, timestamp, index, boolean } from 'drizzle-orm/pg-core';
 
 export const agentModelConfigs = pgTable('agent_model_configs', {
   id: serial('id').primaryKey(),
@@ -8,6 +8,7 @@ export const agentModelConfigs = pgTable('agent_model_configs', {
   temperature: text('temperature').default('0.7'),
   maxTokens: text('max_tokens').default('4096'),
   instructions: text('instructions'),
+  enabled: boolean('enabled').default(true).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });

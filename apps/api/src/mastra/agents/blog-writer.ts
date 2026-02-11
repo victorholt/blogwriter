@@ -34,7 +34,9 @@ Requirements:
 - Write in Markdown format
 - Include a compelling introduction and conclusion
 - For each dress you feature, include its image using Markdown: ![Dress Name](imageUrl)
-- Place images naturally within the content, near the section discussing that dress
+- Place each image inline within the paragraph that discusses that dress — NOT on its own line between paragraphs
+- Ensure there is at least a full paragraph of text (3+ sentences) surrounding each image so text wraps around it naturally
+- Spread images throughout the post with substantial text between them — do NOT cluster images near each other
 - Do NOT put all images at the end — weave them into the narrative`;
 }
 
