@@ -30,6 +30,11 @@ interface SettingsPageProps {
 }
 
 export default function SettingsPage({ token }: SettingsPageProps): React.ReactElement {
+  // Persist admin token so the share page can use it for delete access
+  useEffect(() => {
+    localStorage.setItem('blogwriter:adminToken', token);
+  }, [token]);
+
   const [authorized, setAuthorized] = useState<boolean | null>(null);
   const [activeTab, setActiveTab] = useState<SettingsTab>('api');
   const [allSettings, setAllSettings] = useState<Record<string, string>>({});
@@ -135,6 +140,14 @@ export default function SettingsPage({ token }: SettingsPageProps): React.ReactE
   async function handleToggleGenerateLinks(): Promise<void> {
     const newValue = allSettings.blog_generate_links === 'false' ? 'true' : 'false';
     const result = await updateSettings(token, { blog_generate_links: newValue });
+    if (result.success && result.data) {
+      setAllSettings((prev) => ({ ...prev, ...result.data }));
+    }
+  }
+
+  async function handleToggleSharing(): Promise<void> {
+    const newValue = allSettings.blog_sharing_enabled === 'true' ? 'false' : 'true';
+    const result = await updateSettings(token, { blog_sharing_enabled: newValue });
     if (result.success && result.data) {
       setAllSettings((prev) => ({ ...prev, ...result.data }));
     }
@@ -867,6 +880,15 @@ export default function SettingsPage({ token }: SettingsPageProps): React.ReactE
                 onChange={() => handleToggleGenerateLinks()}
                 label="Generate Links"
                 description="When disabled, blog posts will not include hyperlinks."
+              />
+            </div>
+
+            <div className="settings-card">
+              <Toggle
+                checked={allSettings.blog_sharing_enabled === 'true'}
+                onChange={() => handleToggleSharing()}
+                label="Blog Sharing"
+                description="When enabled, users can create public share links for generated blog posts."
               />
             </div>
           </section>

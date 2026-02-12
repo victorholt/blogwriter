@@ -20,8 +20,13 @@ Requirements:
 - Match the brand's voice and tone
 - Write in Markdown format
 - Include a compelling introduction and conclusion
+- If the client provided a Call to Action, make it stand out — use a bold, compelling closing section with the CTA as a clear heading or blockquote. Weave the CTA naturally into the conclusion and make it feel like an exciting invitation, not a generic afterthought.
 - For each dress you feature, include its image using Markdown: ![Dress Name](imageUrl)
-- Place each image on its OWN line between paragraphs`;
+- Place each image on its OWN line between paragraphs — never inline within a sentence or paragraph
+- Each image line must contain ONLY the image markdown (![...](url)) with nothing else on that line
+- Leave a blank line before and after every image so it renders as a standalone block
+- Spread images throughout the post with substantial text between them — do NOT cluster images near each other
+- Do NOT put all images at the end — weave them into the narrative`;
 
 export function buildWriterInstructions(
   brandVoice: Record<string, any>,
@@ -83,6 +88,7 @@ Requirements:
 - Match the brand's voice and tone
 - Write in Markdown format
 - Include a compelling introduction and conclusion
+- If the client provided a Call to Action, make it stand out — use a bold, compelling closing section with the CTA as a clear heading or blockquote. Weave the CTA naturally into the conclusion and make it feel like an exciting invitation, not a generic afterthought.
 ${imageRequirements}${linkRequirements}`;
 }
 

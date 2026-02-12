@@ -72,6 +72,13 @@ export interface BrandLabel {
 
 export type WizardStep = 1 | 2 | 3 | 4;
 
+export interface SharedBlog {
+  hash: string;
+  blogContent: string;
+  brandName: string | null;
+  createdAt: string;
+}
+
 export type AppView = 'wizard' | 'generating' | 'result';
 
 export interface ApiResponse<T> {

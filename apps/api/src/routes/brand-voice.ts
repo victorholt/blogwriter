@@ -93,11 +93,12 @@ router.post('/analyze-stream', async (req, res) => {
 
   const { url, previousAttempt } = parsed.data;
 
-  // Set up SSE headers
+  // Set up SSE headers (X-Accel-Buffering tells proxies not to buffer)
   res.writeHead(200, {
     'Content-Type': 'text/event-stream',
     'Cache-Control': 'no-cache',
     Connection: 'keep-alive',
+    'X-Accel-Buffering': 'no',
   });
 
   const sendEvent = (type: string, data: unknown) => {

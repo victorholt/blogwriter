@@ -187,6 +187,7 @@ const updateAgentSchema = z.object({
   maxTokens: z.string().optional(),
   instructions: z.string().optional(),
   enabled: z.boolean().optional(),
+  showPreview: z.boolean().optional(),
 });
 
 router.put('/:token/agents/:agentId', async (req, res) => {
@@ -197,7 +198,7 @@ router.put('/:token/agents/:agentId', async (req, res) => {
   }
 
   const { agentId } = req.params;
-  const { modelId, temperature, maxTokens, instructions, enabled } = parsed.data;
+  const { modelId, temperature, maxTokens, instructions, enabled, showPreview } = parsed.data;
 
   try {
     const result = await db
@@ -208,6 +209,7 @@ router.put('/:token/agents/:agentId', async (req, res) => {
         ...(maxTokens !== undefined && { maxTokens }),
         ...(instructions !== undefined && { instructions: instructions || null }),
         ...(enabled !== undefined && { enabled }),
+        ...(showPreview !== undefined && { showPreview }),
         updatedAt: new Date(),
       })
       .where(eq(agentModelConfigs.agentId, agentId))
@@ -261,6 +263,7 @@ const updateSettingsSchema = z.object({
   blog_timeline_style: z.enum(['preview-bar', 'timeline', 'stepper']).optional(),
   blog_generate_images: z.enum(['true', 'false']).optional(),
   blog_generate_links: z.enum(['true', 'false']).optional(),
+  blog_sharing_enabled: z.enum(['true', 'false']).optional(),
 });
 
 router.put('/:token/settings', async (req, res) => {

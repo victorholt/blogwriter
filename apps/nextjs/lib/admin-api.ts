@@ -15,6 +15,7 @@ export interface AgentConfig {
   maxTokens: string;
   instructions: string | null;
   enabled: boolean;
+  showPreview: boolean;
   updatedAt: string;
 }
 
@@ -37,7 +38,7 @@ export async function fetchAgentConfigs(token: string): Promise<ApiResponse<Agen
 export async function updateAgentConfig(
   token: string,
   agentId: string,
-  data: { modelId: string; temperature?: string; maxTokens?: string; instructions?: string; enabled?: boolean },
+  data: { modelId: string; temperature?: string; maxTokens?: string; instructions?: string; enabled?: boolean; showPreview?: boolean },
 ): Promise<ApiResponse<AgentConfig>> {
   const res = await fetch(`${API_BASE}/api/admin/${token}/agents/${agentId}`, {
     method: 'PUT',

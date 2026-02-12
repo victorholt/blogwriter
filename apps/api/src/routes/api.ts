@@ -4,8 +4,9 @@ import adminRoutes from './admin'
 import dressRoutes from './dresses'
 import blogRoutes from './blog'
 import themeRoutes from './themes'
+import shareRoutes from './share'
 import { db } from '../db'
-import { appSettings } from '../db/schema'
+import { appSettings, agentModelConfigs } from '../db/schema'
 import { eq, inArray } from 'drizzle-orm'
 
 const router = Router()
@@ -21,6 +22,9 @@ router.use('/blog', blogRoutes)
 
 // Themes
 router.use('/themes', themeRoutes)
+
+// Share
+router.use('/share', shareRoutes)
 
 // Admin
 router.use('/admin', adminRoutes)
@@ -42,18 +46,26 @@ router.get('/settings/debug-mode', async (_req, res) => {
 // Public blog settings endpoint (no auth required)
 router.get('/settings/blog', async (_req, res) => {
   try {
-    const settings = await db
-      .select()
-      .from(appSettings)
-      .where(inArray(appSettings.key, ['blog_timeline_style', 'blog_generate_images', 'blog_generate_links']));
+    const [settings, agents] = await Promise.all([
+      db.select()
+        .from(appSettings)
+        .where(inArray(appSettings.key, ['blog_timeline_style', 'blog_generate_images', 'blog_generate_links', 'blog_sharing_enabled'])),
+      db.select({ agentId: agentModelConfigs.agentId, showPreview: agentModelConfigs.showPreview })
+        .from(agentModelConfigs)
+        .where(eq(agentModelConfigs.showPreview, true)),
+    ]);
     const map = Object.fromEntries(settings.map((s) => [s.key, s.value]));
+    // Build previewAgents: comma-separated IDs if any have showPreview, otherwise 'last'
+    const previewIds = agents.map((a) => a.agentId);
     return res.json({
       timelineStyle: map.blog_timeline_style || 'preview-bar',
       generateImages: map.blog_generate_images !== 'false',
       generateLinks: map.blog_generate_links !== 'false',
+      sharingEnabled: map.blog_sharing_enabled === 'true',
+      previewAgents: previewIds.length > 0 ? previewIds.join(',') : 'last',
     });
   } catch {
-    return res.json({ timelineStyle: 'preview-bar', generateImages: true, generateLinks: true });
+    return res.json({ timelineStyle: 'preview-bar', generateImages: true, generateLinks: true, sharingEnabled: false, previewAgents: 'last' });
   }
 })
 

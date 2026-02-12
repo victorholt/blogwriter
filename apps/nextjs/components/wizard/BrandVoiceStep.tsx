@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useWizardStore } from '@/stores/wizard-store';
 import {
-  ArrowLeft, Check, Users, DollarSign, Sparkles,
+  Check, Users, Sparkles,
   MessageSquareQuote, RefreshCw, Plus, X, Theater, BookOpen, Ban,
 } from 'lucide-react';
 import EditableSection from '@/components/ui/EditableSection';
@@ -330,8 +330,8 @@ function WritingDirectionEditor({ initial, onSave, onCancel }: {
 }
 
 function StatsEditor({ initial, onSave, onCancel }: {
-  initial: { targetAudience: string; priceRange: string; businessType: string };
-  onSave: (v: { targetAudience: string; priceRange: string; businessType: string }) => void;
+  initial: { targetAudience: string; businessType: string };
+  onSave: (v: { targetAudience: string; businessType: string }) => void;
   onCancel: () => void;
 }) {
   const [draft, setDraft] = useState(initial);
@@ -343,22 +343,11 @@ function StatsEditor({ initial, onSave, onCancel }: {
             <Users size={12} />
             Target Audience
           </div>
-          <input
-            className="inline-edit brand-voice__stat-value"
+          <EnhancedTextArea
             value={draft.targetAudience}
-            onChange={(e) => setDraft({ ...draft, targetAudience: e.target.value })}
-            autoFocus
-          />
-        </div>
-        <div className="brand-voice__stat">
-          <div className="brand-voice__stat-label">
-            <DollarSign size={12} />
-            Price Positioning
-          </div>
-          <input
-            className="inline-edit brand-voice__stat-value brand-voice__stat-value--price"
-            value={draft.priceRange}
-            onChange={(e) => setDraft({ ...draft, priceRange: e.target.value })}
+            onChange={(v) => setDraft({ ...draft, targetAudience: v })}
+            placeholder="Describe the target audience..."
+            rows={3}
           />
         </div>
       </div>
@@ -665,7 +654,6 @@ export default function BrandVoiceStep(): React.ReactElement {
           <StatsEditor
             initial={{
               targetAudience: brandVoice.targetAudience,
-              priceRange: brandVoice.priceRange,
               businessType: brandVoice.businessType,
             }}
             onSave={(v) => { updateBrandVoice(v); onSave(); }}
@@ -680,13 +668,6 @@ export default function BrandVoiceStep(): React.ReactElement {
               Target Audience
             </div>
             <p className="brand-voice__stat-value">{brandVoice.targetAudience}</p>
-          </div>
-          <div className="brand-voice__stat">
-            <div className="brand-voice__stat-label">
-              <DollarSign size={12} />
-              Price Positioning
-            </div>
-            <p className="brand-voice__stat-value brand-voice__stat-value--price">{brandVoice.priceRange}</p>
           </div>
         </div>
       </EditableSection>
@@ -724,20 +705,14 @@ export default function BrandVoiceStep(): React.ReactElement {
 
       {/* Actions */}
       <div className="step-actions">
-        <button className="btn btn--ghost" onClick={() => setStep(1)}>
-          <ArrowLeft size={16} />
-          Back
+        <button className="btn btn--outline" onClick={handleTryAgain}>
+          <RefreshCw size={14} />
+          Try Again
         </button>
-        <div className="step-actions__right">
-          <button className="btn btn--outline" onClick={handleTryAgain}>
-            <RefreshCw size={14} />
-            Try Again
-          </button>
-          <button className="btn btn--primary" onClick={handleConfirm}>
-            <Check size={16} />
-            Confirm
-          </button>
-        </div>
+        <button className="btn btn--primary" onClick={handleConfirm}>
+          <Check size={16} />
+          Confirm
+        </button>
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import type { BrandVoice, Dress, DressFacet, Theme, BrandLabel, ApiResponse, DebugEvent, AgentLogEntry } from '@/types';
+import type { BrandVoice, Dress, DressFacet, Theme, BrandLabel, SharedBlog, ApiResponse, DebugEvent, AgentLogEntry } from '@/types';
 import { normalizeBrandVoice } from './brand-voice-compat';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://blogwriter.test:4444';
@@ -38,32 +38,41 @@ export async function analyzeBrandVoiceStream(
   let buffer = '';
   let result: ApiResponse<BrandVoice> = { success: false, error: 'Analysis did not complete' };
 
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-
-    buffer += decoder.decode(value, { stream: true });
-
-    const lines = buffer.split('\n');
-    buffer = lines.pop() || '';
-
-    for (const line of lines) {
-      if (!line.startsWith('data: ')) continue;
-      try {
-        const event = JSON.parse(line.slice(6));
-        if (event.type === 'status') {
-          onStatus(event.data);
-        } else if (event.type === 'result') {
-          const normalized = normalizeBrandVoice(event.data.data);
-          result = { success: true, data: normalized, cached: event.data.cached, traceId: event.data.traceId };
-        } else if (event.type === 'debug' && onDebug) {
-          onDebug(event.data);
-        } else if (event.type === 'error') {
-          result = { success: false, error: event.data };
-        }
-      } catch { /* skip malformed lines */ }
-    }
+  function processLine(line: string): void {
+    if (!line.startsWith('data: ')) return;
+    try {
+      const event = JSON.parse(line.slice(6));
+      if (event.type === 'status') {
+        onStatus(event.data);
+      } else if (event.type === 'result') {
+        const normalized = normalizeBrandVoice(event.data.data);
+        result = { success: true, data: normalized, cached: event.data.cached, traceId: event.data.traceId };
+      } else if (event.type === 'debug' && onDebug) {
+        onDebug(event.data);
+      } else if (event.type === 'error') {
+        result = { success: false, error: event.data };
+      }
+    } catch { /* skip malformed lines */ }
   }
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+      for (const line of lines) processLine(line);
+    }
+  } catch {
+    // Connection dropped (proxy closed, network error, etc.)
+    // If we already received a successful result, we can still use it
+  }
+
+  // Flush decoder and process any remaining data in the buffer
+  buffer += decoder.decode();
+  if (buffer.trim()) processLine(buffer);
 
   return result;
 }
@@ -141,12 +150,14 @@ export async function fetchBlogSettings(): Promise<{
   timelineStyle: TimelineStyle;
   generateImages: boolean;
   generateLinks: boolean;
+  sharingEnabled: boolean;
+  previewAgents: string;
 }> {
   try {
     const res = await fetch(`${API_BASE}/api/settings/blog`);
     return res.json();
   } catch {
-    return { timelineStyle: 'preview-bar', generateImages: true, generateLinks: true };
+    return { timelineStyle: 'preview-bar', generateImages: true, generateLinks: true, sharingEnabled: false, previewAgents: 'last' };
   }
 }
 
@@ -157,5 +168,32 @@ export async function fetchBrandVoiceTrace(traceId: string): Promise<ApiResponse
 
 export async function fetchBlogSessionTraces(sessionId: string): Promise<ApiResponse<AgentLogEntry[]>> {
   const res = await fetch(`${API_BASE}/api/blog/${sessionId}/traces`);
+  return res.json();
+}
+
+// --- Share ---
+
+export async function createShareLink(data: {
+  blogContent: string;
+  brandName?: string;
+}): Promise<ApiResponse<{ hash: string }>> {
+  const res = await fetch(`${API_BASE}/api/share`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  return res.json();
+}
+
+export async function fetchSharedBlog(hash: string): Promise<ApiResponse<SharedBlog>> {
+  const res = await fetch(`${API_BASE}/api/share/${hash}`);
+  return res.json();
+}
+
+export async function deleteSharedBlog(hash: string, token: string): Promise<ApiResponse<void>> {
+  const res = await fetch(`${API_BASE}/api/share/${hash}`, {
+    method: 'DELETE',
+    headers: { 'x-admin-token': token },
+  });
   return res.json();
 }

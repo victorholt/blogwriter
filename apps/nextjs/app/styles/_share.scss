@@ -1,0 +1,146 @@
+// ============================================================
+// Share — Modal content & shared blog readonly page
+// ============================================================
+
+// --- Share modal content ---
+
+.share-modal {
+  &__description {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--color-gray-500);
+    margin: 0 0 20px;
+  }
+
+  &__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+
+  &__url-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    background: var(--color-gray-50);
+    border: 1px solid var(--color-gray-200);
+    border-radius: var(--radius-md);
+    margin-bottom: 16px;
+  }
+
+  &__url-icon {
+    flex-shrink: 0;
+    color: var(--color-gray-400);
+  }
+
+  &__url-input {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    background: none;
+    font-size: 13px;
+    color: var(--color-gray-700);
+    font-family: inherit;
+    outline: none;
+    cursor: text;
+  }
+
+  &__url-copy {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 12px;
+    border: 1px solid var(--color-gray-200);
+    background: white;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-gray-600);
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+    white-space: nowrap;
+
+    &:hover {
+      background: var(--color-gray-50);
+      border-color: var(--color-gray-300);
+    }
+  }
+
+  &__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  &__delete {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 0;
+    border: none;
+    background: none;
+    font-size: 13px;
+    color: var(--color-gray-400);
+    cursor: pointer;
+    transition: color 0.15s;
+
+    &:hover {
+      color: var(--color-red, #ef4444);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+}
+
+// --- Shared blog readonly page ---
+
+.shared-blog {
+  &__loading,
+  &__error,
+  &__deleted {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--color-gray-500);
+
+    h2 {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--color-gray-700);
+      margin: 0 0 8px;
+    }
+
+    p {
+      font-size: 15px;
+      margin: 0;
+    }
+  }
+
+  &__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    border-top: 1px solid var(--color-gray-100);
+    font-size: 13px;
+    color: var(--color-gray-400);
+  }
+
+  &__footer-label {
+    font-weight: 500;
+  }
+}
+
+// --- Danger button variant for action bar ---
+
+.result__action-btn--danger {
+  color: var(--color-gray-400);
+
+  &:hover {
+    color: var(--color-red, #ef4444);
+    background: #fef2f2;
+  }
+}

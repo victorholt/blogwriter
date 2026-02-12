@@ -38,6 +38,7 @@ interface WizardState {
 
   // Step 4: Instructions
   additionalInstructions: string;
+  callToAction: string;
 
   // Generation
   sessionId: string | null;
@@ -63,6 +64,8 @@ interface WizardState {
   timelineStyle: 'preview-bar' | 'timeline' | 'stepper';
   generateImages: boolean;
   generateLinks: boolean;
+  sharingEnabled: boolean;
+  previewAgents: string;
 
   // Actions
   setStep: (step: WizardStep) => void;
@@ -87,6 +90,7 @@ interface WizardState {
   addDressesToMap: (dresses: Dress[]) => void;
   clearSelectedDresses: () => void;
   setAdditionalInstructions: (text: string) => void;
+  setCallToAction: (text: string) => void;
   setSessionId: (id: string) => void;
   addPipelineAgent: (id: string, label: string) => void;
   updateGeneration: (agent: string, agentLabel: string, step: number, total: number) => void;
@@ -100,6 +104,8 @@ interface WizardState {
   setTimelineStyle: (style: 'preview-bar' | 'timeline' | 'stepper') => void;
   setGenerateImages: (enabled: boolean) => void;
   setGenerateLinks: (enabled: boolean) => void;
+  setSharingEnabled: (enabled: boolean) => void;
+  setPreviewAgents: (value: string) => void;
   setSelectedTheme: (id: number | null) => void;
   setSelectedBrand: (slug: string | null) => void;
   rejectBrandVoice: () => void;
@@ -133,6 +139,7 @@ const initialState = {
   selectedThemeId: null as number | null,
   selectedBrandSlug: null as string | null,
   additionalInstructions: '',
+  callToAction: '',
   sessionId: null as string | null,
   generationAgent: '',
   generationAgentLabel: '',
@@ -150,6 +157,8 @@ const initialState = {
   timelineStyle: 'preview-bar' as const,
   generateImages: true,
   generateLinks: true,
+  sharingEnabled: false,
+  previewAgents: 'last',
 };
 
 // Custom storage adapter that handles Set/Map serialization
@@ -235,6 +244,7 @@ export const useWizardStore = create<WizardState>()(
       clearSelectedDresses: () => set({ selectedDressIds: new Set<string>() }),
 
       setAdditionalInstructions: (text) => set({ additionalInstructions: text }),
+      setCallToAction: (text) => set({ callToAction: text }),
       setSessionId: (id) => set({ sessionId: id }),
       addPipelineAgent: (id, label) =>
         set((state) => {
@@ -256,6 +266,8 @@ export const useWizardStore = create<WizardState>()(
       setTimelineStyle: (style) => set({ timelineStyle: style }),
       setGenerateImages: (enabled) => set({ generateImages: enabled }),
       setGenerateLinks: (enabled) => set({ generateLinks: enabled }),
+      setSharingEnabled: (enabled) => set({ sharingEnabled: enabled }),
+      setPreviewAgents: (value) => set({ previewAgents: value }),
       setSelectedTheme: (id) => set({ selectedThemeId: id }),
       setSelectedBrand: (slug) => set({ selectedBrandSlug: slug, selectedDressIds: new Set<string>() }),
 
@@ -350,6 +362,7 @@ export const useWizardStore = create<WizardState>()(
         selectedDressIds: state.selectedDressIds,
         dressesMap: state.dressesMap,
         additionalInstructions: state.additionalInstructions,
+        callToAction: state.callToAction,
         sessionId: state.sessionId,
         generatedBlog: state.generatedBlog,
         seoMetadata: state.seoMetadata,

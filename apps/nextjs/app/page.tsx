@@ -127,6 +127,8 @@ export default function Home(): React.ReactElement {
   const setTimelineStyle = useWizardStore((s) => s.setTimelineStyle);
   const setGenerateImages = useWizardStore((s) => s.setGenerateImages);
   const setGenerateLinks = useWizardStore((s) => s.setGenerateLinks);
+  const setSharingEnabled = useWizardStore((s) => s.setSharingEnabled);
+  const setPreviewAgents = useWizardStore((s) => s.setPreviewAgents);
 
   // Fetch app settings on mount
   useEffect(() => {
@@ -137,12 +139,10 @@ export default function Home(): React.ReactElement {
       setTimelineStyle(result.timelineStyle);
       setGenerateImages(result.generateImages);
       setGenerateLinks(result.generateLinks);
+      setSharingEnabled(result.sharingEnabled);
+      setPreviewAgents(result.previewAgents);
     });
-  }, [setDebugMode, setTimelineStyle, setGenerateImages, setGenerateLinks]);
-
-  if (view === 'generating') {
-    return <GeneratingWithSSE />;
-  }
+  }, [setDebugMode, setTimelineStyle, setGenerateImages, setGenerateLinks, setSharingEnabled, setPreviewAgents]);
 
   if (view === 'result') {
     return <ResultView />;
@@ -152,7 +152,7 @@ export default function Home(): React.ReactElement {
     <div className="page-shell">
       <div className="paper">
         <StepIndicator />
-        <WizardStep />
+        {view === 'generating' ? <GeneratingWithSSE /> : <WizardStep />}
       </div>
     </div>
   );

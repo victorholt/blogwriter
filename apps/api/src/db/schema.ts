@@ -9,6 +9,7 @@ export const agentModelConfigs = pgTable('agent_model_configs', {
   maxTokens: text('max_tokens').default('4096'),
   instructions: text('instructions'),
   enabled: boolean('enabled').default(true).notNull(),
+  showPreview: boolean('show_preview').default(false).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
@@ -95,6 +96,14 @@ export const agentAdditionalInstructions = pgTable('agent_additional_instruction
 }, (table) => [
   index('idx_additional_instructions_agent_id').on(table.agentId),
 ]);
+
+export const sharedBlogs = pgTable('shared_blogs', {
+  id: serial('id').primaryKey(),
+  hash: text('hash').notNull().unique(),
+  blogContent: text('blog_content').notNull(),
+  brandName: text('brand_name'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
 
 export const brandLabels = pgTable('brand_labels', {
   id: serial('id').primaryKey(),

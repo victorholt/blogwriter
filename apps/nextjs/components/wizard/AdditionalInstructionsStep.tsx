@@ -3,12 +3,15 @@
 import { useState, useEffect } from 'react';
 import { useWizardStore } from '@/stores/wizard-store';
 import { startBlogGeneration, fetchThemes, fetchBrandLabels } from '@/lib/api';
-import { ArrowLeft, Sparkles, Globe, Image, Link2, Tag, Palette } from 'lucide-react';
+import { ArrowLeft, Sparkles, Globe, Image, Link2, Tag, Palette, Megaphone } from 'lucide-react';
+import EnhancedTextArea from '@/components/ui/EnhancedTextArea';
 import type { Dress, Theme, BrandLabel } from '@/types';
 
 export default function AdditionalInstructionsStep(): React.ReactElement {
   const additionalInstructions = useWizardStore((s) => s.additionalInstructions);
   const setAdditionalInstructions = useWizardStore((s) => s.setAdditionalInstructions);
+  const callToAction = useWizardStore((s) => s.callToAction);
+  const setCallToAction = useWizardStore((s) => s.setCallToAction);
   const storeUrl = useWizardStore((s) => s.storeUrl);
   const brandVoice = useWizardStore((s) => s.brandVoice);
   const selectedDressIds = useWizardStore((s) => s.selectedDressIds);
@@ -40,11 +43,18 @@ export default function AdditionalInstructionsStep(): React.ReactElement {
   async function handleGenerate(): Promise<void> {
     if (!brandVoice) return;
 
+    // Merge CTA into additional instructions for the API
+    let instructions = additionalInstructions;
+    if (callToAction.trim()) {
+      const ctaLine = `\nCall to Action: Include the following call-to-action in the blog post: "${callToAction.trim()}"`;
+      instructions = instructions ? instructions + ctaLine : ctaLine.trim();
+    }
+
     const result = await startBlogGeneration({
       storeUrl,
       brandVoice,
       selectedDressIds: Array.from(selectedDressIds),
-      additionalInstructions,
+      additionalInstructions: instructions,
       themeId: selectedThemeId ?? undefined,
       brandLabelSlug: selectedBrandSlug ?? undefined,
     });
@@ -63,12 +73,36 @@ export default function AdditionalInstructionsStep(): React.ReactElement {
         optional &mdash; we&rsquo;ll handle the rest.
       </p>
 
+      {/* Call to Action */}
+      <div className="instructions-step__cta">
+        <label className="instructions-step__cta-label">
+          <Megaphone size={14} />
+          Call to Action
+          <span className="instructions-step__cta-optional">Optional</span>
+        </label>
+        <p className="instructions-step__cta-hint">
+          A specific message or action you want readers to take, like &ldquo;Book your appointment
+          today&rdquo; or &ldquo;Shop the collection online.&rdquo;
+        </p>
+        <EnhancedTextArea
+          value={callToAction}
+          onChange={setCallToAction}
+          placeholder="e.g. Book your bridal appointment online at..."
+          rows={2}
+        />
+      </div>
+
+      {/* Additional Instructions */}
+      <label className="instructions-step__label">
+        Additional Instructions
+        <span className="instructions-step__cta-optional">Optional</span>
+      </label>
       <textarea
         className="instructions-step__textarea"
         placeholder="Add topic focus, keywords, tone adjustments, seasonal themes, specific styling tips..."
         value={additionalInstructions}
         onChange={(e) => setAdditionalInstructions(e.target.value)}
-        rows={6}
+        rows={5}
       />
 
       {/* Session Summary */}
@@ -119,6 +153,19 @@ export default function AdditionalInstructionsStep(): React.ReactElement {
                   <span className="session-summary__meta-value">{selectedBrandName}</span>
                 </div>
               )}
+            </div>
+          </>
+        )}
+
+        {callToAction.trim() && (
+          <>
+            <div className="session-summary__divider" />
+            <div className="session-summary__section">
+              <div className="session-summary__section-label">Call to Action</div>
+              <div className="session-summary__cta">
+                <Megaphone size={14} />
+                <span>&ldquo;{callToAction.trim()}&rdquo;</span>
+              </div>
             </div>
           </>
         )}

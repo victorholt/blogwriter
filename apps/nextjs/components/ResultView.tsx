@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { useWizardStore } from '@/stores/wizard-store';
-import { Copy, Check, RotateCcw, Star, AlertTriangle, ChevronDown, Search, ImageOff, Image } from 'lucide-react';
+import { Copy, Check, RotateCcw, Star, AlertTriangle, ChevronDown, Search, ImageOff, Image, Share2, Link2, Trash2 } from 'lucide-react';
 import Markdown from 'react-markdown';
 import AgentInsight from '@/components/AgentInsight';
 import AgentDiffPanel from '@/components/AgentDiffPanel';
@@ -10,7 +10,8 @@ import AttributionOverlay from '@/components/AttributionOverlay';
 import CompareDropdown from '@/components/CompareDropdown';
 import type { CompareMode } from '@/components/CompareDropdown';
 import { copyRichText } from '@/lib/copy-utils';
-import { fetchDebugMode } from '@/lib/api';
+import { fetchDebugMode, createShareLink, deleteSharedBlog } from '@/lib/api';
+import Modal from '@/components/ui/Modal';
 
 /**
  * Preprocess markdown to convert bracket placeholders and real links
@@ -104,6 +105,7 @@ export default function ResultView(): React.ReactElement {
   const setDebugMode = useWizardStore((s) => s.setDebugMode);
   const dressesMap = useWizardStore((s) => s.dressesMap);
   const generateImages = useWizardStore((s) => s.generateImages);
+  const sharingEnabled = useWizardStore((s) => s.sharingEnabled);
 
   // Re-fetch debug mode on mount so changes made in admin since page load take effect
   useEffect(() => {
@@ -125,6 +127,8 @@ export default function ResultView(): React.ReactElement {
     return map;
   }, [dressesMap]);
 
+  const brandVoice = useWizardStore((s) => s.brandVoice);
+
   const [copied, setCopied] = useState(false);
   const [includeImages, setIncludeImages] = useState(() => {
     if (typeof window === 'undefined') return false;
@@ -133,6 +137,12 @@ export default function ResultView(): React.ReactElement {
   const [reviewOpen, setReviewOpen] = useState(false);
   const [seoOpen, setSeoOpen] = useState(false);
   const [compareMode, setCompareMode] = useState<CompareMode>({ type: 'none' });
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [shareStatus, setShareStatus] = useState<'confirm' | 'sharing' | 'shared'>('confirm');
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [shareHash, setShareHash] = useState<string | null>(null);
+  const [shareCopied, setShareCopied] = useState(false);
+  const [shareDeleting, setShareDeleting] = useState(false);
 
   // Persist includeImages to localStorage; force off when debug mode is disabled
   useEffect(() => {
@@ -170,6 +180,72 @@ export default function ResultView(): React.ReactElement {
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
   }
+
+  function openShareModal(): void {
+    setShareStatus('confirm');
+    setShareUrl(null);
+    setShareHash(null);
+    setShareCopied(false);
+    setShareModalOpen(true);
+  }
+
+  async function handleShareConfirm(): Promise<void> {
+    if (!generatedBlog || shareStatus === 'sharing') return;
+    setShareStatus('sharing');
+    try {
+      const result = await createShareLink({
+        blogContent: generatedBlog,
+        brandName: brandVoice?.brandName,
+      });
+      if (result.success && result.data) {
+        const url = `${window.location.origin}/share/${result.data.hash}`;
+        setShareUrl(url);
+        setShareHash(result.data.hash);
+        setShareStatus('shared');
+      } else {
+        setShareStatus('confirm');
+      }
+    } catch {
+      setShareStatus('confirm');
+    }
+  }
+
+  async function handleCopyShareUrl(): Promise<void> {
+    if (!shareUrl) return;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+    } catch {
+      const input = document.createElement('input');
+      input.value = shareUrl;
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand('copy');
+      document.body.removeChild(input);
+    }
+    setShareCopied(true);
+    setTimeout(() => setShareCopied(false), 2500);
+  }
+
+  async function handleDeleteShare(): Promise<void> {
+    if (!shareHash || shareDeleting) return;
+    const adminToken = localStorage.getItem('blogwriter:adminToken');
+    if (!adminToken) return;
+    setShareDeleting(true);
+    try {
+      const result = await deleteSharedBlog(shareHash, adminToken);
+      if (result.success) {
+        setShareModalOpen(false);
+        setShareStatus('confirm');
+        setShareUrl(null);
+        setShareHash(null);
+      }
+    } catch {
+      // Ignore
+    }
+    setShareDeleting(false);
+  }
+
+  const hasAdminToken = typeof window !== 'undefined' && !!localStorage.getItem('blogwriter:adminToken');
 
   function getScoreColor(score: number): string {
     if (score >= 8) return 'var(--color-green)';
@@ -220,6 +296,15 @@ export default function ResultView(): React.ReactElement {
                 onChange={setCompareMode}
                 agents={compareAgents}
               />
+            </>
+          )}
+          {sharingEnabled && (
+            <>
+              <div className="result__action-divider" />
+              <button className="result__action-btn" onClick={openShareModal}>
+                <Share2 size={14} />
+                <span>Share</span>
+              </button>
             </>
           )}
           <div className="result__action-divider" />
@@ -439,6 +524,72 @@ export default function ResultView(): React.ReactElement {
           </div>
         )}
       </div>
+
+      {/* Share Modal */}
+      <Modal
+        open={shareModalOpen}
+        onClose={() => setShareModalOpen(false)}
+        title={shareStatus === 'shared' ? 'Share Link Created' : 'Share Blog Post'}
+      >
+        {shareStatus === 'confirm' && (
+          <div className="share-modal">
+            <p className="share-modal__description">
+              Create a public link that anyone can use to read this blog post.
+              The shared version is read-only and won&rsquo;t include any editing tools or agent insights.
+            </p>
+            <div className="share-modal__actions">
+              <button className="btn btn--ghost" onClick={() => setShareModalOpen(false)}>
+                Cancel
+              </button>
+              <button className="btn btn--primary" onClick={handleShareConfirm}>
+                <Share2 size={15} />
+                Create Share Link
+              </button>
+            </div>
+          </div>
+        )}
+        {shareStatus === 'sharing' && (
+          <div className="share-modal">
+            <p className="share-modal__description">Creating share link...</p>
+          </div>
+        )}
+        {shareStatus === 'shared' && shareUrl && (
+          <div className="share-modal">
+            <p className="share-modal__description">
+              Anyone with this link can view the blog post.
+            </p>
+            <div className="share-modal__url-row">
+              <Link2 size={14} className="share-modal__url-icon" />
+              <input
+                className="share-modal__url-input"
+                type="text"
+                readOnly
+                value={shareUrl}
+                onClick={(e) => (e.target as HTMLInputElement).select()}
+              />
+              <button className="share-modal__url-copy" onClick={handleCopyShareUrl}>
+                {shareCopied ? <Check size={14} /> : <Copy size={14} />}
+                {shareCopied ? 'Copied!' : 'Copy'}
+              </button>
+            </div>
+            <div className="share-modal__footer">
+              {hasAdminToken && (
+                <button
+                  className="share-modal__delete"
+                  onClick={handleDeleteShare}
+                  disabled={shareDeleting}
+                >
+                  <Trash2 size={13} />
+                  {shareDeleting ? 'Removing...' : 'Remove Share'}
+                </button>
+              )}
+              <button className="btn btn--ghost" onClick={() => setShareModalOpen(false)}>
+                Done
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

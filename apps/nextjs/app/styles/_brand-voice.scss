@@ -234,16 +234,9 @@
     }
   }
 
-  // --- Stat grid (audience + price) ---
+  // --- Stat grid (audience) ---
   &__stats {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 12px;
     margin-bottom: 28px;
-
-    @media (min-width: 640px) {
-      grid-template-columns: 1fr 1fr;
-    }
   }
 
   &__stat {

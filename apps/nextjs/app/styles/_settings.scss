@@ -454,6 +454,9 @@
   }
 
   &__toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 24px;
     padding: 12px 0;
   }
 }

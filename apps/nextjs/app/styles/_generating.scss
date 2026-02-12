@@ -48,6 +48,23 @@
   }
 }
 
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes messageFade {
+  0% { opacity: 0; transform: translateY(6px); }
+  15% { opacity: 1; transform: translateY(0); }
+  85% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-6px); }
+}
+
+@keyframes typingBounce {
+  0%, 60%, 100% { transform: translateY(0); }
+  30% { transform: translateY(-4px); }
+}
+
 // --- Component ---
 
 .generating {
@@ -214,11 +231,64 @@
     margin-bottom: 24px;
   }
 
+  &__cancel {
+    display: flex;
+    justify-content: center;
+    margin-top: 32px;
+  }
+
+  // Rotating message ticker
+  &__messages {
+    text-align: center;
+    margin-bottom: 24px;
+    min-height: 24px;
+    position: relative;
+
+    @media (min-width: 640px) {
+      margin-bottom: 32px;
+    }
+  }
+
+  &__message {
+    font-size: 14px;
+    color: var(--color-gray-400);
+    animation: messageFade 4s ease-in-out;
+
+    @media (min-width: 640px) {
+      font-size: 15px;
+    }
+  }
+
+  // Typing indicator dots
+  &__typing {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    margin-bottom: 20px;
+
+    @media (min-width: 640px) {
+      margin-bottom: 28px;
+    }
+  }
+
+  &__typing-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--color-blue);
+    opacity: 0.4;
+    animation: typingBounce 1.4s ease-in-out infinite;
+
+    &:nth-child(2) { animation-delay: 0.15s; }
+    &:nth-child(3) { animation-delay: 0.3s; }
+  }
+
   // Streaming preview (collapsible)
   &__preview {
-    max-width: 640px;
+    max-width: 840px;
     margin: 0 auto;
-    border: 1px solid var(--color-gray-200);
+    border: 1px solid var(--color-blue-light);
     border-radius: var(--radius-lg);
     overflow: hidden;
     animation: previewFadeIn 0.35s ease-out;
@@ -229,24 +299,44 @@
     align-items: center;
     justify-content: space-between;
     width: 100%;
-    padding: 10px 16px;
-    font-size: 13px;
+    padding: 12px 16px;
+    font-size: 14px;
     font-weight: 500;
-    color: var(--color-gray-500);
-    background: var(--color-gray-50);
+    color: var(--color-blue);
+    background: var(--color-blue-light);
     cursor: pointer;
     border: none;
     transition: background 0.15s;
+    position: relative;
 
     &:hover {
-      background: var(--color-gray-100);
+      background: #dde9ff;
+    }
+
+    // Animated accent line at the bottom
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(
+        90deg,
+        transparent,
+        var(--color-blue),
+        rgba(91, 155, 245, 0.6),
+        transparent
+      );
+      background-size: 200% 100%;
+      animation: shimmer 2s ease-in-out infinite;
     }
   }
 
   &__preview-header-left {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
   }
 
   &__preview-header-right {
@@ -254,7 +344,22 @@
     align-items: center;
     gap: 6px;
     font-size: 12px;
-    color: var(--color-gray-400);
+    color: var(--color-blue);
+    opacity: 0.7;
+  }
+
+  // Pulsing spinner circle (matches timeline active step icon)
+  &__preview-spinner {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: var(--color-blue);
+    color: white;
+    animation: stepActivate 0.4s ease-out, activeGlow 2s ease-in-out 0.4s infinite;
   }
 
   &__preview-chevron {
@@ -321,7 +426,7 @@
   // ============================================================
 
   &__bar {
-    max-width: 640px;
+    max-width: 840px;
     margin: 0 auto;
     border: 1px solid var(--color-blue-light);
     border-radius: var(--radius-lg);
@@ -342,41 +447,65 @@
     cursor: pointer;
     border: none;
     transition: background 0.15s;
+    position: relative;
 
     &:hover {
       background: #dde9ff;
+    }
+
+    // Animated accent line at the bottom
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(
+        90deg,
+        transparent,
+        var(--color-blue),
+        rgba(91, 155, 245, 0.6),
+        transparent
+      );
+      background-size: 200% 100%;
+      animation: shimmer 2s ease-in-out infinite;
+    }
+
+    // Static mode — not clickable (no preview available)
+    &--static {
+      cursor: default;
+
+      &:hover {
+        background: var(--color-blue-light);
+      }
     }
   }
 
   &__bar-left {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     min-width: 0;
+  }
+
+  // Pulsing spinner circle for bar mode (matches timeline active step icon)
+  &__bar-spinner {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: var(--color-blue);
+    color: white;
+    animation: stepActivate 0.4s ease-out, activeGlow 2s ease-in-out 0.4s infinite;
   }
 
   &__bar-current {
     font-weight: 600;
     white-space: nowrap;
-  }
-
-  &__bar-desc {
-    font-size: 12px;
-    font-weight: 400;
-    color: var(--color-blue-hover);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    display: none;
-
-    @media (min-width: 640px) {
-      display: inline;
-    }
-
-    &::before {
-      content: '—';
-      margin: 0 6px;
-    }
   }
 
   &__bar-right {
@@ -387,16 +516,23 @@
     margin-left: 12px;
   }
 
-  &__bar-next {
-    font-size: 12px;
-    font-weight: 400;
-    color: var(--color-gray-400);
+  &__bar-message {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-blue);
     white-space: nowrap;
-    display: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    animation: messageFade 4s ease-in-out;
+  }
 
-    @media (min-width: 640px) {
-      display: inline;
-    }
+  &__bar-preview-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: white;
+    background: var(--color-green);
+    padding: 3px 12px;
+    border-radius: 10px;
   }
 
   // ============================================================

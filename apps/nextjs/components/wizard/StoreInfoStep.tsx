@@ -27,6 +27,7 @@ export default function StoreInfoStep(): React.ReactElement {
 
   const [error, setError] = useState<string | null>(null);
   const retryTriggered = useRef(false);
+  const autoAdvancedRef = useRef(false);
 
   // Map status log messages to debug events by matching patterns
   function getDebugEventForMessage(msg: string, msgIndex: number): import('@/types').DebugEvent | null {
@@ -56,13 +57,20 @@ export default function StoreInfoStep(): React.ReactElement {
 
     if (analysisComplete) return;
 
+    // Prepend https:// if no protocol provided
+    let url = storeUrl.trim();
+    if (!/^https?:\/\//i.test(url)) {
+      url = `https://${url}`;
+      setStoreUrl(url);
+    }
+
     setError(null);
     clearStatusLog();
     setIsAnalyzing(true);
 
     try {
       const result = await analyzeBrandVoiceStream(
-        storeUrl,
+        url,
         (message) => { appendStatusLog(message); },
         (data) => { appendDebugData(data); },
         previousBrandVoice ?? undefined,
@@ -83,6 +91,16 @@ export default function StoreInfoStep(): React.ReactElement {
       setIsAnalyzing(false);
     }
   }
+
+  // Auto-advance to Brand Voice step after fresh analysis completes
+  useEffect(() => {
+    if (!analysisComplete) {
+      autoAdvancedRef.current = false;
+    } else if (!autoAdvancedRef.current) {
+      autoAdvancedRef.current = true;
+      setStep(2);
+    }
+  }, [analysisComplete, setStep]);
 
   // Auto-trigger re-analysis when user rejected a previous voice (clicked "Try Again")
   useEffect(() => {

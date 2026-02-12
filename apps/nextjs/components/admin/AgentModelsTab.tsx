@@ -129,6 +129,18 @@ export default function AgentModelsTab({ token }: AgentModelsTabProps): React.Re
     }
   }
 
+  async function handleTogglePreview(agentId: string): Promise<void> {
+    const agent = agents.find((a) => a.agentId === agentId);
+    if (!agent) return;
+    const result = await updateAgentConfig(token, agentId, {
+      modelId: agent.modelId,
+      showPreview: !agent.showPreview,
+    });
+    if (result.success && result.data) {
+      setAgents((prev) => prev.map((a) => (a.agentId === agentId ? result.data! : a)));
+    }
+  }
+
   async function handleSaveAgent(agentId: string): Promise<void> {
     setAgentSaveStatus((prev) => ({ ...prev, [agentId]: 'saving' }));
     const instructions = getAgentValue(agentId, 'instructions');
@@ -324,6 +336,13 @@ export default function AgentModelsTab({ token }: AgentModelsTabProps): React.Re
                       checked={agent.enabled}
                       onChange={() => handleToggleAgent(agent.agentId)}
                       label="Enabled"
+                    />
+                  )}
+                  {agent.agentId !== 'brand-voice-analyzer' && agent.agentId !== 'text-enhancer' && (
+                    <Toggle
+                      checked={agent.showPreview}
+                      onChange={() => handleTogglePreview(agent.agentId)}
+                      label="Show Preview"
                     />
                   )}
                 </div>
