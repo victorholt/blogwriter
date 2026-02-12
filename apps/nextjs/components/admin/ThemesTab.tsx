@@ -6,11 +6,11 @@ import {
   createTheme,
   updateTheme,
   deleteTheme,
-  enhanceText,
 } from '@/lib/admin-api';
 import type { AdminTheme } from '@/lib/admin-api';
-import { Plus, Save, Trash2, Check, Loader2, AlertCircle, Search, Sparkles } from 'lucide-react';
+import { Plus, Save, Trash2, Check, Loader2, AlertCircle, Search } from 'lucide-react';
 import Toggle from '@/components/ui/Toggle';
+import EnhancedTextArea from '@/components/ui/EnhancedTextArea';
 
 interface ThemesTabProps {
   token: string;
@@ -27,8 +27,6 @@ export default function ThemesTab({ token }: ThemesTabProps): React.ReactElement
   const [newName, setNewName] = useState('');
   const [newDescription, setNewDescription] = useState('');
   const [createStatus, setCreateStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
-  const [enhancing, setEnhancing] = useState<Record<string, boolean>>({});
-
   const loadThemes = useCallback(async () => {
     try {
       const result = await fetchAdminThemes(token);
@@ -120,18 +118,7 @@ export default function ThemesTab({ token }: ThemesTabProps): React.ReactElement
     }
   }
 
-  async function handleEnhance(key: string, text: string, onResult: (text: string) => void): Promise<void> {
-    if (!text.trim() || enhancing[key]) return;
-    setEnhancing((prev) => ({ ...prev, [key]: true }));
-    try {
-      const result = await enhanceText(token, text, 'a theme description that guides AI blog-writing agents — it should be specific, actionable, and describe the theme\'s focus, tone, and key topics');
-      if (result.success && result.data) {
-        onResult(result.data.text);
-      }
-    } finally {
-      setEnhancing((prev) => ({ ...prev, [key]: false }));
-    }
-  }
+  const ENHANCE_CONTEXT = 'a theme description that guides AI blog-writing agents — it should be specific, actionable, and describe the theme\'s focus, tone, and key topics';
 
   const filteredThemes = search
     ? themes.filter((t) =>
@@ -194,27 +181,15 @@ export default function ThemesTab({ token }: ThemesTabProps): React.ReactElement
                 Agent Description
                 <span className="settings-field__hint"> — guides the AI, not shown to users</span>
               </label>
-              <div className="enhance-wrap">
-                <textarea
-                  className="input settings-field__textarea"
-                  rows={3}
-                  placeholder="Describe the theme's focus, tone, and key topics for the AI agents..."
-                  value={newDescription}
-                  onChange={(e) => setNewDescription(e.target.value)}
-                />
-                {newDescription.trim() && (
-                  <button
-                    type="button"
-                    className="enhance-btn"
-                    onClick={() => handleEnhance('new', newDescription, setNewDescription)}
-                    disabled={enhancing['new']}
-                    title="Enhance with AI"
-                  >
-                    {enhancing['new'] ? <Loader2 size={13} className="spin" /> : <Sparkles size={13} />}
-                    {enhancing['new'] ? 'Enhancing...' : 'Enhance'}
-                  </button>
-                )}
-              </div>
+              <EnhancedTextArea
+                value={newDescription}
+                onChange={setNewDescription}
+                placeholder="Describe the theme's focus, tone, and key topics for the AI agents..."
+                rows={3}
+                token={token}
+                enhanceEnabled
+                enhanceContext={ENHANCE_CONTEXT}
+              />
             </div>
           </div>
           <div className="settings-card__footer">
@@ -274,30 +249,14 @@ export default function ThemesTab({ token }: ThemesTabProps): React.ReactElement
                   Agent Description
                   <span className="settings-field__hint"> — guides the AI, not shown to users</span>
                 </label>
-                <div className="enhance-wrap">
-                  <textarea
-                    className="input settings-field__textarea"
-                    rows={3}
-                    value={getThemeValue(theme.id, 'description')}
-                    onChange={(e) => setThemeValue(theme.id, 'description', e.target.value)}
-                  />
-                  {getThemeValue(theme.id, 'description').trim() && (
-                    <button
-                      type="button"
-                      className="enhance-btn"
-                      onClick={() => handleEnhance(
-                        String(theme.id),
-                        getThemeValue(theme.id, 'description'),
-                        (text) => setThemeValue(theme.id, 'description', text),
-                      )}
-                      disabled={enhancing[String(theme.id)]}
-                      title="Enhance with AI"
-                    >
-                      {enhancing[String(theme.id)] ? <Loader2 size={13} className="spin" /> : <Sparkles size={13} />}
-                      {enhancing[String(theme.id)] ? 'Enhancing...' : 'Enhance'}
-                    </button>
-                  )}
-                </div>
+                <EnhancedTextArea
+                  value={getThemeValue(theme.id, 'description')}
+                  onChange={(text) => setThemeValue(theme.id, 'description', text)}
+                  rows={3}
+                  token={token}
+                  enhanceEnabled
+                  enhanceContext={ENHANCE_CONTEXT}
+                />
               </div>
             </div>
 

@@ -1,4 +1,8 @@
 import { Agent, ModelRouterLanguageModel } from '@mastra/core';
+import { asc } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
+import { db } from '../../db';
+import { agentAdditionalInstructions } from '../../db/schema';
 import { getAgentModelConfig, getOpenRouterApiKey } from './model-resolver';
 
 function createOpenRouterModel(modelId: string, apiKey: string): ModelRouterLanguageModel {
@@ -49,7 +53,19 @@ export async function createConfiguredAgent(
   const model = createOpenRouterModel(config.modelId, apiKey);
 
   // DB instructions override code defaults (if set)
-  const baseInstructions = config.instructions || defaultInstructions;
+  let baseInstructions = config.instructions || defaultInstructions;
+
+  // Append additional instruction snippets (if any)
+  const additionalRows = await db
+    .select()
+    .from(agentAdditionalInstructions)
+    .where(eq(agentAdditionalInstructions.agentId, agentId))
+    .orderBy(asc(agentAdditionalInstructions.sortOrder), asc(agentAdditionalInstructions.id));
+
+  if (additionalRows.length > 0) {
+    const joined = additionalRows.map(r => r.content).join('\n\n');
+    baseInstructions += '\n\n[Additional Instructions]\n' + joined;
+  }
 
   let contextPreamble = buildContextPreamble();
 

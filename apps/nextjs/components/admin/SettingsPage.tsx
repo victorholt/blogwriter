@@ -2,11 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import {
-  fetchAgentConfigs,
-  updateAgentConfig,
   fetchSettings,
   updateSettings,
-  fetchModels,
   clearCache,
   fetchDressCacheStats,
   clearDressCache,
@@ -16,13 +13,14 @@ import {
   updateBrandLabel,
   deleteBrandLabel,
 } from '@/lib/admin-api';
-import type { AgentConfig, ModelOption, AdminBrandLabel } from '@/lib/admin-api';
-import { Save, Check, AlertCircle, Key, Bot, Loader2, Trash2, Database, Package, RefreshCw, FileText, Palette, Plus, Tag } from 'lucide-react';
+import type { AdminBrandLabel } from '@/lib/admin-api';
+import { Save, Check, Key, Bot, Loader2, Trash2, Database, Package, RefreshCw, FileText, Palette, Plus, Tag } from 'lucide-react';
 import SearchSelect from '@/components/ui/SearchSelect';
 import Toggle from '@/components/ui/Toggle';
 import type { SearchSelectGroup } from '@/components/ui/SearchSelect';
 import DressMultiSelect from '@/components/ui/DressMultiSelect';
 import ThemesTab from './ThemesTab';
+import AgentModelsTab from './AgentModelsTab';
 import type { Dress } from '@/types';
 
 type SettingsTab = 'api' | 'agents' | 'products' | 'themes' | 'cache' | 'blog';
@@ -34,14 +32,10 @@ interface SettingsPageProps {
 export default function SettingsPage({ token }: SettingsPageProps): React.ReactElement {
   const [authorized, setAuthorized] = useState<boolean | null>(null);
   const [activeTab, setActiveTab] = useState<SettingsTab>('api');
-  const [agents, setAgents] = useState<AgentConfig[]>([]);
-  const [models, setModels] = useState<ModelOption[]>([]);
   const [allSettings, setAllSettings] = useState<Record<string, string>>({});
   const [apiKey, setApiKey] = useState('');
   const [apiKeyDisplay, setApiKeyDisplay] = useState('');
   const [settingsSaveStatus, setSettingsSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
-  const [agentSaveStatus, setAgentSaveStatus] = useState<Record<string, 'idle' | 'saving' | 'saved' | 'error'>>({});
-  const [agentEdits, setAgentEdits] = useState<Record<string, Partial<AgentConfig>>>({});
   const [cacheStatus, setCacheStatus] = useState<'idle' | 'clearing' | 'cleared' | 'error'>('idle');
   const [cacheMessage, setCacheMessage] = useState('');
 
@@ -70,37 +64,18 @@ export default function SettingsPage({ token }: SettingsPageProps): React.ReactE
   const [newBrandName, setNewBrandName] = useState('');
   const [brandCreateStatus, setBrandCreateStatus] = useState<'idle' | 'saving' | 'error'>('idle');
 
-  const modelGroups: SearchSelectGroup[] = Object.entries(
-    models.reduce<Record<string, ModelOption[]>>((acc, m) => {
-      (acc[m.provider] ??= []).push(m);
-      return acc;
-    }, {}),
-  ).map(([provider, providerModels]) => ({
-    label: provider,
-    options: providerModels.map((m) => ({
-      label: m.name,
-      value: `openrouter/${m.id}`,
-    })),
-  }));
-
   const loadData = useCallback(async (): Promise<void> => {
-    const [agentsResult, settingsResult, modelsResult] = await Promise.all([
-      fetchAgentConfigs(token),
-      fetchSettings(token),
-      fetchModels(token),
-    ]);
+    const settingsResult = await fetchSettings(token);
 
-    if (!agentsResult.success || !settingsResult.success) {
+    if (!settingsResult.success) {
       setAuthorized(false);
       return;
     }
 
     setAuthorized(true);
-    setAgents(agentsResult.data ?? []);
     const s = settingsResult.data ?? {};
     setAllSettings(s);
     setApiKeyDisplay(s.openrouter_api_key ?? '');
-    setModels(modelsResult.data ?? []);
   }, [token]);
 
   useEffect(() => {
@@ -196,61 +171,6 @@ export default function SettingsPage({ token }: SettingsPageProps): React.ReactE
       setCacheStatus('error');
       setCacheMessage('Failed to clear cache');
       setTimeout(() => setCacheStatus('idle'), 3000);
-    }
-  }
-
-  // --- Agent ---
-
-  function getAgentValue(agentId: string, field: keyof AgentConfig): string {
-    const edit = agentEdits[agentId];
-    if (edit && field in edit) return edit[field] as string;
-    const agent = agents.find((a) => a.agentId === agentId);
-    return agent ? (agent[field] as string) : '';
-  }
-
-  function setAgentValue(agentId: string, field: keyof AgentConfig, value: string): void {
-    setAgentEdits((prev) => ({
-      ...prev,
-      [agentId]: { ...prev[agentId], [field]: value },
-    }));
-  }
-
-  async function handleToggleAgent(agentId: string): Promise<void> {
-    const agent = agents.find((a) => a.agentId === agentId);
-    if (!agent) return;
-    const newEnabled = !agent.enabled;
-    const result = await updateAgentConfig(token, agentId, {
-      modelId: agent.modelId,
-      enabled: newEnabled,
-    });
-    if (result.success && result.data) {
-      setAgents((prev) => prev.map((a) => (a.agentId === agentId ? result.data! : a)));
-    }
-  }
-
-  async function handleSaveAgent(agentId: string): Promise<void> {
-    setAgentSaveStatus((prev) => ({ ...prev, [agentId]: 'saving' }));
-
-    const instructions = getAgentValue(agentId, 'instructions');
-    const result = await updateAgentConfig(token, agentId, {
-      modelId: getAgentValue(agentId, 'modelId'),
-      temperature: getAgentValue(agentId, 'temperature'),
-      maxTokens: getAgentValue(agentId, 'maxTokens'),
-      ...(instructions !== undefined && { instructions: instructions || '' }),
-    });
-
-    if (result.success && result.data) {
-      setAgentSaveStatus((prev) => ({ ...prev, [agentId]: 'saved' }));
-      setAgents((prev) => prev.map((a) => (a.agentId === agentId ? result.data! : a)));
-      setAgentEdits((prev) => {
-        const next = { ...prev };
-        delete next[agentId];
-        return next;
-      });
-      setTimeout(() => setAgentSaveStatus((prev) => ({ ...prev, [agentId]: 'idle' })), 2000);
-    } else {
-      setAgentSaveStatus((prev) => ({ ...prev, [agentId]: 'error' }));
-      setTimeout(() => setAgentSaveStatus((prev) => ({ ...prev, [agentId]: 'idle' })), 3000);
     }
   }
 
@@ -615,104 +535,7 @@ export default function SettingsPage({ token }: SettingsPageProps): React.ReactE
 
         {/* Agent Models Tab */}
         {activeTab === 'agents' && (
-          <section className="settings-section">
-            <h2 className="settings-section__heading">
-              <Bot size={18} />
-              Agent Models
-            </h2>
-
-            {agents.map((agent) => {
-              const status = agentSaveStatus[agent.agentId] ?? 'idle';
-              const hasEdits = agent.agentId in agentEdits;
-              const isRequired = agent.agentId === 'blog-writer' || agent.agentId === 'brand-voice-analyzer';
-
-              return (
-                <div key={agent.agentId} className={`settings-card${!agent.enabled && !isRequired ? ' settings-card--disabled' : ''}`}>
-                  <div className="settings-card__title-row">
-                    <h3 className="settings-card__title">{agent.agentLabel}</h3>
-                    {!isRequired && (
-                      <Toggle
-                        checked={agent.enabled}
-                        onChange={() => handleToggleAgent(agent.agentId)}
-                      />
-                    )}
-                  </div>
-
-                  <div className="settings-card__fields">
-                    <div className="settings-field">
-                      <label className="settings-field__label">Model</label>
-                      <SearchSelect
-                        value={getAgentValue(agent.agentId, 'modelId')}
-                        onChange={(val) => setAgentValue(agent.agentId, 'modelId', val)}
-                        groups={modelGroups}
-                        placeholder="Select a model..."
-                      />
-                    </div>
-
-                    <div className="settings-card__row">
-                      <div className="settings-field">
-                        <label className="settings-field__label">Temperature</label>
-                        <input
-                          className="input"
-                          type="number"
-                          step="0.1"
-                          min="0"
-                          max="2"
-                          value={getAgentValue(agent.agentId, 'temperature')}
-                          onChange={(e) => setAgentValue(agent.agentId, 'temperature', e.target.value)}
-                        />
-                      </div>
-
-                      <div className="settings-field">
-                        <label className="settings-field__label">Max Tokens</label>
-                        <input
-                          className="input"
-                          type="number"
-                          step="256"
-                          min="256"
-                          value={getAgentValue(agent.agentId, 'maxTokens')}
-                          onChange={(e) => setAgentValue(agent.agentId, 'maxTokens', e.target.value)}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="settings-field">
-                      <label className="settings-field__label">Custom Instructions</label>
-                      <textarea
-                        className="input settings-field__textarea"
-                        rows={4}
-                        placeholder="Leave empty to use default agent instructions..."
-                        value={getAgentValue(agent.agentId, 'instructions') || ''}
-                        onChange={(e) => setAgentValue(agent.agentId, 'instructions', e.target.value)}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="settings-card__footer">
-                    <span className="settings-card__updated">
-                      Updated: {new Date(agent.updatedAt).toLocaleString()}
-                    </span>
-                    <button
-                      className={`btn ${hasEdits ? 'btn--primary' : 'btn--outline'}`}
-                      onClick={() => handleSaveAgent(agent.agentId)}
-                      disabled={status === 'saving'}
-                    >
-                      {status === 'saving' ? (
-                        <Loader2 size={14} className="spin" />
-                      ) : status === 'saved' ? (
-                        <Check size={14} />
-                      ) : status === 'error' ? (
-                        <AlertCircle size={14} />
-                      ) : (
-                        <Save size={14} />
-                      )}
-                      {status === 'saved' ? 'Saved' : status === 'error' ? 'Error' : 'Save'}
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </section>
+          <AgentModelsTab token={token} />
         )}
 
         {/* Product API Tab */}

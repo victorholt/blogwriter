@@ -24,6 +24,8 @@ Return your output in this exact format:
 Then return the final blog post (unchanged if quality score >= 7, or with fixes if below 7).
 Include the SEO metadata block from the previous step.`;
 
+export { INSTRUCTIONS as DEFAULT_INSTRUCTIONS };
+
 export async function createBlogReviewerAgent(globalContext?: GlobalContext) {
   return createConfiguredAgent('blog-reviewer', INSTRUCTIONS, {}, globalContext);
 }

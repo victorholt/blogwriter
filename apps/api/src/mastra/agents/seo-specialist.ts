@@ -21,6 +21,8 @@ After the blog content, add a JSON block with SEO metadata:
 
 Do NOT stuff keywords or make the text sound unnatural. The blog should read perfectly well without knowing it was SEO-optimized.`;
 
+export { INSTRUCTIONS as DEFAULT_INSTRUCTIONS };
+
 export async function createSeoSpecialistAgent(globalContext?: GlobalContext) {
   return createConfiguredAgent('seo-specialist', INSTRUCTIONS, {}, globalContext);
 }

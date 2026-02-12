@@ -190,6 +190,76 @@ export async function deleteBrandLabel(token: string, id: number): Promise<ApiRe
   return res.json();
 }
 
+// --- Agent Defaults ---
+
+export interface AgentDefaultInstructions {
+  instructions: string;
+  isDynamic: boolean;
+}
+
+export async function fetchAgentDefaults(token: string): Promise<ApiResponse<Record<string, AgentDefaultInstructions>>> {
+  const res = await fetch(`${API_BASE}/api/admin/${token}/agents/defaults`);
+  return res.json();
+}
+
+// --- Additional Instructions ---
+
+export interface AdditionalInstruction {
+  id: number;
+  agentId: string;
+  title: string;
+  content: string;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function fetchAdditionalInstructions(
+  token: string,
+  agentId: string,
+): Promise<ApiResponse<AdditionalInstruction[]>> {
+  const res = await fetch(`${API_BASE}/api/admin/${token}/agents/${agentId}/instructions`);
+  return res.json();
+}
+
+export async function createAdditionalInstruction(
+  token: string,
+  agentId: string,
+  data: { title: string; content: string },
+): Promise<ApiResponse<AdditionalInstruction>> {
+  const res = await fetch(`${API_BASE}/api/admin/${token}/agents/${agentId}/instructions`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  return res.json();
+}
+
+export async function updateAdditionalInstruction(
+  token: string,
+  agentId: string,
+  id: number,
+  data: { title?: string; content?: string },
+): Promise<ApiResponse<AdditionalInstruction>> {
+  const res = await fetch(`${API_BASE}/api/admin/${token}/agents/${agentId}/instructions/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  return res.json();
+}
+
+export async function deleteAdditionalInstruction(
+  token: string,
+  agentId: string,
+  id: number,
+): Promise<ApiResponse<{ deleted: boolean }>> {
+  const res = await fetch(`${API_BASE}/api/admin/${token}/agents/${agentId}/instructions/${id}`, {
+    method: 'DELETE',
+  });
+  return res.json();
+}
+
 // --- Enhance Text ---
 
 export async function enhanceText(

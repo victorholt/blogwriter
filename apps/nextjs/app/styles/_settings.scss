@@ -180,42 +180,82 @@
 }
 
 // ============================================================
-// Enhance Button (reusable AI-enhance pattern)
+// TextArea Field (polished textarea with optional toolbar)
 // ============================================================
 
-.enhance-wrap {
-  position: relative;
-}
+.textarea-field {
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+  background: var(--color-paper);
+  overflow: hidden;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  cursor: text;
 
-.enhance-btn {
-  position: absolute;
-  bottom: 10px;
-  right: 10px;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  padding: 5px 10px;
-  font-size: 12px;
-  font-weight: 500;
-  border-radius: 100px;
-  border: 1px solid var(--color-blue);
-  background: #eef4ff;
-  color: var(--color-blue);
-  cursor: pointer;
-  transition: background 0.15s, box-shadow 0.15s;
-
-  svg {
-    flex-shrink: 0;
+  &--focused {
+    border-color: var(--color-blue);
+    box-shadow: 0 0 0 3px rgba(91, 155, 245, 0.1);
   }
 
-  &:hover:not(:disabled) {
-    background: #dde8ff;
-    box-shadow: 0 1px 3px rgba(59, 118, 214, 0.2);
-  }
-
-  &:disabled {
-    cursor: default;
+  &--disabled {
     opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  &__input {
+    display: block;
+    width: 100%;
+    padding: 12px 14px;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--color-gray-800);
+    resize: vertical;
+    min-height: 120px;
+
+    &::placeholder {
+      color: var(--color-gray-400);
+    }
+  }
+
+  &__toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 8px 10px;
+    border-top: 1px solid var(--color-gray-100);
+    background: var(--color-gray-50);
+  }
+
+  &__enhance {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-blue);
+    background: var(--color-blue-light);
+    color: var(--color-blue);
+    cursor: pointer;
+    transition: background 0.15s, box-shadow 0.15s;
+
+    svg {
+      flex-shrink: 0;
+    }
+
+    &:hover:not(:disabled) {
+      background: #dde8ff;
+      box-shadow: 0 1px 3px rgba(91, 155, 245, 0.2);
+    }
+
+    &:disabled {
+      cursor: default;
+      opacity: 0.4;
+    }
   }
 }
 
@@ -275,6 +315,246 @@
     display: flex;
     align-items: center;
     gap: 8px;
+  }
+}
+
+// ============================================================
+// Agent Card (accordion)
+// ============================================================
+
+.agent-card {
+  background: var(--color-gray-50);
+  border-radius: var(--radius-lg);
+  margin-bottom: 8px;
+  overflow: hidden;
+
+  &--disabled {
+    opacity: 0.6;
+  }
+
+  &--expanded {
+    opacity: 1;
+  }
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 14px 20px;
+    font-size: 14px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    color: var(--color-gray-700);
+    transition: background 0.15s;
+
+    &:hover {
+      background: var(--color-gray-100);
+    }
+  }
+
+  &__label {
+    font-weight: 600;
+    color: var(--color-gray-800);
+    min-width: 0;
+    white-space: nowrap;
+  }
+
+  &__model-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 13px;
+    color: var(--color-gray-400);
+  }
+
+  &__badge {
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 100px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+
+    &--disabled {
+      background: var(--color-gray-200);
+      color: var(--color-gray-500);
+    }
+
+    &--snippets {
+      background: #eef4ff;
+      color: var(--color-blue);
+    }
+  }
+
+  &__chevron {
+    flex-shrink: 0;
+    color: var(--color-gray-400);
+    transition: transform 0.2s;
+
+    &--open {
+      transform: rotate(180deg);
+    }
+  }
+
+  &__body {
+    padding: 0 20px 20px;
+    border-top: 1px solid var(--color-gray-200);
+  }
+
+  &__toggle-row {
+    padding: 12px 0;
+  }
+}
+
+// ============================================================
+// Agent Defaults (read-only instructions display)
+// ============================================================
+
+.agent-defaults {
+  margin-top: 16px;
+  margin-bottom: 16px;
+
+  &__toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 0;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-gray-600);
+    background: none;
+    border: none;
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+
+    &:hover {
+      color: var(--color-gray-800);
+    }
+  }
+
+  &__dynamic-badge {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 100px;
+    background: #fef3c7;
+    color: #b45309;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-left: 4px;
+  }
+
+  &__content {
+    margin-top: 8px;
+  }
+
+  &__dynamic-note {
+    font-size: 13px;
+    font-style: italic;
+    color: var(--color-gray-500);
+    margin-bottom: 8px;
+  }
+
+  &__code {
+    display: block;
+    padding: 14px 16px;
+    font-family: monospace;
+    font-size: 12px;
+    line-height: 1.6;
+    background: var(--color-gray-100);
+    color: var(--color-gray-700);
+    border-radius: var(--radius-md);
+    max-height: 300px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+    margin: 0;
+  }
+
+  &__actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+  }
+}
+
+// ============================================================
+// Agent Snippets (additional instructions)
+// ============================================================
+
+.agent-snippets {
+  margin-top: 20px;
+
+  &__header {
+    margin-bottom: 8px;
+  }
+}
+
+.agent-snippet {
+  background: white;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+  margin-bottom: 6px;
+  overflow: hidden;
+
+  &--new {
+    border-style: dashed;
+    border-color: var(--color-blue-light, var(--color-gray-300));
+  }
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 14px;
+    font-size: 13px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    color: var(--color-gray-700);
+    transition: background 0.1s;
+
+    &:hover {
+      background: var(--color-gray-50);
+    }
+  }
+
+  &__excerpt {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 13px;
+    color: var(--color-gray-600);
+    line-height: 1.4;
+  }
+
+  &__body {
+    padding: 8px 14px 14px;
+    border-top: 1px solid var(--color-gray-100);
+
+    .settings-field {
+      margin-bottom: 8px;
+    }
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--color-gray-100);
   }
 }
 

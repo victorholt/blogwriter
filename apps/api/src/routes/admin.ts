@@ -1,12 +1,13 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { db } from '../db';
-import { agentModelConfigs, appSettings, brandVoiceCache, themes, brandLabels } from '../db/schema';
-import { eq, sql } from 'drizzle-orm';
+import { agentModelConfigs, agentAdditionalInstructions, appSettings, brandVoiceCache, themes, brandLabels } from '../db/schema';
+import { eq, asc, and } from 'drizzle-orm';
 import { validateAdminToken } from '../middleware/admin-auth';
 import { invalidateCache } from '../mastra/lib/model-resolver';
 import { enhanceText as agentEnhanceText } from '../mastra/agents/text-enhancer';
 import { clearDressCache, syncDressesFromApi, getCacheStats } from '../services/dress-cache';
+import { AGENT_DEFAULTS } from '../mastra/lib/agent-defaults';
 import { loadProductApiConfig } from '../services/product-api-client';
 import { invalidateInsightsCache } from '../services/agent-trace';
 
@@ -90,6 +91,93 @@ router.get('/:token/agents', async (req, res) => {
   } catch (err) {
     console.error('[Admin] Error fetching agents:', err);
     return res.status(500).json({ success: false, error: 'Failed to fetch agent configs' });
+  }
+});
+
+// --- Agent Default Instructions (read-only, from code) ---
+
+router.get('/:token/agents/defaults', async (_req, res) => {
+  return res.json({ success: true, data: AGENT_DEFAULTS });
+});
+
+// --- Agent Additional Instructions CRUD ---
+
+const additionalInstructionSchema = z.object({
+  title: z.string().max(100).optional().default('Instruction'),
+  content: z.string().min(1).max(5000),
+});
+
+router.get('/:token/agents/:agentId/instructions', async (req, res) => {
+  try {
+    const rows = await db
+      .select()
+      .from(agentAdditionalInstructions)
+      .where(eq(agentAdditionalInstructions.agentId, req.params.agentId))
+      .orderBy(asc(agentAdditionalInstructions.sortOrder), asc(agentAdditionalInstructions.id));
+    return res.json({ success: true, data: rows });
+  } catch (err) {
+    console.error('[Admin] Error fetching additional instructions:', err);
+    return res.status(500).json({ success: false, error: 'Failed to fetch additional instructions' });
+  }
+});
+
+router.post('/:token/agents/:agentId/instructions', async (req, res) => {
+  const parsed = additionalInstructionSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ success: false, error: parsed.error.issues[0]?.message || 'Invalid request' });
+  }
+
+  try {
+    const [row] = await db
+      .insert(agentAdditionalInstructions)
+      .values({ agentId: req.params.agentId, ...parsed.data })
+      .returning();
+    return res.json({ success: true, data: row });
+  } catch (err) {
+    console.error('[Admin] Error creating additional instruction:', err);
+    return res.status(500).json({ success: false, error: 'Failed to create additional instruction' });
+  }
+});
+
+router.put('/:token/agents/:agentId/instructions/:id', async (req, res) => {
+  const parsed = additionalInstructionSchema.partial().safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ success: false, error: parsed.error.issues[0]?.message || 'Invalid request' });
+  }
+
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) return res.status(400).json({ success: false, error: 'Invalid ID' });
+
+  try {
+    const result = await db
+      .update(agentAdditionalInstructions)
+      .set({ ...parsed.data, updatedAt: new Date() })
+      .where(and(eq(agentAdditionalInstructions.id, id), eq(agentAdditionalInstructions.agentId, req.params.agentId)))
+      .returning();
+
+    if (result.length === 0) return res.status(404).json({ success: false, error: 'Instruction not found' });
+    return res.json({ success: true, data: result[0] });
+  } catch (err) {
+    console.error(`[Admin] Error updating instruction ${id}:`, err);
+    return res.status(500).json({ success: false, error: 'Failed to update instruction' });
+  }
+});
+
+router.delete('/:token/agents/:agentId/instructions/:id', async (req, res) => {
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) return res.status(400).json({ success: false, error: 'Invalid ID' });
+
+  try {
+    const result = await db
+      .delete(agentAdditionalInstructions)
+      .where(and(eq(agentAdditionalInstructions.id, id), eq(agentAdditionalInstructions.agentId, req.params.agentId)))
+      .returning();
+
+    if (result.length === 0) return res.status(404).json({ success: false, error: 'Instruction not found' });
+    return res.json({ success: true, data: { deleted: true } });
+  } catch (err) {
+    console.error(`[Admin] Error deleting instruction ${id}:`, err);
+    return res.status(500).json({ success: false, error: 'Failed to delete instruction' });
   }
 });
 

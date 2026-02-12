@@ -17,6 +17,8 @@ Do NOT add new sections or significantly change the content — your job is to p
 Preserve all image markdown (![...](url)) exactly as-is — do not remove, alter, or reposition image URLs. Each image must remain on its own line with blank lines before and after.
 Do NOT wrap the output in a code block or add any metadata — output raw Markdown only.`;
 
+export { INSTRUCTIONS as DEFAULT_INSTRUCTIONS };
+
 export async function createBlogEditorAgent(globalContext?: GlobalContext) {
   return createConfiguredAgent('blog-editor', INSTRUCTIONS, {}, globalContext);
 }

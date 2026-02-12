@@ -71,6 +71,8 @@ REQUIREMENTS:
 - Every field must be filled — do not leave any empty or with placeholder text
 - Base everything on actual content you scraped, not generic assumptions`;
 
+export { INSTRUCTIONS as DEFAULT_INSTRUCTIONS };
+
 function extractJson(text: string): Record<string, unknown> {
   // Try direct parse first
   try {

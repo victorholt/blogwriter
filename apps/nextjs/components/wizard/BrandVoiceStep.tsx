@@ -3,10 +3,424 @@
 import { useState } from 'react';
 import { useWizardStore } from '@/stores/wizard-store';
 import {
-  ArrowLeft, Pencil, Check, Users, DollarSign, Sparkles,
+  ArrowLeft, Check, Users, DollarSign, Sparkles,
   MessageSquareQuote, RefreshCw, Plus, X, Theater, BookOpen, Ban,
 } from 'lucide-react';
+import EditableSection from '@/components/ui/EditableSection';
+import EnhancedTextArea from '@/components/ui/EnhancedTextArea';
+import TagInput from '@/components/ui/TagInput';
 import type { BrandVoice, ToneAttribute, VocabularyCategory, WritingRule } from '@/types';
+
+// ─── Inline editor components ───────────────────────────────
+// Each editor renders the SAME visual layout as the display view,
+// but swaps text for inline-editable inputs that inherit styling.
+
+function NameEditor({ initial, onSave, onCancel }: {
+  initial: string;
+  onSave: (v: string) => void;
+  onCancel: () => void;
+}) {
+  const [draft, setDraft] = useState(initial);
+  return (
+    <>
+      <div className="brand-voice__header">
+        <input
+          className="inline-edit brand-voice__name"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          autoFocus
+        />
+      </div>
+      <div className="editable-section__actions">
+        <button className="btn btn--outline" onClick={onCancel}>Cancel</button>
+        <button className="btn btn--primary" onClick={() => onSave(draft)}><Check size={14} /> Save</button>
+      </div>
+    </>
+  );
+}
+
+function SummaryEditor({ initial, onSave, onCancel }: {
+  initial: string;
+  onSave: (v: string) => void;
+  onCancel: () => void;
+}) {
+  const [draft, setDraft] = useState(initial);
+  return (
+    <>
+      <EnhancedTextArea
+        value={draft}
+        onChange={setDraft}
+        rows={4}
+      />
+      <div className="editable-section__actions">
+        <button className="btn btn--outline" onClick={onCancel}>Cancel</button>
+        <button className="btn btn--primary" onClick={() => onSave(draft)}><Check size={14} /> Save</button>
+      </div>
+    </>
+  );
+}
+
+function PersonalityEditor({ initial, onSave, onCancel }: {
+  initial: { archetype: string; description: string };
+  onSave: (v: { archetype: string; description: string }) => void;
+  onCancel: () => void;
+}) {
+  const [draft, setDraft] = useState(initial);
+  return (
+    <>
+      <div className="brand-voice__personality">
+        <div className="brand-voice__section-title">
+          <Theater size={12} />
+          Brand Personality
+        </div>
+        <input
+          className="inline-edit brand-voice__personality-archetype"
+          value={draft.archetype}
+          onChange={(e) => setDraft({ ...draft, archetype: e.target.value })}
+          autoFocus
+        />
+        <EnhancedTextArea
+          value={draft.description}
+          onChange={(v) => setDraft({ ...draft, description: v })}
+          placeholder="Description"
+          rows={3}
+        />
+      </div>
+      <div className="editable-section__actions">
+        <button className="btn btn--outline" onClick={onCancel}>Cancel</button>
+        <button className="btn btn--primary" onClick={() => onSave(draft)}><Check size={14} /> Save</button>
+      </div>
+    </>
+  );
+}
+
+function ToneEditor({ initial, onSave, onCancel }: {
+  initial: ToneAttribute[];
+  onSave: (v: ToneAttribute[]) => void;
+  onCancel: () => void;
+}) {
+  const [draft, setDraft] = useState<ToneAttribute[]>(() => structuredClone(initial));
+  const update = (i: number, field: keyof ToneAttribute, value: string) => {
+    const next = [...draft];
+    next[i] = { ...next[i], [field]: value };
+    setDraft(next);
+  };
+  return (
+    <>
+      <div className="brand-voice__tone-section">
+        <div className="brand-voice__section-title">Tone Attributes</div>
+        <div className="brand-voice__tone-attrs">
+          {draft.map((attr, i) => (
+            <div key={i} className="brand-voice__tone-attr">
+              <input
+                className="inline-edit brand-voice__tone-attr-name"
+                value={attr.name}
+                onChange={(e) => update(i, 'name', e.target.value)}
+                placeholder="Tone name"
+              />
+              <EnhancedTextArea
+                value={attr.description}
+                onChange={(v) => update(i, 'description', v)}
+                placeholder="Description"
+                rows={3}
+              />
+              <button
+                className="editable-section__remove-btn"
+                onClick={() => setDraft(draft.filter((_, j) => j !== i))}
+              >
+                <X size={12} />
+              </button>
+            </div>
+          ))}
+        </div>
+        <button className="btn btn--ghost btn--sm" style={{ marginTop: 10 }} onClick={() => setDraft([...draft, { name: '', description: '' }])}>
+          <Plus size={14} /> Add tone
+        </button>
+      </div>
+      <div className="editable-section__actions">
+        <button className="btn btn--outline" onClick={onCancel}>Cancel</button>
+        <button className="btn btn--primary" onClick={() => onSave(draft)}><Check size={14} /> Save</button>
+      </div>
+    </>
+  );
+}
+
+function VocabEditor({ initial, onSave, onCancel }: {
+  initial: VocabularyCategory[];
+  onSave: (v: VocabularyCategory[]) => void;
+  onCancel: () => void;
+}) {
+  const [draft, setDraft] = useState<VocabularyCategory[]>(() => structuredClone(initial));
+  const updateCategory = (i: number, value: string) => {
+    const next = [...draft];
+    next[i] = { ...next[i], category: value };
+    setDraft(next);
+  };
+  const updateTerms = (i: number, terms: string[]) => {
+    const next = [...draft];
+    next[i] = { ...next[i], terms };
+    setDraft(next);
+  };
+  return (
+    <>
+      <div className="brand-voice__vocab">
+        <div className="brand-voice__section-title">Vocabulary</div>
+        {draft.map((cat, i) => (
+          <div key={i} className="brand-voice__vocab-group">
+            <input
+              className="inline-edit brand-voice__vocab-category"
+              value={cat.category}
+              onChange={(e) => updateCategory(i, e.target.value)}
+              placeholder="Category name"
+            />
+            <TagInput
+              tags={cat.terms}
+              onChange={(terms) => updateTerms(i, terms)}
+              placeholder="Type a term and press Enter"
+            />
+            <button
+              className="editable-section__remove-btn"
+              onClick={() => setDraft(draft.filter((_, j) => j !== i))}
+            >
+              <X size={12} />
+            </button>
+          </div>
+        ))}
+        <button className="btn btn--ghost btn--sm" style={{ marginTop: 6 }} onClick={() => setDraft([...draft, { category: '', terms: [] }])}>
+          <Plus size={14} /> Add category
+        </button>
+      </div>
+      <div className="editable-section__actions">
+        <button className="btn btn--outline" onClick={onCancel}>Cancel</button>
+        <button className="btn btn--primary" onClick={() => onSave(draft)}><Check size={14} /> Save</button>
+      </div>
+    </>
+  );
+}
+
+function StyleRulesEditor({ initial, onSave, onCancel }: {
+  initial: WritingRule[];
+  onSave: (v: WritingRule[]) => void;
+  onCancel: () => void;
+}) {
+  const [draft, setDraft] = useState<WritingRule[]>(() => structuredClone(initial));
+  const update = (i: number, field: keyof WritingRule, value: string) => {
+    const next = [...draft];
+    next[i] = { ...next[i], [field]: value };
+    setDraft(next);
+  };
+  return (
+    <>
+      <div className="brand-voice__style-rules">
+        <div className="brand-voice__section-title">
+          <BookOpen size={12} />
+          Writing Style
+        </div>
+        {draft.map((rule, i) => (
+          <div key={i} className="brand-voice__style-rule">
+            <input
+              className="inline-edit brand-voice__style-rule-name"
+              value={rule.rule}
+              onChange={(e) => update(i, 'rule', e.target.value)}
+              placeholder="Rule name"
+            />
+            <EnhancedTextArea
+              value={rule.description}
+              onChange={(v) => update(i, 'description', v)}
+              placeholder="Description"
+              rows={3}
+            />
+            <button
+              className="editable-section__remove-btn"
+              onClick={() => setDraft(draft.filter((_, j) => j !== i))}
+            >
+              <X size={12} />
+            </button>
+          </div>
+        ))}
+        <button className="btn btn--ghost btn--sm" style={{ marginTop: 6 }} onClick={() => setDraft([...draft, { rule: '', description: '' }])}>
+          <Plus size={14} /> Add rule
+        </button>
+      </div>
+      <div className="editable-section__actions">
+        <button className="btn btn--outline" onClick={onCancel}>Cancel</button>
+        <button className="btn btn--primary" onClick={() => onSave(draft)}><Check size={14} /> Save</button>
+      </div>
+    </>
+  );
+}
+
+function AvoidancesEditor({ initial, onSave, onCancel }: {
+  initial: WritingRule[];
+  onSave: (v: WritingRule[]) => void;
+  onCancel: () => void;
+}) {
+  const [draft, setDraft] = useState<WritingRule[]>(() => structuredClone(initial));
+  const update = (i: number, field: keyof WritingRule, value: string) => {
+    const next = [...draft];
+    next[i] = { ...next[i], [field]: value };
+    setDraft(next);
+  };
+  return (
+    <>
+      <div className="brand-voice__avoidances">
+        <div className="brand-voice__section-title">
+          <Ban size={12} />
+          Avoidances
+        </div>
+        {draft.map((rule, i) => (
+          <div key={i} className="brand-voice__avoidance">
+            <input
+              className="inline-edit brand-voice__avoidance-name"
+              value={rule.rule}
+              onChange={(e) => update(i, 'rule', e.target.value)}
+              placeholder="Avoidance"
+            />
+            <EnhancedTextArea
+              value={rule.description}
+              onChange={(v) => update(i, 'description', v)}
+              placeholder="Description"
+              rows={3}
+            />
+            <button
+              className="editable-section__remove-btn"
+              onClick={() => setDraft(draft.filter((_, j) => j !== i))}
+            >
+              <X size={12} />
+            </button>
+          </div>
+        ))}
+        <button className="btn btn--ghost btn--sm" style={{ marginTop: 6 }} onClick={() => setDraft([...draft, { rule: '', description: '' }])}>
+          <Plus size={14} /> Add avoidance
+        </button>
+      </div>
+      <div className="editable-section__actions">
+        <button className="btn btn--outline" onClick={onCancel}>Cancel</button>
+        <button className="btn btn--primary" onClick={() => onSave(draft)}><Check size={14} /> Save</button>
+      </div>
+    </>
+  );
+}
+
+function WritingDirectionEditor({ initial, onSave, onCancel }: {
+  initial: string;
+  onSave: (v: string) => void;
+  onCancel: () => void;
+}) {
+  const [draft, setDraft] = useState(initial);
+  return (
+    <>
+      <div className="brand-voice__blog-tone">
+        <div className="brand-voice__blog-tone-label">
+          <MessageSquareQuote size={12} />
+          Writing Direction
+        </div>
+        <EnhancedTextArea
+          value={draft}
+          onChange={setDraft}
+          rows={4}
+        />
+      </div>
+      <div className="editable-section__actions">
+        <button className="btn btn--outline" onClick={onCancel}>Cancel</button>
+        <button className="btn btn--primary" onClick={() => onSave(draft)}><Check size={14} /> Save</button>
+      </div>
+    </>
+  );
+}
+
+function StatsEditor({ initial, onSave, onCancel }: {
+  initial: { targetAudience: string; priceRange: string; businessType: string };
+  onSave: (v: { targetAudience: string; priceRange: string; businessType: string }) => void;
+  onCancel: () => void;
+}) {
+  const [draft, setDraft] = useState(initial);
+  return (
+    <>
+      <div className="brand-voice__stats">
+        <div className="brand-voice__stat">
+          <div className="brand-voice__stat-label">
+            <Users size={12} />
+            Target Audience
+          </div>
+          <input
+            className="inline-edit brand-voice__stat-value"
+            value={draft.targetAudience}
+            onChange={(e) => setDraft({ ...draft, targetAudience: e.target.value })}
+            autoFocus
+          />
+        </div>
+        <div className="brand-voice__stat">
+          <div className="brand-voice__stat-label">
+            <DollarSign size={12} />
+            Price Positioning
+          </div>
+          <input
+            className="inline-edit brand-voice__stat-value brand-voice__stat-value--price"
+            value={draft.priceRange}
+            onChange={(e) => setDraft({ ...draft, priceRange: e.target.value })}
+          />
+        </div>
+      </div>
+      <div className="editable-section__actions">
+        <button className="btn btn--outline" onClick={onCancel}>Cancel</button>
+        <button className="btn btn--primary" onClick={() => onSave(draft)}><Check size={14} /> Save</button>
+      </div>
+    </>
+  );
+}
+
+function UspsEditor({ initial, onSave, onCancel }: {
+  initial: string[];
+  onSave: (v: string[]) => void;
+  onCancel: () => void;
+}) {
+  const [draft, setDraft] = useState<string[]>(() => [...initial]);
+  const update = (i: number, value: string) => {
+    const next = [...draft];
+    next[i] = value;
+    setDraft(next);
+  };
+  return (
+    <>
+      <div className="brand-voice__usps">
+        <div className="brand-voice__section-title">
+          <Sparkles size={12} />
+          What Sets Them Apart
+        </div>
+        <div className="brand-voice__usp-list">
+          {draft.map((point, i) => (
+            <div key={i} className="brand-voice__usp">
+              <span className="brand-voice__usp-icon">{i + 1}</span>
+              <input
+                className="inline-edit"
+                value={point}
+                onChange={(e) => update(i, e.target.value)}
+                style={{ flex: 1, fontSize: 14, color: 'var(--color-gray-700)' }}
+              />
+              <button
+                className="editable-section__remove-btn"
+                style={{ position: 'static', opacity: 1, flexShrink: 0 }}
+                onClick={() => setDraft(draft.filter((_, j) => j !== i))}
+              >
+                <X size={12} />
+              </button>
+            </div>
+          ))}
+        </div>
+        <button className="btn btn--ghost btn--sm" style={{ marginTop: 10 }} onClick={() => setDraft([...draft, ''])}>
+          <Plus size={14} /> Add point
+        </button>
+      </div>
+      <div className="editable-section__actions">
+        <button className="btn btn--outline" onClick={onCancel}>Cancel</button>
+        <button className="btn btn--primary" onClick={() => onSave(draft.filter(Boolean))}><Check size={14} /> Save</button>
+      </div>
+    </>
+  );
+}
+
+// ─── Main component ─────────────────────────────────────────
 
 export default function BrandVoiceStep(): React.ReactElement {
   const brandVoice = useWizardStore((s) => s.brandVoice);
@@ -14,325 +428,290 @@ export default function BrandVoiceStep(): React.ReactElement {
   const confirmBrandVoice = useWizardStore((s) => s.confirmBrandVoice);
   const rejectBrandVoice = useWizardStore((s) => s.rejectBrandVoice);
   const setStep = useWizardStore((s) => s.setStep);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editData, setEditData] = useState<BrandVoice | null>(null);
+  const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
 
   if (!brandVoice) return <></>;
 
-  function handleEdit(): void {
-    setEditData(structuredClone(brandVoice!));
-    setIsEditing(true);
-  }
-
-  function handleSaveEdit(): void {
-    if (editData) {
-      setBrandVoice(editData);
-    }
-    setIsEditing(false);
+  function updateBrandVoice(partial: Partial<BrandVoice>): void {
+    setBrandVoice({ ...brandVoice!, ...partial });
   }
 
   function handleConfirm(): void {
+    setEditingSectionId(null);
     confirmBrandVoice();
     setStep(3);
   }
 
   function handleTryAgain(): void {
+    setEditingSectionId(null);
     rejectBrandVoice();
   }
 
-  const data = isEditing ? editData! : brandVoice;
-
-  // --- Edit helpers ---
-  function updateToneAttr(index: number, field: keyof ToneAttribute, value: string): void {
-    const next = [...editData!.toneAttributes];
-    next[index] = { ...next[index], [field]: value };
-    setEditData({ ...editData!, toneAttributes: next });
-  }
-  function addToneAttr(): void {
-    setEditData({ ...editData!, toneAttributes: [...editData!.toneAttributes, { name: '', description: '' }] });
-  }
-  function removeToneAttr(index: number): void {
-    setEditData({ ...editData!, toneAttributes: editData!.toneAttributes.filter((_, i) => i !== index) });
-  }
-
-  function updateVocabCategory(index: number, field: string, value: string): void {
-    const next = [...editData!.vocabulary];
-    if (field === 'category') {
-      next[index] = { ...next[index], category: value };
-    } else {
-      next[index] = { ...next[index], terms: value.split(',').map((t) => t.trim()).filter(Boolean) };
-    }
-    setEditData({ ...editData!, vocabulary: next });
-  }
-  function addVocabCategory(): void {
-    setEditData({ ...editData!, vocabulary: [...editData!.vocabulary, { category: '', terms: [] }] });
-  }
-  function removeVocabCategory(index: number): void {
-    setEditData({ ...editData!, vocabulary: editData!.vocabulary.filter((_, i) => i !== index) });
-  }
-
-  function updateRule(list: 'writingStyle' | 'avoidances', index: number, field: keyof WritingRule, value: string): void {
-    const next = [...editData![list]];
-    next[index] = { ...next[index], [field]: value };
-    setEditData({ ...editData!, [list]: next });
-  }
-  function addRule(list: 'writingStyle' | 'avoidances'): void {
-    setEditData({ ...editData!, [list]: [...editData![list], { rule: '', description: '' }] });
-  }
-  function removeRule(list: 'writingStyle' | 'avoidances', index: number): void {
-    setEditData({ ...editData!, [list]: editData![list].filter((_, i) => i !== index) });
-  }
-
-  // --- Edit mode ---
-  if (isEditing) {
-    return (
-      <div>
-        <div className="brand-voice__header">
-          <h1 className="brand-voice__name">Edit Voice Profile</h1>
-        </div>
-
-        <div className="brand-voice__section">
-          <label className="brand-voice__label">Brand Name</label>
-          <input className="input" value={editData!.brandName} onChange={(e) => setEditData({ ...editData!, brandName: e.target.value })} />
-        </div>
-
-        <div className="brand-voice__section">
-          <label className="brand-voice__label">Summary</label>
-          <textarea className="textarea" value={editData!.summary} onChange={(e) => setEditData({ ...editData!, summary: e.target.value })} rows={3} />
-        </div>
-
-        <div className="brand-voice__section">
-          <label className="brand-voice__label">Target Audience</label>
-          <input className="input" value={editData!.targetAudience} onChange={(e) => setEditData({ ...editData!, targetAudience: e.target.value })} />
-        </div>
-
-        <div className="brand-voice__section">
-          <label className="brand-voice__label">Price Range</label>
-          <input className="input" value={editData!.priceRange} onChange={(e) => setEditData({ ...editData!, priceRange: e.target.value })} />
-        </div>
-
-        <div className="brand-voice__section">
-          <label className="brand-voice__label">Business Type</label>
-          <input className="input" value={editData!.businessType} onChange={(e) => setEditData({ ...editData!, businessType: e.target.value })} />
-        </div>
-
-        {/* Personality */}
-        <div className="brand-voice__section">
-          <label className="brand-voice__label">Personality Archetype</label>
-          <input className="input" value={editData!.personality.archetype} onChange={(e) => setEditData({ ...editData!, personality: { ...editData!.personality, archetype: e.target.value } })} />
-        </div>
-        <div className="brand-voice__section">
-          <label className="brand-voice__label">Personality Description</label>
-          <textarea className="textarea" value={editData!.personality.description} onChange={(e) => setEditData({ ...editData!, personality: { ...editData!.personality, description: e.target.value } })} rows={3} />
-        </div>
-
-        {/* Tone Attributes */}
-        <div className="brand-voice__section">
-          <label className="brand-voice__label">Tone Attributes</label>
-          {editData!.toneAttributes.map((attr, i) => (
-            <div key={i} className="brand-voice__edit-row">
-              <input className="input" placeholder="Name" value={attr.name} onChange={(e) => updateToneAttr(i, 'name', e.target.value)} />
-              <textarea className="textarea" placeholder="Description" value={attr.description} onChange={(e) => updateToneAttr(i, 'description', e.target.value)} rows={2} />
-              <button className="btn btn--ghost btn--sm" onClick={() => removeToneAttr(i)}><X size={14} /></button>
-            </div>
-          ))}
-          <button className="btn btn--ghost btn--sm" onClick={addToneAttr}><Plus size={14} /> Add tone</button>
-        </div>
-
-        {/* Vocabulary */}
-        <div className="brand-voice__section">
-          <label className="brand-voice__label">Vocabulary Categories</label>
-          {editData!.vocabulary.map((cat, i) => (
-            <div key={i} className="brand-voice__edit-row">
-              <input className="input" placeholder="Category name" value={cat.category} onChange={(e) => updateVocabCategory(i, 'category', e.target.value)} />
-              <input className="input" placeholder="Terms (comma-separated)" value={cat.terms.join(', ')} onChange={(e) => updateVocabCategory(i, 'terms', e.target.value)} />
-              <button className="btn btn--ghost btn--sm" onClick={() => removeVocabCategory(i)}><X size={14} /></button>
-            </div>
-          ))}
-          <button className="btn btn--ghost btn--sm" onClick={addVocabCategory}><Plus size={14} /> Add category</button>
-        </div>
-
-        {/* Writing Style */}
-        <div className="brand-voice__section">
-          <label className="brand-voice__label">Writing Style Rules</label>
-          {editData!.writingStyle.map((rule, i) => (
-            <div key={i} className="brand-voice__edit-row">
-              <input className="input" placeholder="Rule" value={rule.rule} onChange={(e) => updateRule('writingStyle', i, 'rule', e.target.value)} />
-              <textarea className="textarea" placeholder="Description" value={rule.description} onChange={(e) => updateRule('writingStyle', i, 'description', e.target.value)} rows={2} />
-              <button className="btn btn--ghost btn--sm" onClick={() => removeRule('writingStyle', i)}><X size={14} /></button>
-            </div>
-          ))}
-          <button className="btn btn--ghost btn--sm" onClick={() => addRule('writingStyle')}><Plus size={14} /> Add rule</button>
-        </div>
-
-        {/* Avoidances */}
-        <div className="brand-voice__section">
-          <label className="brand-voice__label">Avoidances</label>
-          {editData!.avoidances.map((rule, i) => (
-            <div key={i} className="brand-voice__edit-row">
-              <input className="input" placeholder="Rule" value={rule.rule} onChange={(e) => updateRule('avoidances', i, 'rule', e.target.value)} />
-              <textarea className="textarea" placeholder="Description" value={rule.description} onChange={(e) => updateRule('avoidances', i, 'description', e.target.value)} rows={2} />
-              <button className="btn btn--ghost btn--sm" onClick={() => removeRule('avoidances', i)}><X size={14} /></button>
-            </div>
-          ))}
-          <button className="btn btn--ghost btn--sm" onClick={() => addRule('avoidances')}><Plus size={14} /> Add avoidance</button>
-        </div>
-
-        {/* Writing Direction */}
-        <div className="brand-voice__section">
-          <label className="brand-voice__label">Writing Direction</label>
-          <textarea className="textarea" value={editData!.writingDirection} onChange={(e) => setEditData({ ...editData!, writingDirection: e.target.value })} rows={3} />
-        </div>
-
-        {/* USPs */}
-        <div className="brand-voice__section">
-          <label className="brand-voice__label">Unique Selling Points (one per line)</label>
-          <textarea className="textarea" value={editData!.uniqueSellingPoints.join('\n')} onChange={(e) => setEditData({ ...editData!, uniqueSellingPoints: e.target.value.split('\n').filter(Boolean) })} rows={4} />
-        </div>
-
-        <div className="step-actions">
-          <button className="btn btn--ghost" onClick={() => setIsEditing(false)}>Cancel</button>
-          <button className="btn btn--primary" onClick={handleSaveEdit}>
-            <Check size={16} />
-            Save Changes
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // --- Display mode: rich structured profile ---
   return (
     <div>
-      {/* Brand name + actions */}
-      <div className="brand-voice__header">
-        <h1 className="brand-voice__name">{data.brandName}</h1>
-      </div>
+      {/* Brand name */}
+      <EditableSection
+        sectionId="name"
+        editingSectionId={editingSectionId}
+        onEditingChange={setEditingSectionId}
+        renderEdit={({ onSave, onCancel }) => (
+          <NameEditor
+            initial={brandVoice.brandName}
+            onSave={(v) => { updateBrandVoice({ brandName: v }); onSave(); }}
+            onCancel={onCancel}
+          />
+        )}
+      >
+        <div className="brand-voice__header">
+          <h1 className="brand-voice__name">{brandVoice.brandName}</h1>
+        </div>
+      </EditableSection>
 
       {/* Summary */}
-      <p className="brand-voice__summary">{data.summary}</p>
+      <EditableSection
+        sectionId="summary"
+        editingSectionId={editingSectionId}
+        onEditingChange={setEditingSectionId}
+        renderEdit={({ onSave, onCancel }) => (
+          <SummaryEditor
+            initial={brandVoice.summary}
+            onSave={(v) => { updateBrandVoice({ summary: v }); onSave(); }}
+            onCancel={onCancel}
+          />
+        )}
+      >
+        <p className="brand-voice__summary">{brandVoice.summary}</p>
+      </EditableSection>
 
       {/* Personality card */}
-      {data.personality && (
-        <div className="brand-voice__personality">
-          <div className="brand-voice__section-title">
-            <Theater size={12} />
-            Brand Personality
+      {brandVoice.personality && (
+        <EditableSection
+          sectionId="personality"
+          editingSectionId={editingSectionId}
+          onEditingChange={setEditingSectionId}
+          renderEdit={({ onSave, onCancel }) => (
+            <PersonalityEditor
+              initial={brandVoice.personality}
+              onSave={(v) => { updateBrandVoice({ personality: v }); onSave(); }}
+              onCancel={onCancel}
+            />
+          )}
+        >
+          <div className="brand-voice__personality">
+            <div className="brand-voice__section-title">
+              <Theater size={12} />
+              Brand Personality
+            </div>
+            <div className="brand-voice__personality-archetype">{brandVoice.personality.archetype}</div>
+            <p className="brand-voice__personality-desc">{brandVoice.personality.description}</p>
           </div>
-          <div className="brand-voice__personality-archetype">{data.personality.archetype}</div>
-          <p className="brand-voice__personality-desc">{data.personality.description}</p>
-        </div>
+        </EditableSection>
       )}
 
       {/* Tone Attributes */}
-      {data.toneAttributes?.length > 0 && (
-        <div className="brand-voice__tone-section">
-          <div className="brand-voice__section-title">Tone Attributes</div>
-          <div className="brand-voice__tone-attrs">
-            {data.toneAttributes.map((attr, i) => (
-              <div key={i} className="brand-voice__tone-attr">
-                <div className="brand-voice__tone-attr-name">{attr.name}</div>
-                <p className="brand-voice__tone-attr-desc">{attr.description}</p>
-              </div>
-            ))}
+      {brandVoice.toneAttributes?.length > 0 && (
+        <EditableSection
+          sectionId="tone"
+          editingSectionId={editingSectionId}
+          onEditingChange={setEditingSectionId}
+          renderEdit={({ onSave, onCancel }) => (
+            <ToneEditor
+              initial={brandVoice.toneAttributes}
+              onSave={(v) => { updateBrandVoice({ toneAttributes: v }); onSave(); }}
+              onCancel={onCancel}
+            />
+          )}
+        >
+          <div className="brand-voice__tone-section">
+            <div className="brand-voice__section-title">Tone Attributes</div>
+            <div className="brand-voice__tone-attrs">
+              {brandVoice.toneAttributes.map((attr, i) => (
+                <div key={i} className="brand-voice__tone-attr">
+                  <div className="brand-voice__tone-attr-name">{attr.name}</div>
+                  <p className="brand-voice__tone-attr-desc">{attr.description}</p>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        </EditableSection>
       )}
 
       {/* Vocabulary */}
-      {data.vocabulary?.length > 0 && (
-        <div className="brand-voice__vocab">
-          <div className="brand-voice__section-title">Vocabulary</div>
-          {data.vocabulary.map((cat, i) => (
-            <div key={i} className="brand-voice__vocab-group">
-              <div className="brand-voice__vocab-category">{cat.category}</div>
-              <div className="brand-voice__vocab-terms">
-                {cat.terms.map((term, j) => (
-                  <span key={j} className="brand-voice__vocab-term">{term}</span>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Writing Style */}
-      {data.writingStyle?.length > 0 && (
-        <div className="brand-voice__style-rules">
-          <div className="brand-voice__section-title">
-            <BookOpen size={12} />
-            Writing Style
-          </div>
-          {data.writingStyle.map((rule, i) => (
-            <div key={i} className="brand-voice__style-rule">
-              <div className="brand-voice__style-rule-name">{i + 1}. {rule.rule}</div>
-              <p className="brand-voice__style-rule-desc">{rule.description}</p>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Avoidances */}
-      {data.avoidances?.length > 0 && (
-        <div className="brand-voice__avoidances">
-          <div className="brand-voice__section-title">
-            <Ban size={12} />
-            Avoidances
-          </div>
-          {data.avoidances.map((rule, i) => (
-            <div key={i} className="brand-voice__avoidance">
-              <div className="brand-voice__avoidance-name">{rule.rule}</div>
-              <p className="brand-voice__avoidance-desc">{rule.description}</p>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Writing Direction */}
-      {data.writingDirection && (
-        <div className="brand-voice__blog-tone">
-          <div className="brand-voice__blog-tone-label">
-            <MessageSquareQuote size={12} />
-            Writing Direction
-          </div>
-          <p className="brand-voice__blog-tone-text">{data.writingDirection}</p>
-        </div>
-      )}
-
-      {/* Audience + Price + Business Type */}
-      <div className="brand-voice__stats">
-        <div className="brand-voice__stat">
-          <div className="brand-voice__stat-label">
-            <Users size={12} />
-            Target Audience
-          </div>
-          <p className="brand-voice__stat-value">{data.targetAudience}</p>
-        </div>
-        <div className="brand-voice__stat">
-          <div className="brand-voice__stat-label">
-            <DollarSign size={12} />
-            Price Positioning
-          </div>
-          <p className="brand-voice__stat-value brand-voice__stat-value--price">{data.priceRange}</p>
-        </div>
-      </div>
-
-      {/* Unique Selling Points */}
-      {data.uniqueSellingPoints?.length > 0 && (
-        <div className="brand-voice__usps">
-          <div className="brand-voice__section-title">
-            <Sparkles size={12} />
-            What Sets Them Apart
-          </div>
-          <div className="brand-voice__usp-list">
-            {data.uniqueSellingPoints.map((point, i) => (
-              <div key={i} className="brand-voice__usp">
-                <span className="brand-voice__usp-icon">{i + 1}</span>
-                <span>{point}</span>
+      {brandVoice.vocabulary?.length > 0 && (
+        <EditableSection
+          sectionId="vocabulary"
+          editingSectionId={editingSectionId}
+          onEditingChange={setEditingSectionId}
+          renderEdit={({ onSave, onCancel }) => (
+            <VocabEditor
+              initial={brandVoice.vocabulary}
+              onSave={(v) => { updateBrandVoice({ vocabulary: v }); onSave(); }}
+              onCancel={onCancel}
+            />
+          )}
+        >
+          <div className="brand-voice__vocab">
+            <div className="brand-voice__section-title">Vocabulary</div>
+            {brandVoice.vocabulary.map((cat, i) => (
+              <div key={i} className="brand-voice__vocab-group">
+                <div className="brand-voice__vocab-category">{cat.category}</div>
+                <div className="brand-voice__vocab-terms">
+                  {cat.terms.map((term, j) => (
+                    <span key={j} className="brand-voice__vocab-term">{term}</span>
+                  ))}
+                </div>
               </div>
             ))}
           </div>
+        </EditableSection>
+      )}
+
+      {/* Writing Style */}
+      {brandVoice.writingStyle?.length > 0 && (
+        <EditableSection
+          sectionId="writingStyle"
+          editingSectionId={editingSectionId}
+          onEditingChange={setEditingSectionId}
+          renderEdit={({ onSave, onCancel }) => (
+            <StyleRulesEditor
+              initial={brandVoice.writingStyle}
+              onSave={(v) => { updateBrandVoice({ writingStyle: v }); onSave(); }}
+              onCancel={onCancel}
+            />
+          )}
+        >
+          <div className="brand-voice__style-rules">
+            <div className="brand-voice__section-title">
+              <BookOpen size={12} />
+              Writing Style
+            </div>
+            {brandVoice.writingStyle.map((rule, i) => (
+              <div key={i} className="brand-voice__style-rule">
+                <div className="brand-voice__style-rule-name">{i + 1}. {rule.rule}</div>
+                <p className="brand-voice__style-rule-desc">{rule.description}</p>
+              </div>
+            ))}
+          </div>
+        </EditableSection>
+      )}
+
+      {/* Avoidances */}
+      {brandVoice.avoidances?.length > 0 && (
+        <EditableSection
+          sectionId="avoidances"
+          editingSectionId={editingSectionId}
+          onEditingChange={setEditingSectionId}
+          renderEdit={({ onSave, onCancel }) => (
+            <AvoidancesEditor
+              initial={brandVoice.avoidances}
+              onSave={(v) => { updateBrandVoice({ avoidances: v }); onSave(); }}
+              onCancel={onCancel}
+            />
+          )}
+        >
+          <div className="brand-voice__avoidances">
+            <div className="brand-voice__section-title">
+              <Ban size={12} />
+              Avoidances
+            </div>
+            {brandVoice.avoidances.map((rule, i) => (
+              <div key={i} className="brand-voice__avoidance">
+                <div className="brand-voice__avoidance-name">{rule.rule}</div>
+                <p className="brand-voice__avoidance-desc">{rule.description}</p>
+              </div>
+            ))}
+          </div>
+        </EditableSection>
+      )}
+
+      {/* Writing Direction */}
+      {brandVoice.writingDirection && (
+        <EditableSection
+          sectionId="writingDirection"
+          editingSectionId={editingSectionId}
+          onEditingChange={setEditingSectionId}
+          renderEdit={({ onSave, onCancel }) => (
+            <WritingDirectionEditor
+              initial={brandVoice.writingDirection}
+              onSave={(v) => { updateBrandVoice({ writingDirection: v }); onSave(); }}
+              onCancel={onCancel}
+            />
+          )}
+        >
+          <div className="brand-voice__blog-tone">
+            <div className="brand-voice__blog-tone-label">
+              <MessageSquareQuote size={12} />
+              Writing Direction
+            </div>
+            <p className="brand-voice__blog-tone-text">{brandVoice.writingDirection}</p>
+          </div>
+        </EditableSection>
+      )}
+
+      {/* Audience + Price + Business Type */}
+      <EditableSection
+        sectionId="stats"
+        editingSectionId={editingSectionId}
+        onEditingChange={setEditingSectionId}
+        renderEdit={({ onSave, onCancel }) => (
+          <StatsEditor
+            initial={{
+              targetAudience: brandVoice.targetAudience,
+              priceRange: brandVoice.priceRange,
+              businessType: brandVoice.businessType,
+            }}
+            onSave={(v) => { updateBrandVoice(v); onSave(); }}
+            onCancel={onCancel}
+          />
+        )}
+      >
+        <div className="brand-voice__stats">
+          <div className="brand-voice__stat">
+            <div className="brand-voice__stat-label">
+              <Users size={12} />
+              Target Audience
+            </div>
+            <p className="brand-voice__stat-value">{brandVoice.targetAudience}</p>
+          </div>
+          <div className="brand-voice__stat">
+            <div className="brand-voice__stat-label">
+              <DollarSign size={12} />
+              Price Positioning
+            </div>
+            <p className="brand-voice__stat-value brand-voice__stat-value--price">{brandVoice.priceRange}</p>
+          </div>
         </div>
+      </EditableSection>
+
+      {/* Unique Selling Points */}
+      {brandVoice.uniqueSellingPoints?.length > 0 && (
+        <EditableSection
+          sectionId="usps"
+          editingSectionId={editingSectionId}
+          onEditingChange={setEditingSectionId}
+          renderEdit={({ onSave, onCancel }) => (
+            <UspsEditor
+              initial={brandVoice.uniqueSellingPoints}
+              onSave={(v) => { updateBrandVoice({ uniqueSellingPoints: v }); onSave(); }}
+              onCancel={onCancel}
+            />
+          )}
+        >
+          <div className="brand-voice__usps">
+            <div className="brand-voice__section-title">
+              <Sparkles size={12} />
+              What Sets Them Apart
+            </div>
+            <div className="brand-voice__usp-list">
+              {brandVoice.uniqueSellingPoints.map((point, i) => (
+                <div key={i} className="brand-voice__usp">
+                  <span className="brand-voice__usp-icon">{i + 1}</span>
+                  <span>{point}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </EditableSection>
       )}
 
       {/* Actions */}
@@ -345,10 +724,6 @@ export default function BrandVoiceStep(): React.ReactElement {
           <button className="btn btn--outline" onClick={handleTryAgain}>
             <RefreshCw size={14} />
             Try Again
-          </button>
-          <button className="btn btn--outline" onClick={handleEdit}>
-            <Pencil size={14} />
-            Edit
           </button>
           <button className="btn btn--primary" onClick={handleConfirm}>
             <Check size={16} />

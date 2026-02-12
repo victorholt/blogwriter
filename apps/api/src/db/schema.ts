@@ -84,6 +84,18 @@ export const themes = pgTable('themes', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
+export const agentAdditionalInstructions = pgTable('agent_additional_instructions', {
+  id: serial('id').primaryKey(),
+  agentId: text('agent_id').notNull(),
+  title: text('title').notNull(),
+  content: text('content').notNull(),
+  sortOrder: integer('sort_order').default(0).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => [
+  index('idx_additional_instructions_agent_id').on(table.agentId),
+]);
+
 export const brandLabels = pgTable('brand_labels', {
   id: serial('id').primaryKey(),
   slug: text('slug').notNull().unique(),

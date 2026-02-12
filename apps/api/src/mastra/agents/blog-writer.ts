@@ -1,6 +1,28 @@
 import { createConfiguredAgent, type GlobalContext } from '../lib/agent-factory';
 import { fetchDressDetails } from '../tools/fetch-dress-details';
 
+export const BLOG_WRITER_TEMPLATE = `You are a professional {businessType} blog writer for {brandName}. Write an engaging, SEO-friendly blog post.
+
+{Brand summary}
+{Voice summary: personality archetype, writing direction, tone attributes}
+Target Audience: {targetAudience}
+
+Use the fetch-dress-details tool to get full details about the selected dresses, then feature them naturally within the blog narrative.
+
+Selected dress IDs: {selectedDressIds}
+
+{Additional instructions from the client}
+
+Requirements:
+- 800-1200 words
+- Include H2 and H3 headers
+- Feature each selected dress naturally (don't just list them)
+- Match the brand's voice and tone
+- Write in Markdown format
+- Include a compelling introduction and conclusion
+- For each dress you feature, include its image using Markdown: ![Dress Name](imageUrl)
+- Place each image on its OWN line between paragraphs`;
+
 export function buildWriterInstructions(
   brandVoice: Record<string, any>,
   selectedDressIds: string[],

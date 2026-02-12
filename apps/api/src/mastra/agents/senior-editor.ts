@@ -20,6 +20,8 @@ If you find critical issues, fix them. If the content is strong, make minimal ch
 Return the final blog in clean Markdown with the SEO metadata block.
 Do NOT wrap the output in a code block or add any meta-commentary.`;
 
+export { INSTRUCTIONS as DEFAULT_INSTRUCTIONS };
+
 export async function createSeniorEditorAgent(globalContext?: GlobalContext) {
   return createConfiguredAgent('senior-editor', INSTRUCTIONS, {}, globalContext);
 }

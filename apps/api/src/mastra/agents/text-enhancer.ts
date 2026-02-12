@@ -8,6 +8,8 @@ RULES:
 - Preserve the original language and voice, just make it better.
 - If the input is already excellent, make only minor polish.`;
 
+export { INSTRUCTIONS as DEFAULT_INSTRUCTIONS };
+
 export async function enhanceText(text: string, context?: string): Promise<string> {
   const instructions = context
     ? `${INSTRUCTIONS}\n\nThe text you are improving is used as: ${context}.`
