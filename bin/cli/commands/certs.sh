@@ -211,36 +211,34 @@ EXTEOF
 }
 
 # ============================================================================
-# Auto-renewal cron job
+# Auto-renewal service
 # ============================================================================
 
-install_renewal_cron() {
-    local cron_cmd="0 3 * * * cd ${PROJECT_ROOT} && ./cli certs-renew >> /var/log/blogwriter-certs.log 2>&1"
-
-    # Check if cron job already exists
-    if crontab -l 2>/dev/null | grep -qF "cli certs-renew"; then
-        info "Auto-renewal cron job already installed"
+start_auto_renewal() {
+    # Check if certbot-renew container is already running
+    if dc ps --format '{{.State}}' certbot-renew 2>/dev/null | grep -qi "running"; then
+        info "Auto-renewal service is already running"
         return
     fi
 
     echo ""
-    read -r -p "Install auto-renewal cron job (runs daily at 3 AM)? [Y/n]: " install_cron
-    if [[ "${install_cron}" =~ ^[Nn]$ ]]; then
-        info "Skipping cron job. To renew manually: ./cli certs-renew"
+    read -r -p "Start auto-renewal service (checks every 12 hours)? [Y/n]: " start_renewal
+    if [[ "${start_renewal}" =~ ^[Nn]$ ]]; then
+        info "Skipping auto-renewal. To renew manually: ./cli certs-renew"
         warning "Certificates expire in 90 days."
         return
     fi
 
-    # Append to existing crontab
-    (crontab -l 2>/dev/null; echo "${cron_cmd}") | crontab -
+    info "Starting certbot auto-renewal service..."
+    COMPOSE_PROFILES="${COMPOSE_PROFILES:+${COMPOSE_PROFILES},}auto-renew,certbot" dc up -d certbot-renew
 
     if [ $? -eq 0 ]; then
-        success "Auto-renewal cron job installed"
-        info "Schedule: daily at 3:00 AM"
-        info "Log: /var/log/blogwriter-certs.log"
+        success "Auto-renewal service started"
+        info "Checks for renewal every 12 hours"
+        info "Proxy auto-reloads within 1 hour of cert change"
     else
-        warning "Failed to install cron job. Add it manually:"
-        echo "  ${cron_cmd}"
+        warning "Failed to start auto-renewal service."
+        info "To start manually: COMPOSE_PROFILES=auto-renew ./cli up certbot-renew"
     fi
 }
 
@@ -312,8 +310,8 @@ generate_letsencrypt() {
     info "Renew with: ./cli certs-renew"
     echo ""
 
-    # Install auto-renewal cron job
-    install_renewal_cron
+    # Start auto-renewal service
+    start_auto_renewal
 }
 
 # ============================================================================

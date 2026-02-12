@@ -45,6 +45,34 @@ services:
     networks:
       - app-network
 
+  certbot-renew:
+    image: certbot/certbot:latest
+    container_name: ${CONTAINER_PREFIX:-blogwriter}-certbot-renew
+    entrypoint: sh
+    command:
+      - -c
+      - |
+        echo "Certbot auto-renewal service started (checks every 12h)"
+        trap exit TERM INT
+        while true; do
+          sleep 43200 &
+          wait $$!
+          echo "[`date`] Running certbot renew..."
+          certbot renew --webroot -w /var/www/certbot \
+            --deploy-hook "cp -L /etc/letsencrypt/live/$$DOMAIN/fullchain.pem /etc/ssl-output/$$DOMAIN.crt && cp -L /etc/letsencrypt/live/$$DOMAIN/privkey.pem /etc/ssl-output/$$DOMAIN.key && cp -L /etc/letsencrypt/live/$$DOMAIN/chain.pem /etc/ssl-output/ca.crt && echo Certificates renewed and copied"
+        done
+    environment:
+      DOMAIN: ${DOMAIN:?DOMAIN must be set}
+    volumes:
+      - letsencrypt-data:/etc/letsencrypt
+      - ssl-certs:/etc/ssl-output
+      - acme-challenge:/var/www/certbot
+    profiles:
+      - auto-renew
+    networks:
+      - app-network
+    restart: unless-stopped
+
 volumes:
   ssl-certs:
     driver: local

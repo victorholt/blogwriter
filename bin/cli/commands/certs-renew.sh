@@ -38,7 +38,11 @@ COMPOSE_PROFILES="${COMPOSE_PROFILES:+${COMPOSE_PROFILES},}certbot" dc run --rm 
          echo 'No renewed certificates found (may not have been due for renewal)'; \
      fi"
 
-# Reload Apache
-info "Reloading Apache..."
-dc exec proxy httpd -k graceful
+# Restart proxy to pick up new certs
+info "Restarting proxy..."
+dc restart proxy
 success "Certificate renewal complete."
+
+echo ""
+info "Tip: For automatic renewal, start the auto-renewal service:"
+echo "  COMPOSE_PROFILES=auto-renew ./cli up certbot-renew"

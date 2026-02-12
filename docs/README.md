@@ -281,11 +281,17 @@ To use an external Postgres/Valkey instead of Docker containers:
 
 ### SSL Certificate Renewal
 
-`./cli certs` automatically installs a cron job for renewal (daily at 3 AM) when using Let's Encrypt. To manually renew or check status:
+After initial cert generation, `./cli certs` offers to start the auto-renewal service — a container that checks for renewal every 12 hours. The proxy auto-reloads within 1 hour of a cert change.
 
 ```bash
-./cli certs-renew              # manually trigger renewal
-crontab -l                     # verify cron job is installed
+# Manual one-shot renewal
+./cli certs-renew
+
+# Start auto-renewal service manually (if skipped during ./cli certs)
+COMPOSE_PROFILES=auto-renew ./cli up certbot-renew
+
+# Or add auto-renew to COMPOSE_PROFILES in .env for permanent auto-start
+# COMPOSE_PROFILES=db,auto-renew
 ```
 
 ---
@@ -310,4 +316,4 @@ crontab -l                     # verify cron job is installed
 | `API_EXTERNAL_PORT` | `4444` | API direct port (local only) |
 | `NEXTJS_EXTERNAL_PORT` | `4443` | Next.js direct port (local only) |
 | `CERT_EMAIL` | `admin@example.com` | Let's Encrypt registration email |
-| `COMPOSE_PROFILES` | `db` | `db` = run Postgres/Valkey containers |
+| `COMPOSE_PROFILES` | `db` | `db` = Postgres/Valkey, `auto-renew` = cert renewal service |
