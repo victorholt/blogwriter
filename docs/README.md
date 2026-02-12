@@ -126,11 +126,19 @@ User → Apache Proxy (:8081) → Next.js (:3000) ← fetch → Express API (:40
 
 ```bash
 ./cli up              # Start all containers
-./cli logs            # View logs
 ./cli down            # Stop containers
 ./cli build           # Rebuild containers
-./cli shell nextjs    # Shell into Next.js container
-./cli shell api       # Shell into API container
+./cli logs            # View logs
+./cli shell api       # Shell into a container
+
+./cli db push         # Push schema changes directly (no migration files)
+./cli db sync         # Generate migrations + apply them
+./cli db migrate      # Run pending migrations
+./cli db generate     # Generate migration files from schema
+
+./cli certs           # Generate SSL certificates
+./cli certs-renew     # Renew Let's Encrypt certificates
+./cli typecheck       # Run TypeScript type checking
 ```
 
 ---
@@ -270,6 +278,17 @@ Run `./cli env` to interactively create/update `.env`. Existing values are used 
 # Force regenerate
 ./cli certs --force
 ```
+
+### Database Commands
+
+```bash
+./cli db push         # Push schema directly (quick, no migration files)
+./cli db sync         # Generate migration files + apply them
+./cli db generate     # Generate migration files only
+./cli db migrate      # Run pending migrations only
+```
+
+In production, `drizzle-kit` isn't in the runtime image. The CLI automatically spins up a one-off `api-migrations` container (built from the `migrations` Dockerfile stage) to run these commands.
 
 ### Using External Database
 
