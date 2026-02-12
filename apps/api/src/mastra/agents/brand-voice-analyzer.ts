@@ -73,30 +73,40 @@ REQUIREMENTS:
 
 export { INSTRUCTIONS as DEFAULT_INSTRUCTIONS };
 
+/** Strip trailing commas before ] or } — common LLM JSON mistake */
+function fixTrailingCommas(json: string): string {
+  return json.replace(/,\s*([}\]])/g, '$1');
+}
+
+function tryParse(json: string): Record<string, unknown> | null {
+  try { return JSON.parse(json); } catch { /* continue */ }
+  // Retry after fixing trailing commas
+  try { return JSON.parse(fixTrailingCommas(json)); } catch { return null; }
+}
+
 function extractJson(text: string): Record<string, unknown> {
   // Try direct parse first
-  try {
-    return JSON.parse(text.trim());
-  } catch { /* continue */ }
+  const direct = tryParse(text.trim());
+  if (direct) return direct;
 
   // Try extracting from markdown code block
   const codeBlockMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
   if (codeBlockMatch) {
-    try {
-      return JSON.parse(codeBlockMatch[1].trim());
-    } catch { /* continue */ }
+    const fromBlock = tryParse(codeBlockMatch[1].trim());
+    if (fromBlock) return fromBlock;
   }
 
   // Try finding a JSON object in the text
   const braceStart = text.indexOf('{');
   const braceEnd = text.lastIndexOf('}');
   if (braceStart !== -1 && braceEnd > braceStart) {
-    try {
-      return JSON.parse(text.slice(braceStart, braceEnd + 1));
-    } catch { /* continue */ }
+    const fromBraces = tryParse(text.slice(braceStart, braceEnd + 1));
+    if (fromBraces) return fromBraces;
   }
 
-  throw new Error(`Failed to parse brand voice analysis from agent response`);
+  // Log what we received for debugging
+  console.error(`[BrandVoice] extractJson failed. Length: ${text.length}, preview: ${text.slice(0, 300)}`);
+  throw new Error(`Failed to parse brand voice JSON (${text.length} chars). Check API logs for preview.`);
 }
 
 export async function analyzeBrandVoice(

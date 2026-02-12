@@ -74,7 +74,8 @@ router.post('/analyze', async (req, res) => {
       cached: false,
     });
   } catch (err) {
-    console.error(`[BrandVoice] Error analyzing ${url}:`, err);
+    const errDetail = err instanceof Error ? `${err.message}\n${err.stack}` : String(err);
+    console.error(`[BrandVoice] Error analyzing ${url}:\n${errDetail}`);
     const message =
       err instanceof Error && err.message === 'AI_SERVICE_UNAVAILABLE'
         ? 'Our analysis service is temporarily unavailable. Please try again later.'
@@ -104,6 +105,11 @@ router.post('/analyze-stream', async (req, res) => {
   const sendEvent = (type: string, data: unknown) => {
     res.write(`data: ${JSON.stringify({ type, data })}\n\n`);
   };
+
+  // Send SSE heartbeat every 15s to prevent proxy timeouts during long operations
+  const heartbeat = setInterval(() => {
+    try { res.write(':heartbeat\n\n'); } catch { /* connection closed */ }
+  }, 15_000);
 
   try {
     // Check cache first (skip if retrying after rejection)
@@ -168,13 +174,16 @@ router.post('/analyze-stream', async (req, res) => {
     sendEvent('result', { data: analysis, cached: false, traceId });
     res.end();
   } catch (err) {
-    console.error(`[BrandVoice] Stream error for ${url}:`, err);
+    const errDetail = err instanceof Error ? `${err.message}\n${err.stack}` : String(err);
+    console.error(`[BrandVoice] Stream error for ${url}:\n${errDetail}`);
     const message =
       err instanceof Error && err.message === 'AI_SERVICE_UNAVAILABLE'
         ? 'Our analysis service is temporarily unavailable. Please try again later.'
         : 'Something went wrong while analyzing the website. Please try again.';
-    sendEvent('error', message);
-    res.end();
+    try { sendEvent('error', message); } catch { /* connection already closed */ }
+    try { res.end(); } catch { /* connection already closed */ }
+  } finally {
+    clearInterval(heartbeat);
   }
 });
 
