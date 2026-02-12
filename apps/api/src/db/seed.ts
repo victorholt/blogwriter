@@ -27,6 +27,7 @@ const DEFAULT_SETTINGS = [
   { key: 'blog_timeline_style', value: 'preview-bar' },
   { key: 'blog_generate_images', value: 'true' },
   { key: 'blog_generate_links', value: 'true' },
+  { key: 'blog_sharing_enabled', value: 'false' },
 ];
 
 export async function seedDatabase(): Promise<void> {
