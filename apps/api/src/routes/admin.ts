@@ -275,9 +275,12 @@ router.put('/:token/settings', async (req, res) => {
     for (const [key, value] of Object.entries(updates)) {
       if (value !== undefined) {
         await db
-          .update(appSettings)
-          .set({ value, updatedAt: new Date() })
-          .where(eq(appSettings.key, key));
+          .insert(appSettings)
+          .values({ key, value })
+          .onConflictDoUpdate({
+            target: appSettings.key,
+            set: { value, updatedAt: new Date() },
+          });
       }
     }
 
