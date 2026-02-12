@@ -35,6 +35,9 @@ RUN npm ci --omit=dev && npm cache clean --force
 # Copy compiled JavaScript from builder
 COPY --from=builder /app/dist ./dist
 
+# Copy migration files for runtime migrations on startup
+COPY --from=builder /app/drizzle ./drizzle
+
 ENV NODE_ENV=production
 EXPOSE 4000
 

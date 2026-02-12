@@ -17,7 +17,7 @@ run_drizzle() {
     if [ "${ENV}" = "local" ]; then
         dc exec api npm run "${npm_script}"
     else
-        COMPOSE_PROFILES="${COMPOSE_PROFILES:+${COMPOSE_PROFILES},}tools" dc run --rm api-migrations npm run "${npm_script}"
+        COMPOSE_PROFILES="${COMPOSE_PROFILES:+${COMPOSE_PROFILES},}tools" dc run --build --rm api-migrations npm run "${npm_script}"
     fi
 }
 
