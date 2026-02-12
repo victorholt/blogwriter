@@ -116,7 +116,7 @@ export async function fetchProducts(
       throw new Error(`Product API responded with ${res.status}: ${res.statusText}`);
     }
 
-    const data = await res.json();
+    const data: any = await res.json();
     const dresses = (data.results || []).map((p: ExternalProduct) => mapExternalProduct(p));
 
     return {
@@ -152,7 +152,7 @@ export async function fetchProductFacets(config: ProductApiConfig): Promise<Prod
       throw new Error(`Product API responded with ${res.status}: ${res.statusText}`);
     }
 
-    const data = await res.json();
+    const data: any = await res.json();
     return (data.filters || []).map((f: any) => ({
       term_id: f.term_id,
       slug: f.slug,
@@ -195,7 +195,7 @@ export async function fetchProductsByIds(
       throw new Error(`Product API responded with ${res.status}: ${res.statusText}`);
     }
 
-    const data = await res.json();
+    const data: any = await res.json();
     return (data.results || []).map((p: ExternalProduct) => mapExternalProduct(p));
   } finally {
     clearTimeout(timeoutId);

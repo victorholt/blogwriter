@@ -52,7 +52,7 @@ async function fetchOpenRouterModels(): Promise<CachedModels['data']> {
 
   console.log('[Admin] Fetching models from OpenRouter...');
   const res = await fetch('https://openrouter.ai/api/v1/models');
-  const json = await res.json();
+  const json: any = await res.json();
   const models = (json.data || [])
     .filter((m: any) => isAllowedModel(m.id))
     .map((m: any) => ({
