@@ -53,11 +53,17 @@ app.listen(PORT, async () => {
   console.log(`API server running on http://localhost:${PORT}`)
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`)
 
-  // Run migrations then seed default data
+  // Run migrations (no-op if drizzle/ folder doesn't exist)
   try {
     await runMigrations()
+  } catch (err) {
+    console.error('[Startup] Migration error (may be expected if using db:push):', err)
+  }
+
+  // Seed default data — must run even if migrations fail
+  try {
     await seedDatabase()
   } catch (err) {
-    console.error('[Startup] Failed to initialize database:', err)
+    console.error('[Startup] Failed to seed database:', err)
   }
 })
