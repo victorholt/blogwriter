@@ -211,6 +211,40 @@ EXTEOF
 }
 
 # ============================================================================
+# Auto-renewal cron job
+# ============================================================================
+
+install_renewal_cron() {
+    local cron_cmd="0 3 * * * cd ${PROJECT_ROOT} && ./cli certs-renew >> /var/log/blogwriter-certs.log 2>&1"
+
+    # Check if cron job already exists
+    if crontab -l 2>/dev/null | grep -qF "cli certs-renew"; then
+        info "Auto-renewal cron job already installed"
+        return
+    fi
+
+    echo ""
+    read -r -p "Install auto-renewal cron job (runs daily at 3 AM)? [Y/n]: " install_cron
+    if [[ "${install_cron}" =~ ^[Nn]$ ]]; then
+        info "Skipping cron job. To renew manually: ./cli certs-renew"
+        warning "Certificates expire in 90 days."
+        return
+    fi
+
+    # Append to existing crontab
+    (crontab -l 2>/dev/null; echo "${cron_cmd}") | crontab -
+
+    if [ $? -eq 0 ]; then
+        success "Auto-renewal cron job installed"
+        info "Schedule: daily at 3:00 AM"
+        info "Log: /var/log/blogwriter-certs.log"
+    else
+        warning "Failed to install cron job. Add it manually:"
+        echo "  ${cron_cmd}"
+    fi
+}
+
+# ============================================================================
 # Staging/Prod: Let's Encrypt via Certbot
 # ============================================================================
 
@@ -245,8 +279,8 @@ generate_letsencrypt() {
     # Create letsencrypt directory
     mkdir -p "${SSL_DIR}/letsencrypt"
 
-    # Run certbot via docker compose
-    dc run --rm --profile certbot certbot ${certbot_args}
+    # Run certbot via docker compose (COMPOSE_PROFILES activates the certbot service)
+    COMPOSE_PROFILES="${COMPOSE_PROFILES:+${COMPOSE_PROFILES},}certbot" dc run --rm certbot ${certbot_args}
 
     if [ $? -ne 0 ]; then
         error "Let's Encrypt certificate request failed."
@@ -269,17 +303,18 @@ generate_letsencrypt() {
         exit 1
     fi
 
-    # Reload Apache to pick up new certs
-    info "Reloading Apache..."
-    dc exec proxy httpd -k graceful
-    success "Apache reloaded with new certificates."
+    # Restart proxy to pick up new certs (full restart re-evaluates IfFile directives)
+    info "Restarting proxy..."
+    dc restart proxy
+    success "Proxy restarted with new certificates."
 
     echo ""
     info "Certificate: ${SSL_DIR}/${DOMAIN}.crt"
     info "Private Key: ${SSL_DIR}/${DOMAIN}.key"
     echo ""
-    info "To renew certificates later: ./cli certs-renew"
-    warning "Certificates expire in 90 days. Set up a cron job for automatic renewal."
+
+    # Install auto-renewal cron job
+    install_renewal_cron
 }
 
 # ============================================================================

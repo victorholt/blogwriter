@@ -213,10 +213,11 @@ The wizard walks you through: environment config, image builds, container startu
 # 3. Initialize database
 ./cli db push                    # create tables (first deploy only)
 
-# 4. SSL certificates
-./cli certs                      # Let's Encrypt via certbot (proxy must be running)
-./cli restart proxy              # reload with SSL
+# 4. SSL certificates (Let's Encrypt)
+./cli certs --email=you@example.com   # request cert (proxy must be running)
 ```
+
+After obtaining certificates, HTTP automatically redirects to HTTPS.
 
 ### The `--env` Flag
 
@@ -247,6 +248,29 @@ Run `./cli env` to interactively create/update `.env`. Existing values are used 
 | `staging` | `docker-compose.yml` + `docker-compose.staging.yml` |
 | `prod` | `docker-compose.yml` + `docker-compose.prod.yml` |
 
+### SSL Certificates
+
+`./cli certs` behaves differently based on `APP_ENV`:
+
+| Environment | Method | Details |
+|-------------|--------|---------|
+| `local` | Self-signed (openssl) | Creates a local CA + domain cert. Optional macOS Keychain trust. |
+| `staging` / `prod` | Let's Encrypt (certbot) | HTTP-01 challenge. Requires proxy running + port 80 open. |
+
+```bash
+# Local development — self-signed
+./cli certs
+
+# Staging/Production — Let's Encrypt
+./cli certs --email=you@example.com
+
+# Test with Let's Encrypt staging server first
+./cli certs --email=you@example.com --staging-le
+
+# Force regenerate
+./cli certs --force
+```
+
 ### Using External Database
 
 To use an external Postgres/Valkey instead of Docker containers:
@@ -257,11 +281,11 @@ To use an external Postgres/Valkey instead of Docker containers:
 
 ### SSL Certificate Renewal
 
-Let's Encrypt certificates expire every 90 days. Set up automatic renewal:
+`./cli certs` automatically installs a cron job for renewal (daily at 3 AM) when using Let's Encrypt. To manually renew or check status:
 
 ```bash
-# Add to crontab
-0 3 * * * cd /path/to/blogwriter && ./cli certs-renew >> /var/log/blogwriter-certs.log 2>&1
+./cli certs-renew              # manually trigger renewal
+crontab -l                     # verify cron job is installed
 ```
 
 ---

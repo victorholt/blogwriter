@@ -19,8 +19,8 @@ check_docker
 
 info "Renewing Let's Encrypt certificates..."
 
-# Run certbot renew
-dc run --rm --profile certbot certbot renew
+# Run certbot renew (COMPOSE_PROFILES activates the certbot service)
+COMPOSE_PROFILES="${COMPOSE_PROFILES:+${COMPOSE_PROFILES},}certbot" dc run --rm certbot renew
 
 if [ $? -ne 0 ]; then
     error "Certificate renewal failed."
