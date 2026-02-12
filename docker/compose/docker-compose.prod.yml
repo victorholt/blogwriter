@@ -1,0 +1,49 @@
+version: "3.9"
+services:
+  proxy:
+    environment:
+      - DOMAIN=${DOMAIN:?DOMAIN must be set in .env}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - acme-challenge:/usr/local/apache2/htdocs/.well-known/acme-challenge
+
+  api:
+    build:
+      target: production
+    environment:
+      NODE_ENV: production
+      CORS_ORIGIN: ${CORS_ORIGIN:-https://${DOMAIN}}
+
+  nextjs:
+    build:
+      target: production
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://${DOMAIN}}
+    environment:
+      NODE_ENV: production
+      HOSTNAME: "0.0.0.0"
+
+  postgres:
+    profiles:
+      - db
+
+  valkey:
+    profiles:
+      - db
+
+  certbot:
+    image: certbot/certbot:latest
+    container_name: ${CONTAINER_PREFIX:-blogwriter}-certbot
+    volumes:
+      - ../../docker/ssl/letsencrypt:/etc/letsencrypt
+      - acme-challenge:/var/www/certbot
+    profiles:
+      - certbot
+    networks:
+      - app-network
+
+volumes:
+  acme-challenge:
+    driver: local

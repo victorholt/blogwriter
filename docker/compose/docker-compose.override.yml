@@ -1,6 +1,14 @@
 version: "3.9"
 services:
+  proxy:
+    volumes:
+      - ../../docker/proxy/httpd.conf:/usr/local/apache2/conf/httpd.conf:ro
+      - ../../docker/proxy/httpd-vhosts.conf:/usr/local/apache2/conf/vhosts/httpd-vhosts.conf:ro
   api:
+    build:
+      target: development
+    environment:
+      NODE_ENV: development
     volumes:
       - ../../apps/api:/app
       - /app/node_modules
@@ -8,6 +16,10 @@ services:
       - ${API_EXTERNAL_PORT:-4444}:4000
     command: npm run dev
   nextjs:
+    build:
+      target: development
+    environment:
+      NODE_ENV: development
     volumes:
       - ../../apps/nextjs:/app
       - /app/node_modules

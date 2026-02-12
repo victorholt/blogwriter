@@ -184,18 +184,106 @@ Each phase is fully documented in the design docs linked above. Here's a summary
 
 ---
 
+## Deployment
+
+### Prerequisites
+
+- Docker + Docker Compose v2
+- A domain with DNS pointing to your server
+- Ports 80 and 443 open
+
+### Quick Deploy (Guided Wizard)
+
+```bash
+git clone <repo-url> blogwriter && cd blogwriter
+./cli deploy
+```
+
+The wizard walks you through: environment config, image builds, container startup, database setup, and SSL certificates.
+
+### Manual Deployment
+
+```bash
+# 1. Configure environment
+./cli env                        # interactive .env setup (set APP_ENV=prod)
+
+# 2. Build & start
+./cli --env=prod up              # builds production images + starts containers
+
+# 3. Initialize database
+./cli db push                    # create tables (first deploy only)
+
+# 4. SSL certificates
+./cli certs                      # Let's Encrypt via certbot (proxy must be running)
+./cli restart proxy              # reload with SSL
+```
+
+### The `--env` Flag
+
+Override `APP_ENV` from any position:
+
+```bash
+./cli --env=prod up
+./cli up --env=staging
+./cli build --env=prod api
+```
+
+Default is `local` (from `.env` or fallback). The flag overrides the `.env` value for that invocation.
+
+### Environment Files
+
+| File | Purpose |
+|------|---------|
+| `.env` | Active configuration (gitignored) |
+| `.env.example` | Documented template with all variables |
+
+Run `./cli env` to interactively create/update `.env`. Existing values are used as defaults.
+
+### Docker Compose Layering
+
+| Environment | Compose files loaded |
+|-------------|---------------------|
+| `local` | `docker-compose.yml` + `docker-compose.override.yml` |
+| `staging` | `docker-compose.yml` + `docker-compose.staging.yml` |
+| `prod` | `docker-compose.yml` + `docker-compose.prod.yml` |
+
+### Using External Database
+
+To use an external Postgres/Valkey instead of Docker containers:
+
+1. Remove `db` from `COMPOSE_PROFILES` in `.env`
+2. Set `DATABASE_URL` to your external connection string
+3. Configure `VALKEY_HOST` and `VALKEY_PORT` if using external Valkey
+
+### SSL Certificate Renewal
+
+Let's Encrypt certificates expire every 90 days. Set up automatic renewal:
+
+```bash
+# Add to crontab
+0 3 * * * cd /path/to/blogwriter && ./cli certs-renew >> /var/log/blogwriter-certs.log 2>&1
+```
+
+---
+
 ## Environment Variables
 
-```env
-# API
-DATABASE_URL=postgresql://blogwriter_user:blogwriter_pass@postgres:5432/blogwriter_db
-VALKEY_HOST=valkey
-VALKEY_PORT=6379
-OPENROUTER_API_KEY=sk-or-...
-ADMIN_TOKEN=<random-uuid>
-DRESS_API_URL=<external-api-url>
-DRESS_API_KEY=<if-needed>
-
-# Next.js
-NEXT_PUBLIC_API_URL=http://blogwriter.test:4444
-```
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `APP_ENV` | `local` | Environment: `local`, `staging`, `prod` |
+| `DOMAIN` | `blogwriter.test` | Public domain (proxy + SSL) |
+| `CONTAINER_PREFIX` | `blogwriter` | Docker container name prefix |
+| `POSTGRES_USER` | `blogwriter_user` | Database user |
+| `POSTGRES_PASSWORD` | `blogwriter_pass` | Database password |
+| `POSTGRES_DB` | `blogwriter_db` | Database name |
+| `DATABASE_URL` | *(auto-composed)* | Override for external database |
+| `ADMIN_TOKEN` | `dev-admin-token` | Admin API token (change in prod!) |
+| `OPENROUTER_API_KEY` | — | OpenRouter API key for AI agents |
+| `NEXT_PUBLIC_API_URL` | `http://blogwriter.test:4444` | Browser API URL (build-time) |
+| `CORS_ORIGIN` | — | Restrict CORS in production |
+| `PROXY_PORT` | `8081` | Proxy HTTP port (local only) |
+| `PROXY_SSL_PORT` | `8444` | Proxy HTTPS port (local only) |
+| `API_EXTERNAL_PORT` | `4444` | API direct port (local only) |
+| `NEXTJS_EXTERNAL_PORT` | `4443` | Next.js direct port (local only) |
+| `CERT_EMAIL` | `admin@example.com` | Let's Encrypt registration email |
+| `COMPOSE_PROFILES` | `db` | `db` = run Postgres/Valkey containers |

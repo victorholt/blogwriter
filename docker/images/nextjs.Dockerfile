@@ -26,6 +26,8 @@ CMD ["npm", "run", "dev"]
 
 # Stage 3: Builder
 FROM base AS builder
+ARG NEXT_PUBLIC_API_URL=http://localhost:4000
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 COPY apps/nextjs/package*.json ./
 RUN npm ci
 COPY apps/nextjs/ ./

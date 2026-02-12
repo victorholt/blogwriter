@@ -29,6 +29,7 @@ valkey_data/
 docker/ssl/*.pem
 docker/ssl/*.key
 docker/ssl/*.crt
+docker/ssl/letsencrypt/
 
 # Logs
 *.log

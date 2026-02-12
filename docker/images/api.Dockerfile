@@ -16,13 +16,22 @@ EXPOSE 4000
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["npm", "run", "dev"]
 
-# Production stage
+# Builder stage — compile TypeScript
+FROM base AS builder
+COPY apps/api/package*.json ./
+RUN npm ci
+COPY apps/api/ ./
+RUN npm run build
+
+# Production stage — minimal runtime
 FROM base AS production
 COPY apps/api/package*.json ./
-RUN npm ci --only=production
-COPY apps/api/ ./
+RUN npm ci --omit=dev && npm cache clean --force
+
+# Copy compiled JavaScript from builder
+COPY --from=builder /app/dist ./dist
 
 ENV NODE_ENV=production
 EXPOSE 4000
 
-CMD ["npm", "start"]
+CMD ["node", "dist/index.js"]

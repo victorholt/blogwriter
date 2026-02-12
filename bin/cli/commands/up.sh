@@ -5,6 +5,14 @@
 check_docker
 load_env
 
+ENV="${APP_ENV:-local}"
+
+# In non-local environments, auto-build production images before starting
+if [ "${ENV}" != "local" ]; then
+    info "Environment: ${ENV} — building production images..."
+    dc build
+fi
+
 info "Starting containers..."
 dc up -d "$@"
 

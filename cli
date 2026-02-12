@@ -12,11 +12,25 @@ PROJECT_ROOT="${SCRIPT_DIR}"
 # Source common utilities
 source "${SCRIPT_DIR}/bin/cli/common.sh"
 
+# ── Parse --env flag from any position ───────────────────────────
+REMAINING_ARGS=()
+for arg in "$@"; do
+    case "$arg" in
+        --env=*)
+            export APP_ENV="${arg#*=}"
+            ;;
+        *)
+            REMAINING_ARGS+=("$arg")
+            ;;
+    esac
+done
+set -- "${REMAINING_ARGS[@]}"
+
 show_help() {
     cat << EOF
 blogwriter CLI - Docker Project Management Tool
 
-Usage: ./cli [command] [options]
+Usage: ./cli [--env=<env>] [command] [options]
 
 Commands:
     up          Start all containers
@@ -32,19 +46,26 @@ Commands:
     db          Database commands (migrate, generate, push)
     certs       Generate SSL certificates (self-signed or Let's Encrypt)
     certs-renew Renew Let's Encrypt certificates
+    env         Interactive environment configuration
+    deploy      Guided deployment wizard
     help        Show this help message
+
+Options:
+    --env=<env> Override APP_ENV (local, staging, prod). Default: from .env or "local"
 
 Examples:
     ./cli up
+    ./cli --env=prod up
+    ./cli up --env=staging
     ./cli install           # install deps in api + nextjs
     ./cli install nextjs    # install deps in nextjs only
     ./cli logs api
     ./cli shell nextjs
     ./cli exec api npm install
     ./cli db migrate
-    ./cli db generate
     ./cli certs
-    ./cli certs-renew
+    ./cli env               # interactive .env setup
+    ./cli deploy            # guided deployment wizard
 
 EOF
 }
@@ -92,6 +113,12 @@ case "${COMMAND}" in
         ;;
     certs-renew)
         source "${SCRIPT_DIR}/bin/cli/commands/certs-renew.sh"
+        ;;
+    env)
+        source "${SCRIPT_DIR}/bin/cli/commands/env.sh"
+        ;;
+    deploy)
+        source "${SCRIPT_DIR}/bin/cli/commands/deploy.sh"
         ;;
     help|--help|-h)
         show_help
