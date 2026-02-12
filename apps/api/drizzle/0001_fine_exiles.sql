@@ -1,4 +1,4 @@
-CREATE TABLE "agent_logs" (
+CREATE TABLE IF NOT EXISTS "agent_logs" (
 	"id" text PRIMARY KEY NOT NULL,
 	"trace_id" text NOT NULL,
 	"session_id" text,
@@ -8,5 +8,5 @@ CREATE TABLE "agent_logs" (
 	"created_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE INDEX "idx_agent_logs_trace_id" ON "agent_logs" USING btree ("trace_id");--> statement-breakpoint
-CREATE INDEX "idx_agent_logs_session_id" ON "agent_logs" USING btree ("session_id");
+CREATE INDEX IF NOT EXISTS "idx_agent_logs_trace_id" ON "agent_logs" USING btree ("trace_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_agent_logs_session_id" ON "agent_logs" USING btree ("session_id");

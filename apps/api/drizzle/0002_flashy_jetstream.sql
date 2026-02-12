@@ -1,1 +1,1 @@
-ALTER TABLE "agent_model_configs" ADD COLUMN "enabled" boolean DEFAULT true NOT NULL;
+ALTER TABLE "agent_model_configs" ADD COLUMN IF NOT EXISTS "enabled" boolean DEFAULT true NOT NULL;

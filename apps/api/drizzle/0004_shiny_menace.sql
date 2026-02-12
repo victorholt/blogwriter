@@ -1,4 +1,4 @@
-CREATE TABLE "agent_additional_instructions" (
+CREATE TABLE IF NOT EXISTS "agent_additional_instructions" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"agent_id" text NOT NULL,
 	"title" text NOT NULL,
@@ -8,4 +8,4 @@ CREATE TABLE "agent_additional_instructions" (
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE INDEX "idx_additional_instructions_agent_id" ON "agent_additional_instructions" USING btree ("agent_id");
+CREATE INDEX IF NOT EXISTS "idx_additional_instructions_agent_id" ON "agent_additional_instructions" USING btree ("agent_id");
