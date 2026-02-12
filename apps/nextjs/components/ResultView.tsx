@@ -223,7 +223,7 @@ export default function ResultView(): React.ReactElement {
             </>
           )}
           <div className="result__action-divider" />
-          <button className="result__action-btn" onClick={reset}>
+          <button className="result__action-btn result__action-btn--green" onClick={reset}>
             <RotateCcw size={14} />
             <span>Start Over</span>
           </button>

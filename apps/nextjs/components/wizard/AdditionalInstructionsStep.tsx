@@ -57,11 +57,10 @@ export default function AdditionalInstructionsStep(): React.ReactElement {
 
   return (
     <div>
-      <h1 className="step-heading" style={{ color: 'var(--color-gray-800)' }}>
-        Additional Instructions
-      </h1>
-      <p className="instructions-step__subtitle">
-        Any special guidance for the blog? This is optional.
+      <h1 className="step-heading step-heading--serif">Anything else we should know?</h1>
+      <p className="step-subtitle">
+        Add any special guidance or preferences for the blog post. This is completely
+        optional &mdash; we&rsquo;ll handle the rest.
       </p>
 
       <textarea

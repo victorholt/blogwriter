@@ -17,11 +17,9 @@ export default function DressSelectionStep(): React.ReactElement {
 
   return (
     <div>
-      <h1 className="step-heading" style={{ color: 'var(--color-gray-800)' }}>
-        Wedding Dresses
-      </h1>
-      <p className="dress-step__subtitle">
-        Select the dresses to feature in your blog post
+      <h1 className="step-heading step-heading--serif">What are we talking about?</h1>
+      <p className="step-subtitle">
+        Let&rsquo;s define the focus of this post/content request.
       </p>
 
       <BrandSelector />

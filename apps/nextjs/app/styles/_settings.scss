@@ -6,16 +6,21 @@
   display: flex;
   gap: 0;
   border-bottom: 1px solid var(--color-gray-200);
-  margin-bottom: 32px;
+  margin-bottom: 20px;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+
+  @media (min-width: 640px) {
+    margin-bottom: 32px;
+  }
 }
 
 .settings-tab {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 10px 16px;
-  font-size: 14px;
+  padding: 10px 12px;
+  font-size: 13px;
   font-weight: 500;
   color: var(--color-gray-500);
   cursor: pointer;
@@ -23,6 +28,11 @@
   background: none;
   white-space: nowrap;
   transition: color 0.15s, border-color 0.15s;
+
+  @media (min-width: 640px) {
+    padding: 10px 16px;
+    font-size: 14px;
+  }
 
   &:hover {
     color: var(--color-gray-700);
@@ -43,39 +53,61 @@
 }
 
 .settings-title {
-  font-size: 2rem;
+  font-size: 1.5rem;
   font-weight: 700;
   color: var(--color-gray-800);
   margin-bottom: 4px;
+
+  @media (min-width: 640px) {
+    font-size: 2rem;
+  }
 }
 
 .settings-subtitle {
-  font-size: 15px;
+  font-size: 14px;
   color: var(--color-gray-500);
-  margin-bottom: 32px;
+  margin-bottom: 20px;
+
+  @media (min-width: 640px) {
+    font-size: 15px;
+    margin-bottom: 32px;
+  }
 }
 
 .settings-section {
-  margin-bottom: 40px;
+  margin-bottom: 28px;
+
+  @media (min-width: 640px) {
+    margin-bottom: 40px;
+  }
 
   &__heading {
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 600;
     color: var(--color-gray-700);
-    margin-bottom: 16px;
+    margin-bottom: 12px;
     padding-bottom: 8px;
     border-bottom: 1px solid var(--color-gray-200);
+
+    @media (min-width: 640px) {
+      font-size: 16px;
+      margin-bottom: 16px;
+    }
   }
 }
 
 .settings-card {
   background: var(--color-gray-50);
   border-radius: var(--radius-lg);
-  padding: 20px;
+  padding: 14px;
   margin-bottom: 12px;
+
+  @media (min-width: 640px) {
+    padding: 20px;
+  }
 
   &__title {
     font-size: 15px;
@@ -339,16 +371,22 @@
   &__header {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
     width: 100%;
-    padding: 14px 20px;
-    font-size: 14px;
+    padding: 12px 14px;
+    font-size: 13px;
     background: none;
     border: none;
     cursor: pointer;
     text-align: left;
     color: var(--color-gray-700);
     transition: background 0.15s;
+
+    @media (min-width: 640px) {
+      gap: 12px;
+      padding: 14px 20px;
+      font-size: 14px;
+    }
 
     &:hover {
       background: var(--color-gray-100);
@@ -368,8 +406,12 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: 13px;
+    font-size: 12px;
     color: var(--color-gray-400);
+
+    @media (min-width: 640px) {
+      font-size: 13px;
+    }
   }
 
   &__badge {
@@ -403,8 +445,12 @@
   }
 
   &__body {
-    padding: 0 20px 20px;
+    padding: 0 14px 14px;
     border-top: 1px solid var(--color-gray-200);
+
+    @media (min-width: 640px) {
+      padding: 0 20px 20px;
+    }
   }
 
   &__toggle-row {
@@ -563,9 +609,13 @@
 // ============================================================
 
 .brand-labels {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+
   &__table {
     width: 100%;
     border-collapse: collapse;
+    min-width: 400px;
   }
 
   &__th {

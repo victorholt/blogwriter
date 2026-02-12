@@ -10,14 +10,22 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+
+  @media (min-width: 640px) {
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: nowrap;
+  }
 }
 
 .diff__selectors {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .diff__vs {
@@ -124,8 +132,12 @@
 }
 
 .diff__content {
-  padding: 16px 24px;
+  padding: 12px 16px;
   margin: 0;
+
+  @media (min-width: 640px) {
+    padding: 16px 24px;
+  }
 
   // When combined with result__content, inherit blog preview styling
   // and disable the drop-cap (first paragraph may start with <del>)
@@ -192,12 +204,16 @@ ins.diff-hl {
 
 .diff__side-by-side {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 1px;
   border: 1px solid var(--color-gray-200);
   border-radius: var(--radius-md);
   overflow: hidden;
   background: var(--color-gray-200);
+
+  @media (min-width: 640px) {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 .diff__side {

@@ -449,6 +449,14 @@ export default function BrandVoiceStep(): React.ReactElement {
 
   return (
     <div>
+      <h1 className="step-heading step-heading--serif">Does this sound like you?</h1>
+      <p className="step-subtitle">
+        After looking at your website, we think we&rsquo;ve captured your store&rsquo;s
+        personality. Please review your profile below to ensure it accurately reflects
+        your brand before we begin drafting. If the voice isn&rsquo;t quite right, you
+        can select from our curated personas below, instead.
+      </p>
+
       {/* Brand name */}
       <EditableSection
         sectionId="name"
@@ -463,7 +471,7 @@ export default function BrandVoiceStep(): React.ReactElement {
         )}
       >
         <div className="brand-voice__header">
-          <h1 className="brand-voice__name">{brandVoice.brandName}</h1>
+          <h2 className="brand-voice__name">{brandVoice.brandName}</h2>
         </div>
       </EditableSection>
 

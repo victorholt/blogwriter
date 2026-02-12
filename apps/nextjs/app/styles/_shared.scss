@@ -136,14 +136,39 @@
 // ============================================================
 
 .step-heading {
-  font-size: 2.75rem;
+  font-size: 1.75rem;
   font-weight: 700;
-  color: var(--color-gray-500);
-  margin-bottom: 32px;
+  color: var(--color-gray-600);
+  margin-bottom: 20px;
   line-height: 1.15;
+
+  @media (min-width: 640px) {
+    font-size: 2.75rem;
+    margin-bottom: 32px;
+  }
 
   @media (min-width: 768px) {
     font-size: 3.25rem;
+  }
+
+  &--serif {
+    margin-bottom: 12px;
+
+    @media (min-width: 640px) {
+      margin-bottom: 16px;
+    }
+  }
+}
+
+.step-subtitle {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-gray-500);
+  margin-bottom: 24px;
+
+  @media (min-width: 640px) {
+    font-size: 15px;
+    margin-bottom: 32px;
   }
 }
 
@@ -151,7 +176,11 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 40px;
+  margin-top: 24px;
+
+  @media (min-width: 640px) {
+    margin-top: 40px;
+  }
 }
 
 .step-actions__right {

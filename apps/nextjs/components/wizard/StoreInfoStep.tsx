@@ -101,7 +101,12 @@ export default function StoreInfoStep(): React.ReactElement {
 
   return (
     <div>
-      <h1 className="step-heading">Store Website</h1>
+      <h1 className="step-heading step-heading--serif">Let&rsquo;s get to know you</h1>
+      <p className="step-subtitle">
+        We&rsquo;ll start by getting to know your store. Paste your website URL below so we can
+        analyze your brand&rsquo;s DNA &mdash; from your specific voice and tone to your
+        store&rsquo;s location &mdash; to create a perfectly tailored blog post.
+      </p>
 
       {brandVoiceAttemptCount > 0 && isAnalyzing && (
         <div className="brand-voice__retry-banner">
@@ -134,7 +139,7 @@ export default function StoreInfoStep(): React.ReactElement {
           ) : (
             <Play size={12} fill="currentColor" />
           )}
-          {isAnalyzing ? 'Analyzing...' : analysisComplete ? 'Analyzed' : 'Analyze'}
+          {isAnalyzing ? 'Analyzing...' : analysisComplete ? 'Analyzed' : 'NEXT'}
         </button>
       </div>
 

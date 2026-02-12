@@ -11,32 +11,42 @@
   }
 
   &__name {
-    font-size: 2.75rem;
+    font-size: 1.1rem;
     font-weight: 700;
-    color: var(--color-gray-800);
-    line-height: 1.1;
-    letter-spacing: -0.02em;
+    color: var(--color-gray-700);
+    line-height: 1.2;
+    letter-spacing: -0.01em;
 
-    @media (min-width: 768px) {
-      font-size: 3.25rem;
+    @media (min-width: 640px) {
+      font-size: 1.35rem;
     }
   }
 
   // --- Hero summary (pullquote style) ---
   &__summary {
-    font-size: 17px;
+    font-size: 15px;
     line-height: 1.65;
     color: var(--color-gray-600);
-    margin-bottom: 32px;
+    margin-bottom: 24px;
+
+    @media (min-width: 640px) {
+      font-size: 17px;
+      margin-bottom: 32px;
+    }
   }
 
   // --- Personality card ---
   &__personality {
-    margin-bottom: 28px;
-    padding: 20px 24px;
+    margin-bottom: 24px;
+    padding: 16px;
     border-left: 3px solid var(--color-blue);
     background: linear-gradient(135deg, #f8faff 0%, #fefefe 100%);
     border-radius: 0 var(--radius-md) var(--radius-md) 0;
+
+    @media (min-width: 640px) {
+      margin-bottom: 28px;
+      padding: 20px 24px;
+    }
   }
 
   &__personality-archetype {
@@ -310,11 +320,16 @@
 
   // --- Blog tone / Writing direction (blockquote) ---
   &__blog-tone {
-    margin-bottom: 28px;
-    padding: 20px 24px;
+    margin-bottom: 24px;
+    padding: 16px;
     border-left: 3px solid var(--color-blue);
     background: linear-gradient(135deg, #f8faff 0%, #fefefe 100%);
     border-radius: 0 var(--radius-md) var(--radius-md) 0;
+
+    @media (min-width: 640px) {
+      margin-bottom: 28px;
+      padding: 20px 24px;
+    }
   }
 
   &__blog-tone-label {
@@ -458,11 +473,15 @@
   }
 
   &--editing {
-    padding: 20px;
+    padding: 12px;
     border-radius: var(--radius-lg);
     background: var(--color-gray-50);
     border: 1px dashed var(--color-gray-300);
     margin-bottom: 12px;
+
+    @media (min-width: 640px) {
+      padding: 20px;
+    }
 
     &:hover {
       background: var(--color-gray-50);

@@ -54,18 +54,27 @@
   padding: 24px 0;
 
   &__title {
-    font-size: 1.75rem;
+    font-size: 1.25rem;
     font-weight: 700;
     color: var(--color-gray-800);
     margin-bottom: 4px;
     text-align: center;
+
+    @media (min-width: 640px) {
+      font-size: 1.75rem;
+    }
   }
 
   &__subtitle {
-    font-size: 15px;
+    font-size: 14px;
     color: var(--color-gray-500);
     text-align: center;
-    margin-bottom: 32px;
+    margin-bottom: 24px;
+
+    @media (min-width: 640px) {
+      font-size: 15px;
+      margin-bottom: 32px;
+    }
   }
 
   // Pipeline stepper
@@ -257,15 +266,20 @@
   }
 
   &__preview-content {
-    padding: 20px 24px;
+    padding: 14px 16px;
     font-family: var(--font-body, Georgia, serif);
-    font-size: 15px;
+    font-size: 14px;
     line-height: 1.7;
     color: var(--color-gray-600);
     max-height: 400px;
     overflow-y: auto;
     border-top: 1px solid var(--color-gray-200);
     background: white;
+
+    @media (min-width: 640px) {
+      padding: 20px 24px;
+      font-size: 15px;
+    }
 
     // Top fade mask — text scrolling up fades out, new text at bottom is clear
     -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 48px);
@@ -353,6 +367,11 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    display: none;
+
+    @media (min-width: 640px) {
+      display: inline;
+    }
 
     &::before {
       content: '—';
@@ -373,6 +392,11 @@
     font-weight: 400;
     color: var(--color-gray-400);
     white-space: nowrap;
+    display: none;
+
+    @media (min-width: 640px) {
+      display: inline;
+    }
   }
 
   // ============================================================
@@ -383,11 +407,16 @@
     display: flex;
     align-items: flex-start;
     justify-content: center;
-    margin-bottom: 32px;
-    padding: 0 16px;
+    margin-bottom: 24px;
+    padding: 0 8px;
     max-width: 640px;
     margin-left: auto;
     margin-right: auto;
+
+    @media (min-width: 640px) {
+      margin-bottom: 32px;
+      padding: 0 16px;
+    }
   }
 
   &__stepper-item {
@@ -432,16 +461,21 @@
   }
 
   &__stepper-label {
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 500;
     text-align: center;
     margin-top: 6px;
     color: var(--color-gray-400);
-    max-width: 80px;
+    max-width: 60px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     transition: color 0.3s;
+
+    @media (min-width: 640px) {
+      font-size: 11px;
+      max-width: 80px;
+    }
 
     &--active {
       color: var(--color-blue);

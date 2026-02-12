@@ -1,12 +1,12 @@
 // ============================================================
-// Step Indicator — Mobile (< 768px)
+// Step Indicator — Mobile (< 1024px)
 // ============================================================
 
 .step-indicator-mobile {
   display: block;
   padding-bottom: 24px;
 
-  @media (min-width: 768px) {
+  @media (min-width: 1024px) {
     display: none;
   }
 
@@ -53,13 +53,13 @@
 }
 
 // ============================================================
-// Step Indicator — Desktop (≥ 768px)
+// Step Indicator — Desktop (≥ 1024px)
 // ============================================================
 
 .step-indicator-desktop {
   display: none;
 
-  @media (min-width: 768px) {
+  @media (min-width: 1024px) {
     display: flex;
     align-items: center;
     gap: 24px;

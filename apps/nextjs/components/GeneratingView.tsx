@@ -6,13 +6,30 @@ import { startBlogGeneration } from '@/lib/api';
 import { Check, Loader2, Circle, AlertCircle, ChevronDown, RotateCcw, ArrowLeft } from 'lucide-react';
 import Markdown from 'react-markdown';
 
-const AGENT_DESCRIPTIONS: Record<string, string> = {
-  'blog-writer': 'Drafting the blog post with dress details',
-  'blog-editor': 'Polishing grammar, flow, and tone',
-  'seo-specialist': 'Optimizing for search engines',
-  'senior-editor': 'Final editorial review',
-  'blog-reviewer': 'Quality assessment and scoring',
+// Generic step labels — hide agent identities from users
+const STEP_LABELS: Record<string, string> = {
+  'blog-writer': 'Writing the first draft',
+  'blog-editor': 'Polishing and refining',
+  'seo-specialist': 'Optimizing for search',
+  'senior-editor': 'Final review',
+  'blog-reviewer': 'Quality check',
 };
+
+const STEP_DESCRIPTIONS: Record<string, string> = {
+  'blog-writer': 'Drafting your blog post with dress details and brand voice',
+  'blog-editor': 'Refining grammar, flow, and tone',
+  'seo-specialist': 'Adding keywords and meta descriptions',
+  'senior-editor': 'Final editorial polish',
+  'blog-reviewer': 'Scoring quality and readability',
+};
+
+function getStepLabel(agentId: string, fallbackLabel: string): string {
+  return STEP_LABELS[agentId] || fallbackLabel;
+}
+
+function getNextLabel(agentId: string, fallbackLabel: string): string {
+  return STEP_LABELS[agentId] || fallbackLabel;
+}
 
 export default function GeneratingView(): React.ReactElement {
   const generationAgent = useWizardStore((s) => s.generationAgent);
@@ -110,7 +127,7 @@ export default function GeneratingView(): React.ReactElement {
         >
           <div className="generating__preview-header-left">
             <Loader2 size={14} className="spin" />
-            <span>{generationAgentLabel || 'Agent'} is writing...</span>
+            <span>{generationAgent ? `${getStepLabel(generationAgent, 'Working')}...` : 'Working...'}</span>
           </div>
           <div className="generating__preview-header-right">
             <span>{previewOpen ? 'Hide' : 'Preview'}</span>
@@ -133,13 +150,11 @@ export default function GeneratingView(): React.ReactElement {
     <div className="page-shell">
       <div className="paper">
         <div className="generating">
-          <h1 className="generating__title">Writing Your Blog Post</h1>
-          <p className="generating__subtitle">
+          <h1 className="step-heading step-heading--serif">Let&rsquo;s write!</h1>
+          <p className="step-subtitle">
             {generationError
               ? 'An error occurred during generation'
-              : generationAgent
-                ? `Step ${generationStep} of ${generationTotalSteps}`
-                : 'Starting pipeline...'}
+              : 'Sit tight while we draft an initial version of your post'}
           </p>
 
           {/* MODE: Preview Bar */}
@@ -157,17 +172,12 @@ export default function GeneratingView(): React.ReactElement {
                     <Circle size={14} />
                   )}
                   <span className="generating__bar-current">
-                    {generationAgentLabel || 'Starting...'}
+                    {generationAgent ? `${getStepLabel(generationAgent, generationAgentLabel || '')}...` : 'Starting...'}
                   </span>
-                  {generationAgent && (
-                    <span className="generating__bar-desc">
-                      {AGENT_DESCRIPTIONS[generationAgent] || ''}
-                    </span>
-                  )}
                 </div>
                 <div className="generating__bar-right">
                   {nextAgent ? (
-                    <span className="generating__bar-next">Next: {nextAgent.label}</span>
+                    <span className="generating__bar-next">Up Next: {getNextLabel(nextAgent.id, nextAgent.label)}</span>
                   ) : generationAgent ? (
                     <span className="generating__bar-next">Final step</span>
                   ) : null}
@@ -213,9 +223,9 @@ export default function GeneratingView(): React.ReactElement {
                           )}
                         </div>
                         <div className="generating__step-info">
-                          <span className="generating__step-label">{agent.label}</span>
+                          <span className="generating__step-label">{getStepLabel(agent.id, agent.label)}</span>
                           <span className="generating__step-desc">
-                            {AGENT_DESCRIPTIONS[agent.id] || ''}
+                            {STEP_DESCRIPTIONS[agent.id] || ''}
                           </span>
                         </div>
                       </div>
@@ -250,7 +260,7 @@ export default function GeneratingView(): React.ReactElement {
                         )}
                       </div>
                       <span className={`generating__stepper-label generating__stepper-label--${status}`}>
-                        {agent.label}
+                        {getStepLabel(agent.id, agent.label)}
                       </span>
                       {!isLast && (
                         <div className={`generating__stepper-line generating__stepper-line--${status}`} />
