@@ -44,6 +44,7 @@ Commands:
     status      Show container status
     restart     Restart containers
     db          Database commands (migrate, generate, push)
+    typecheck   Run TypeScript type checking (all or specific service)
     certs       Generate SSL certificates (self-signed or Let's Encrypt)
     certs-renew Renew Let's Encrypt certificates
     env         Interactive environment configuration
@@ -107,6 +108,9 @@ case "${COMMAND}" in
         ;;
     db)
         source "${SCRIPT_DIR}/bin/cli/commands/db.sh"
+        ;;
+    typecheck)
+        source "${SCRIPT_DIR}/bin/cli/commands/typecheck.sh"
         ;;
     certs)
         source "${SCRIPT_DIR}/bin/cli/commands/certs.sh"

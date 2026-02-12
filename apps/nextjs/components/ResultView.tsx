@@ -241,7 +241,8 @@ export default function ResultView(): React.ReactElement {
           ) : generatedBlog ? (
             <Markdown
               components={{
-                img: ({ src, alt }) => {
+                img: ({ src: rawSrc, alt }) => {
+                  const src = typeof rawSrc === 'string' ? rawSrc : undefined;
                   const isBroken = src ? brokenImages.has(src) : true;
                   const dress = src ? imageUrlToDress.get(src) : undefined;
 

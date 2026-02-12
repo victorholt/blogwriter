@@ -1,5 +1,4 @@
 name: blogwriter
-version: "3.9"
 services:
   proxy:
     build:

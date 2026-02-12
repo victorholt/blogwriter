@@ -69,7 +69,7 @@ function formatToolResult(event: DebugEvent & { kind: 'tool-result' }): { icon: 
 
 function formatRawResponse(event: DebugEvent & { kind: 'raw-response' }): { icon: typeof Sparkles; title: string; body: React.ReactNode } {
   // Try to parse the brand voice JSON from the raw response
-  let parsed: Record<string, unknown> | null = null;
+  let parsed: Record<string, any> | null = null;
   try {
     const text = event.text.trim();
     const braceStart = text.indexOf('{');
