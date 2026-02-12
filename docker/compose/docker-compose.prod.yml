@@ -7,7 +7,7 @@ services:
       - "443:443"
     volumes:
       - ssl-certs:/usr/local/apache2/conf/ssl:ro
-      - acme-challenge:/usr/local/apache2/htdocs/.well-known/acme-challenge
+      - acme-challenge:/usr/local/apache2/htdocs
 
   api:
     build:
