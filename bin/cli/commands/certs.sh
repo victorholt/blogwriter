@@ -276,10 +276,8 @@ generate_letsencrypt() {
         certbot_args="${certbot_args} --force-renewal"
     fi
 
-    # Create letsencrypt directory
-    mkdir -p "${SSL_DIR}/letsencrypt"
-
     # Run certbot via docker compose (COMPOSE_PROFILES activates the certbot service)
+    # Docker auto-creates the host directory for the volume mount
     COMPOSE_PROFILES="${COMPOSE_PROFILES:+${COMPOSE_PROFILES},}certbot" dc run --rm certbot ${certbot_args}
 
     if [ $? -ne 0 ]; then
@@ -291,17 +289,18 @@ generate_letsencrypt() {
         exit 1
     fi
 
-    # Copy certs to standard location for Apache
-    local le_live="${SSL_DIR}/letsencrypt/live/${DOMAIN}"
-    if [ -d "${le_live}" ]; then
-        cp -L "${le_live}/fullchain.pem" "${SSL_DIR}/${DOMAIN}.crt"
-        cp -L "${le_live}/privkey.pem" "${SSL_DIR}/${DOMAIN}.key"
-        cp -L "${le_live}/chain.pem" "${SSL_DIR}/ca.crt"
-        success "Let's Encrypt certificates installed for ${DOMAIN}"
-    else
-        error "Let's Encrypt certificates not found at expected path."
+    # Copy certs from letsencrypt volume to ssl-certs volume (inside container)
+    info "Copying certificates to SSL volume..."
+    COMPOSE_PROFILES="${COMPOSE_PROFILES:+${COMPOSE_PROFILES},}certbot" dc run --rm --entrypoint sh certbot -c \
+        "cp -L /etc/letsencrypt/live/${DOMAIN}/fullchain.pem /etc/ssl-output/${DOMAIN}.crt && \
+         cp -L /etc/letsencrypt/live/${DOMAIN}/privkey.pem /etc/ssl-output/${DOMAIN}.key && \
+         cp -L /etc/letsencrypt/live/${DOMAIN}/chain.pem /etc/ssl-output/ca.crt"
+
+    if [ $? -ne 0 ]; then
+        error "Failed to copy certificates to SSL volume."
         exit 1
     fi
+    success "Let's Encrypt certificates installed for ${DOMAIN}"
 
     # Restart proxy to pick up new certs (full restart re-evaluates IfFile directives)
     info "Restarting proxy..."
@@ -309,8 +308,8 @@ generate_letsencrypt() {
     success "Proxy restarted with new certificates."
 
     echo ""
-    info "Certificate: ${SSL_DIR}/${DOMAIN}.crt"
-    info "Private Key: ${SSL_DIR}/${DOMAIN}.key"
+    info "Certificates stored in Docker volume: ssl-certs"
+    info "Renew with: ./cli certs-renew"
     echo ""
 
     # Install auto-renewal cron job

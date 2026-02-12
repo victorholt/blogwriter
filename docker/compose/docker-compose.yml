@@ -10,8 +10,6 @@ services:
       - ${PROXY_SSL_PORT:-8444}:443
     environment:
       DOMAIN: ${DOMAIN:-}
-    volumes:
-      - ../../docker/ssl:/usr/local/apache2/conf/ssl:ro
     networks:
       - app-network
     depends_on:
@@ -40,9 +38,6 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-blogwriter_user}:${POSTGRES_PASSWORD:-blogwriter_pass}@postgres:5432/${POSTGRES_DB:-blogwriter_db}
       ADMIN_TOKEN: ${ADMIN_TOKEN:-dev-admin-token}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
-    depends_on:
-      postgres:
-        condition: service_healthy
     networks:
       - app-network
     restart: unless-stopped

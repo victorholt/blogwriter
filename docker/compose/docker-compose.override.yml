@@ -3,9 +3,13 @@ services:
     volumes:
       - ../../docker/proxy/httpd.conf:/usr/local/apache2/conf/httpd.conf:ro
       - ../../docker/proxy/httpd-vhosts.conf:/usr/local/apache2/conf/vhosts/httpd-vhosts.conf:ro
+      - ../../docker/ssl:/usr/local/apache2/conf/ssl:ro
   api:
     build:
       target: development
+    depends_on:
+      postgres:
+        condition: service_healthy
     environment:
       NODE_ENV: development
     volumes:

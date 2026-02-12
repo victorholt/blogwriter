@@ -6,6 +6,7 @@ services:
       - "80:80"
       - "443:443"
     volumes:
+      - ssl-certs:/usr/local/apache2/conf/ssl:ro
       - acme-challenge:/usr/local/apache2/htdocs/.well-known/acme-challenge
 
   api:
@@ -36,7 +37,8 @@ services:
     image: certbot/certbot:latest
     container_name: ${CONTAINER_PREFIX:-blogwriter}-certbot
     volumes:
-      - ../../docker/ssl/letsencrypt:/etc/letsencrypt
+      - letsencrypt-data:/etc/letsencrypt
+      - ssl-certs:/etc/ssl-output
       - acme-challenge:/var/www/certbot
     profiles:
       - certbot
@@ -44,5 +46,9 @@ services:
       - app-network
 
 volumes:
+  ssl-certs:
+    driver: local
+  letsencrypt-data:
+    driver: local
   acme-challenge:
     driver: local

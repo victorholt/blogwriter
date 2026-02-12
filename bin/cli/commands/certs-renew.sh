@@ -7,7 +7,6 @@ load_env
 
 ENV="${APP_ENV:-local}"
 DOMAIN="${DOMAIN:-blogwriter.test}"
-SSL_DIR="${PROJECT_ROOT}/docker/ssl"
 
 if [ "${ENV}" = "local" ]; then
     info "Local environment uses self-signed certificates."
@@ -27,22 +26,19 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Copy renewed certs to standard location
-LE_LIVE="${SSL_DIR}/letsencrypt/live/${DOMAIN}"
-if [ -d "${LE_LIVE}" ]; then
-    cp -L "${LE_LIVE}/fullchain.pem" "${SSL_DIR}/${DOMAIN}.crt"
-    cp -L "${LE_LIVE}/privkey.pem" "${SSL_DIR}/${DOMAIN}.key"
-    cp -L "${LE_LIVE}/chain.pem" "${SSL_DIR}/ca.crt"
-    success "Certificates renewed for ${DOMAIN}"
-else
-    warning "No renewed certificates found. They may not have been due for renewal."
-fi
+# Copy renewed certs from letsencrypt volume to ssl-certs volume (inside container)
+info "Copying renewed certificates to SSL volume..."
+COMPOSE_PROFILES="${COMPOSE_PROFILES:+${COMPOSE_PROFILES},}certbot" dc run --rm --entrypoint sh certbot -c \
+    "if [ -d /etc/letsencrypt/live/${DOMAIN} ]; then \
+         cp -L /etc/letsencrypt/live/${DOMAIN}/fullchain.pem /etc/ssl-output/${DOMAIN}.crt && \
+         cp -L /etc/letsencrypt/live/${DOMAIN}/privkey.pem /etc/ssl-output/${DOMAIN}.key && \
+         cp -L /etc/letsencrypt/live/${DOMAIN}/chain.pem /etc/ssl-output/ca.crt && \
+         echo 'Certificates copied'; \
+     else \
+         echo 'No renewed certificates found (may not have been due for renewal)'; \
+     fi"
 
 # Reload Apache
 info "Reloading Apache..."
 dc exec proxy httpd -k graceful
-success "Apache reloaded."
-
-echo ""
-info "Tip: Add a cron job for automatic renewal:"
-echo "  0 3 * * * cd ${PROJECT_ROOT} && ./cli certs-renew >> /var/log/cert-renew.log 2>&1"
+success "Certificate renewal complete."
