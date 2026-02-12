@@ -23,6 +23,10 @@ RUN npm ci
 COPY apps/api/ ./
 RUN npm run build
 
+# Migrations stage — has drizzle-kit + source for schema operations
+FROM builder AS migrations
+CMD ["sh"]
+
 # Production stage — minimal runtime
 FROM base AS production
 COPY apps/api/package*.json ./

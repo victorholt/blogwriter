@@ -33,6 +33,19 @@ services:
     profiles:
       - db
 
+  api-migrations:
+    build:
+      context: ../..
+      dockerfile: docker/images/api.Dockerfile
+      target: migrations
+    container_name: ${CONTAINER_PREFIX:-blogwriter}-api-migrations
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-blogwriter_user}:${POSTGRES_PASSWORD:-blogwriter_pass}@postgres:5432/${POSTGRES_DB:-blogwriter_db}
+    profiles:
+      - tools
+    networks:
+      - app-network
+
   certbot:
     image: certbot/certbot:latest
     container_name: ${CONTAINER_PREFIX:-blogwriter}-certbot

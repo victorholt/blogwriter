@@ -8,6 +8,19 @@ load_env
 DB_COMMAND="${1:-}"
 shift || true
 
+ENV="${APP_ENV:-local}"
+
+# In non-local environments, drizzle-kit is only in the migrations stage
+# Use a one-off container from the api-migrations service
+run_drizzle() {
+    local npm_script="$1"
+    if [ "${ENV}" = "local" ]; then
+        dc exec api npm run "${npm_script}"
+    else
+        COMPOSE_PROFILES="${COMPOSE_PROFILES:+${COMPOSE_PROFILES},}tools" dc run --rm api-migrations npm run "${npm_script}"
+    fi
+}
+
 show_db_help() {
     cat << EOF
 Database Commands (Drizzle ORM):
@@ -32,25 +45,25 @@ EOF
 case "${DB_COMMAND}" in
     sync)
         info "Generating migration files from schema..."
-        dc exec api npm run db:generate
+        run_drizzle db:generate
         success "Migration files generated!"
         info "Running database migrations..."
-        dc exec api npm run db:migrate
+        run_drizzle db:migrate
         success "Migrations completed!"
         ;;
     migrate)
         info "Running database migrations..."
-        dc exec api npm run db:migrate
+        run_drizzle db:migrate
         success "Migrations completed!"
         ;;
     generate)
         info "Generating migration files from schema..."
-        dc exec api npm run db:generate
+        run_drizzle db:generate
         success "Migration files generated!"
         ;;
     push)
         info "Pushing schema changes directly..."
-        dc exec api npm run db:push
+        run_drizzle db:push
         success "Schema pushed!"
         ;;
     help|--help|-h|"")
