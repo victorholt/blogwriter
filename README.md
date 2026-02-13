@@ -72,6 +72,44 @@ This project uses [Drizzle ORM](https://orm.drizzle.team/) for database manageme
 3. Review the generated SQL in `apps/api/drizzle/`
 4. Apply it: `./cli db migrate`
 
+## Versioning & Cache Busting
+
+The app version lives in the `VERSION` file at the project root and is used to bust browser caches on deploy.
+
+### How it works
+
+1. **`VERSION` file** — Single source of truth (e.g. `0.0.1`). Mounted into containers at `/etc/app-version`.
+2. **Next.js `generateBuildId`** — Uses the version as the build ID, so all `/_next/static/` chunk URLs change when the version bumps. This forces browsers to fetch fresh assets.
+3. **Apache proxy headers** — HTML and API responses are served with `no-cache, no-store, must-revalidate`. Fingerprinted Next.js assets (`/_next/static/`) are served with `immutable` + 1-year max-age since their URLs already include the version hash.
+4. **Admin UI** — The current version is displayed as a badge in the Settings page.
+
+### Bumping the version
+
+```bash
+# Show current version
+./cli version
+
+# Bump patch (0.0.1 -> 0.0.2)
+./cli version patch
+
+# Bump minor (0.0.2 -> 0.1.0)
+./cli version minor
+
+# Bump major (0.1.0 -> 1.0.0)
+./cli version major
+
+# Set a specific version
+./cli version set 2.0.0
+```
+
+After bumping, restart the Next.js container so it picks up the new build ID:
+
+```bash
+./cli restart nextjs
+```
+
+On the next deploy / container rebuild, users will automatically receive fresh assets.
+
 ## 📁 Project Structure
 
 ```
