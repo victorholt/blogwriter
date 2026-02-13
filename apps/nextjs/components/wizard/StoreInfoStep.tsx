@@ -135,7 +135,7 @@ export default function StoreInfoStep(): React.ReactElement {
       <div className="store-input">
         <input
           type="url"
-          placeholder="Copy and paste your home page or favorite blog post here"
+          placeholder="Paste your website or blog URL here"
           value={storeUrl}
           onChange={(e) => handleUrlChange(e.target.value)}
           onKeyDown={(e) => {

@@ -45,7 +45,7 @@ function useRotatingMessage(agentId: string | null): { key: number; text: string
     const interval = setInterval(() => {
       setIndex((prev) => (prev + 1) % messages.length);
       setKey((k) => k + 1);
-    }, 4000);
+    }, 7000);
     return () => clearInterval(interval);
   }, [messages.length]);
 
@@ -231,23 +231,18 @@ export default function GeneratingView(): React.ReactElement {
                 {generationAgent ? `${getStepLabel(generationAgent, generationAgentLabel || '')}...` : 'Starting...'}
               </span>
             </div>
-            <div className="generating__bar-right">
-              {shouldShowPreview ? (
-                <>
-                  <span className="generating__bar-preview-label">
-                    {previewOpen ? 'Hide' : 'Preview'}
-                  </span>
-                  <ChevronDown
-                    size={14}
-                    className={`generating__preview-chevron ${previewOpen ? 'generating__preview-chevron--open' : ''}`}
-                  />
-                </>
-              ) : (
-                <span key={messageKey} className="generating__bar-message">
-                  {rotatingMessage}
+            {shouldShowPreview && (
+              <div className="generating__bar-right">
+                <span className={`generating__bar-preview-label${previewOpen ? ' generating__bar-preview-label--hide' : ''}`}>
+                  {previewOpen ? 'Hide' : 'Preview'}
                 </span>
-              )}
-            </div>
+              </div>
+            )}
+            {!shouldShowPreview && (
+              <span key={messageKey} className="generating__bar-message">
+                {rotatingMessage}
+              </span>
+            )}
           </button>
           {previewOpen && shouldShowPreview && previewText && (
             <div ref={previewRef} className="generating__preview-content">

@@ -252,7 +252,7 @@
   &__message {
     font-size: 14px;
     color: var(--color-gray-400);
-    animation: messageFade 4s ease-in-out;
+    animation: messageFade 7s ease-in-out;
 
     @media (min-width: 640px) {
       font-size: 15px;
@@ -438,6 +438,8 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
     width: 100%;
     padding: 14px 16px;
     font-size: 14px;
@@ -446,6 +448,7 @@
     background: var(--color-blue-light);
     cursor: pointer;
     border: none;
+    text-align: left;
     transition: background 0.15s;
     position: relative;
 
@@ -511,28 +514,41 @@
   &__bar-right {
     display: flex;
     align-items: center;
-    gap: 10px;
     flex-shrink: 0;
-    margin-left: 12px;
   }
 
   &__bar-message {
+    flex-basis: 100%;
+    margin-left: 38px;
     font-size: 13px;
     font-weight: 500;
     color: var(--color-blue);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    animation: messageFade 4s ease-in-out;
+    opacity: 0.75;
+    text-align: left;
+    animation: messageFade 7s ease-in-out;
+
+    @media (min-width: 640px) {
+      flex-basis: auto;
+      margin-left: 0;
+    }
   }
 
   &__bar-preview-label {
-    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    font-size: 13px;
     font-weight: 600;
     color: white;
     background: var(--color-green);
-    padding: 3px 12px;
-    border-radius: 10px;
+    border: 1px solid var(--color-green);
+    padding: 5px 16px;
+    border-radius: var(--radius-sm, 6px);
+
+    &--hide {
+      color: var(--color-gray-500);
+      background: white;
+      border-color: var(--color-gray-300);
+    }
   }
 
   // ============================================================
