@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { readFileSync } from 'fs';
 import { db } from '../db';
-import { agentModelConfigs, agentAdditionalInstructions, appSettings, brandVoiceCache, themes, brandLabels } from '../db/schema';
+import { agentModelConfigs, agentAdditionalInstructions, appSettings, brandVoiceCache, themes, brandLabels, voicePresets } from '../db/schema';
 import { eq, asc, and } from 'drizzle-orm';
 import { validateAdminToken } from '../middleware/admin-auth';
 import { invalidateCache } from '../mastra/lib/model-resolver';
@@ -11,6 +11,7 @@ import { clearDressCache, syncDressesFromApi, getCacheStats } from '../services/
 import { AGENT_DEFAULTS } from '../mastra/lib/agent-defaults';
 import { loadProductApiConfig } from '../services/product-api-client';
 import { invalidateInsightsCache } from '../services/agent-trace';
+import { formatBrandVoiceText } from '../mastra/agents/brand-voice-formatter';
 
 // Read app version once at startup
 let appVersion = '0.0.0';
@@ -518,6 +519,139 @@ router.delete('/:token/brand-labels/:id', async (req, res) => {
   } catch (err) {
     console.error(`[Admin] Error deleting brand label ${id}:`, err);
     return res.status(500).json({ success: false, error: 'Failed to delete brand label' });
+  }
+});
+
+// --- Voice Presets CRUD ---
+
+router.get('/:token/voice-presets', async (_req, res) => {
+  try {
+    const rows = await db.select().from(voicePresets).orderBy(voicePresets.sortOrder);
+    return res.json({ success: true, data: rows });
+  } catch (err) {
+    console.error('[Admin] Error fetching voice presets:', err);
+    return res.status(500).json({ success: false, error: 'Failed to fetch voice presets' });
+  }
+});
+
+const createVoicePresetSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  description: z.string().optional(),
+  rawSourceText: z.string().optional(),
+  formattedVoice: z.string().optional(),
+  additionalInstructions: z.string().optional(),
+});
+
+router.post('/:token/voice-presets', async (req, res) => {
+  const parsed = createVoicePresetSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ success: false, error: parsed.error.issues[0]?.message || 'Invalid request' });
+  }
+
+  try {
+    const [row] = await db.insert(voicePresets).values(parsed.data).returning();
+    return res.json({ success: true, data: row });
+  } catch (err) {
+    console.error('[Admin] Error creating voice preset:', err);
+    return res.status(500).json({ success: false, error: 'Failed to create voice preset' });
+  }
+});
+
+const updateVoicePresetSchema = z.object({
+  name: z.string().min(1).optional(),
+  description: z.string().optional(),
+  rawSourceText: z.string().optional(),
+  formattedVoice: z.string().optional(),
+  additionalInstructions: z.string().optional(),
+  isActive: z.boolean().optional(),
+  sortOrder: z.number().optional(),
+});
+
+router.put('/:token/voice-presets/:id', async (req, res) => {
+  const parsed = updateVoicePresetSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ success: false, error: parsed.error.issues[0]?.message || 'Invalid request' });
+  }
+
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) return res.status(400).json({ success: false, error: 'Invalid ID' });
+
+  try {
+    const result = await db
+      .update(voicePresets)
+      .set({ ...parsed.data, updatedAt: new Date() })
+      .where(eq(voicePresets.id, id))
+      .returning();
+
+    if (result.length === 0) return res.status(404).json({ success: false, error: 'Voice preset not found' });
+    return res.json({ success: true, data: result[0] });
+  } catch (err) {
+    console.error(`[Admin] Error updating voice preset ${id}:`, err);
+    return res.status(500).json({ success: false, error: 'Failed to update voice preset' });
+  }
+});
+
+router.delete('/:token/voice-presets/:id', async (req, res) => {
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) return res.status(400).json({ success: false, error: 'Invalid ID' });
+
+  try {
+    const result = await db.delete(voicePresets).where(eq(voicePresets.id, id)).returning();
+    if (result.length === 0) return res.status(404).json({ success: false, error: 'Voice preset not found' });
+    return res.json({ success: true, data: { deleted: true } });
+  } catch (err) {
+    console.error(`[Admin] Error deleting voice preset ${id}:`, err);
+    return res.status(500).json({ success: false, error: 'Failed to delete voice preset' });
+  }
+});
+
+// --- Voice Preset Format Stream (SSE) ---
+
+const formatVoiceSchema = z.object({
+  rawText: z.string().min(1, 'Raw text is required').max(50000),
+  additionalInstructions: z.string().optional(),
+});
+
+router.post('/:token/voice-presets/format-stream', async (req, res) => {
+  const parsed = formatVoiceSchema.safeParse(req.body);
+  if (!parsed.success) {
+    const message = parsed.error.issues[0]?.message || 'Invalid request';
+    return res.status(400).json({ success: false, error: message });
+  }
+
+  const { rawText, additionalInstructions } = parsed.data;
+
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    Connection: 'keep-alive',
+    'X-Accel-Buffering': 'no',
+  });
+
+  const sendEvent = (type: string, data: unknown) => {
+    res.write(`data: ${JSON.stringify({ type, data })}\n\n`);
+  };
+
+  const heartbeat = setInterval(() => {
+    try { res.write(':heartbeat\n\n'); } catch { /* connection closed */ }
+  }, 15_000);
+
+  try {
+    const eventHandler = (event: { type: string; data?: unknown }) => {
+      sendEvent(event.type, event.data);
+    };
+
+    const result = await formatBrandVoiceText(rawText, eventHandler, { additionalInstructions });
+
+    sendEvent('result', { data: result });
+    res.end();
+  } catch (err) {
+    const errMsg = err instanceof Error ? err.message : 'Failed to format voice text';
+    console.error('[Admin] Voice format-stream error:', errMsg);
+    try { sendEvent('error', errMsg); } catch { /* connection closed */ }
+    try { res.end(); } catch { /* connection closed */ }
+  } finally {
+    clearInterval(heartbeat);
   }
 });
 

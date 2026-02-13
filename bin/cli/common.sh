@@ -77,6 +77,93 @@ load_env() {
     fi
 }
 
+# Update or add a key=value in the .env file
+# Usage: set_env_var <KEY> <VALUE>
+set_env_var() {
+    local key="$1"
+    local value="$2"
+    local env_file="${PROJECT_ROOT}/.env"
+
+    if [ ! -f "$env_file" ]; then
+        echo "${key}=${value}" > "$env_file"
+        return
+    fi
+
+    if grep -q "^${key}=" "$env_file" 2>/dev/null; then
+        # Update existing key (macOS-compatible sed)
+        sed -i '' "s|^${key}=.*|${key}=${value}|" "$env_file"
+    else
+        # Append new key
+        echo "${key}=${value}" >> "$env_file"
+    fi
+}
+
+# Check if a port is available. If in use, prompt the user for a new port.
+# Skips ports held by our own project containers.
+# Usage: check_port <port> <SERVICE_NAME> <ENV_VAR_NAME>
+check_port() {
+    local port="$1"
+    local service="$2"
+    local env_var="$3"
+    local prefix="${CONTAINER_PREFIX:-blogwriter}"
+    local pid
+
+    pid=$(lsof -ti :"$port" 2>/dev/null)
+    if [ -z "$pid" ]; then
+        return 0
+    fi
+
+    # If the port is held by one of our own running containers, that's fine
+    local container
+    container=$(docker ps --filter "publish=$port" --filter "name=${prefix}-" --format '{{.Names}}' 2>/dev/null)
+    if [ -n "$container" ]; then
+        return 0
+    fi
+
+    local owner
+    owner=$(lsof -i :"$port" -sTCP:LISTEN 2>/dev/null | tail -1 | awk '{print $1}')
+    warning "Port $port ($service) is already in use by ${owner:-unknown}"
+
+    # Prompt for a new port
+    while true; do
+        read -r -p "  Enter a new port for $service (or 'q' to abort): " new_port
+        if [ "$new_port" = "q" ]; then
+            return 1
+        fi
+        # Validate it's a number
+        if ! [[ "$new_port" =~ ^[0-9]+$ ]]; then
+            error "  Invalid port number"
+            continue
+        fi
+        # Check the new port is free
+        if lsof -ti :"$new_port" > /dev/null 2>&1; then
+            error "  Port $new_port is also in use"
+            continue
+        fi
+        # Good — save to .env and export for this session
+        set_env_var "$env_var" "$new_port"
+        export "$env_var=$new_port"
+        success "  $service port set to $new_port (saved to .env)"
+        return 0
+    done
+}
+
+# Check all project ports for conflicts, prompting to fix any that are in use.
+check_all_ports() {
+    local ok=true
+    check_port "${VALKEY_EXTERNAL_PORT:-6380}" "VALKEY" "VALKEY_EXTERNAL_PORT" || ok=false
+    check_port "${POSTGRES_EXTERNAL_PORT:-5432}" "POSTGRES" "POSTGRES_EXTERNAL_PORT" || ok=false
+    check_port "${API_EXTERNAL_PORT:-4444}" "API" "API_EXTERNAL_PORT" || ok=false
+    check_port "${NEXTJS_EXTERNAL_PORT:-4443}" "NEXTJS" "NEXTJS_EXTERNAL_PORT" || ok=false
+
+    if [ "$ok" = false ]; then
+        echo ""
+        error "Aborting due to unresolved port conflicts."
+        return 1
+    fi
+    return 0
+}
+
 # Get list of service names
 get_services() {
     dc config --services

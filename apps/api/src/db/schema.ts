@@ -115,3 +115,16 @@ export const brandLabels = pgTable('brand_labels', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
+
+export const voicePresets = pgTable('voice_presets', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  description: text('description'),
+  rawSourceText: text('raw_source_text'),
+  formattedVoice: text('formatted_voice'),
+  additionalInstructions: text('additional_instructions'),
+  isActive: boolean('is_active').default(true).notNull(),
+  sortOrder: integer('sort_order').default(0).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});

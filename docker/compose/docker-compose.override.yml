@@ -33,7 +33,7 @@ services:
     command: npm run dev
   postgres:
     ports:
-      - 5432:5432
+      - ${POSTGRES_EXTERNAL_PORT:-5432}:5432
   valkey:
     ports:
-      - 6380:6379
+      - ${VALKEY_EXTERNAL_PORT:-6380}:6379

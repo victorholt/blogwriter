@@ -5,6 +5,7 @@ import dressRoutes from './dresses'
 import blogRoutes from './blog'
 import themeRoutes from './themes'
 import shareRoutes from './share'
+import voicePresetRoutes from './voice-presets'
 import { db } from '../db'
 import { appSettings, agentModelConfigs } from '../db/schema'
 import { eq, inArray } from 'drizzle-orm'
@@ -25,6 +26,9 @@ router.use('/themes', themeRoutes)
 
 // Share
 router.use('/share', shareRoutes)
+
+// Voice Presets
+router.use('/voice-presets', voicePresetRoutes)
 
 // Admin
 router.use('/admin', adminRoutes)
@@ -55,17 +59,17 @@ router.get('/settings/blog', async (_req, res) => {
         .where(eq(agentModelConfigs.showPreview, true)),
     ]);
     const map = Object.fromEntries(settings.map((s) => [s.key, s.value]));
-    // Build previewAgents: comma-separated IDs if any have showPreview, otherwise 'last'
+    // Build previewAgents: comma-separated IDs of agents with showPreview enabled
     const previewIds = agents.map((a) => a.agentId);
     return res.json({
       timelineStyle: map.blog_timeline_style || 'preview-bar',
       generateImages: map.blog_generate_images !== 'false',
       generateLinks: map.blog_generate_links !== 'false',
       sharingEnabled: map.blog_sharing_enabled === 'true',
-      previewAgents: previewIds.length > 0 ? previewIds.join(',') : 'last',
+      previewAgents: previewIds.length > 0 ? previewIds.join(',') : 'none',
     });
   } catch {
-    return res.json({ timelineStyle: 'preview-bar', generateImages: true, generateLinks: true, sharingEnabled: false, previewAgents: 'last' });
+    return res.json({ timelineStyle: 'preview-bar', generateImages: true, generateLinks: true, sharingEnabled: false, previewAgents: 'none' });
   }
 })
 

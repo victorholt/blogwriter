@@ -11,6 +11,8 @@
   "dependencies": {
     "@radix-ui/react-label": "^2.1.8",
     "@radix-ui/react-slot": "^1.2.4",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^4.1.0",
     "lucide-react": "^0.460.0",
     "marked": "^17.0.1",
     "next": "^16.0.0",

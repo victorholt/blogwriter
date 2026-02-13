@@ -92,21 +92,16 @@ export default function GeneratingView(): React.ReactElement {
     }
   }, [previewText, previewOpen]);
 
-  // Derived: current agent index
-  const currentAgentIndex = generationPipeline.findIndex((a) => a.id === generationAgent);
-
   // Should the preview be expandable for the current agent?
+  // Only show when the agent explicitly has "Show Preview" enabled in settings.
   const shouldShowPreview = useMemo(() => {
     if (!generationAgent || !generationPipeline.length) return false;
     if (previewAgents === 'all') return true;
     if (previewAgents === 'none') return false;
-    if (previewAgents === 'last') {
-      return currentAgentIndex === generationPipeline.length - 1;
-    }
-    // Comma-separated list of agent IDs
+    // Comma-separated list of agent IDs with showPreview enabled
     const allowed = previewAgents.split(',').map((s) => s.trim());
     return allowed.includes(generationAgent);
-  }, [generationAgent, generationPipeline, previewAgents, currentAgentIndex]);
+  }, [generationAgent, generationPipeline, previewAgents]);
 
   // Auto-close preview when switching to an agent without preview
   useEffect(() => {

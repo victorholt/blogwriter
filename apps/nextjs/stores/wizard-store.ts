@@ -20,6 +20,8 @@ interface WizardState {
   brandVoiceConfirmed: boolean;
   previousBrandVoice: BrandVoice | null;
   brandVoiceAttemptCount: number;
+  loadedPresetId: number | null;
+  loadedPresetName: string | null;
 
   // Step 3: Theme & Brand
   selectedThemeId: number | null;
@@ -110,6 +112,7 @@ interface WizardState {
   setPreviewAgents: (value: string) => void;
   setSelectedTheme: (id: number | null) => void;
   setSelectedBrand: (slug: string | null) => void;
+  loadPresetVoice: (presetId: number, presetName: string, voice: BrandVoice) => void;
   rejectBrandVoice: () => void;
   resetGenerationForRetry: () => void;
   invalidateUrlDependentState: () => void;
@@ -129,6 +132,8 @@ const initialState = {
   brandVoiceConfirmed: false,
   previousBrandVoice: null as BrandVoice | null,
   brandVoiceAttemptCount: 0,
+  loadedPresetId: null as number | null,
+  loadedPresetName: null as string | null,
   availableDresses: [] as Dress[],
   selectedDressIds: new Set<string>(),
   isDressesLoading: false,
@@ -161,7 +166,7 @@ const initialState = {
   generateImages: true,
   generateLinks: true,
   sharingEnabled: false,
-  previewAgents: 'last',
+  previewAgents: 'none',
 };
 
 // Custom storage adapter that handles Set/Map serialization
@@ -275,6 +280,19 @@ export const useWizardStore = create<WizardState>()(
       setSelectedTheme: (id) => set({ selectedThemeId: id }),
       setSelectedBrand: (slug) => set({ selectedBrandSlug: slug, selectedDressIds: new Set<string>() }),
 
+      loadPresetVoice: (presetId, presetName, voice) =>
+        set({
+          brandVoice: voice,
+          loadedPresetId: presetId,
+          loadedPresetName: presetName,
+          analysisComplete: true,
+          brandVoiceConfirmed: false,
+          isAnalyzing: false,
+          analysisStatusLog: [],
+          analysisDebugData: [],
+          brandVoiceTraceId: null,
+        }),
+
       rejectBrandVoice: () =>
         set((state) => ({
           previousBrandVoice: state.brandVoice,
@@ -285,6 +303,8 @@ export const useWizardStore = create<WizardState>()(
           analysisDebugData: [],
           brandVoiceTraceId: null,
           brandVoiceAttemptCount: state.brandVoiceAttemptCount + 1,
+          loadedPresetId: null,
+          loadedPresetName: null,
           currentStep: 1 as WizardStep,
         })),
 
@@ -316,6 +336,8 @@ export const useWizardStore = create<WizardState>()(
           brandVoiceConfirmed: false,
           previousBrandVoice: null,
           brandVoiceAttemptCount: 0,
+          loadedPresetId: null,
+          loadedPresetName: null,
           sessionId: null,
           generatedBlog: null,
           seoMetadata: null,
@@ -363,6 +385,8 @@ export const useWizardStore = create<WizardState>()(
         brandVoiceConfirmed: state.brandVoiceConfirmed,
         previousBrandVoice: state.previousBrandVoice,
         brandVoiceAttemptCount: state.brandVoiceAttemptCount,
+        loadedPresetId: state.loadedPresetId,
+        loadedPresetName: state.loadedPresetName,
         selectedThemeId: state.selectedThemeId,
         selectedBrandSlug: state.selectedBrandSlug,
         selectedDressIds: state.selectedDressIds,

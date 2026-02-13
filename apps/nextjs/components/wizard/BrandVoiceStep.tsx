@@ -1,14 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useWizardStore } from '@/stores/wizard-store';
 import {
   Check, CheckSquare, Users, Sparkles,
   MessageSquareQuote, RefreshCw, Plus, X, Theater, BookOpen, Ban,
+  FileText, FileDown, Mic,
 } from 'lucide-react';
 import EditableSection from '@/components/ui/EditableSection';
 import EnhancedTextArea from '@/components/ui/EnhancedTextArea';
 import TagInput from '@/components/ui/TagInput';
+import DownloadButton from '@/components/ui/DownloadButton';
+import PresetVoicePicker from './PresetVoicePicker';
+import { downloadBrandVoiceAsText, downloadBrandVoiceAsSnapshot } from '@/lib/export-utils';
 import type { BrandVoice, ToneAttribute, VocabularyCategory, WritingRule } from '@/types';
 
 // ─── Inline editor components ───────────────────────────────
@@ -416,8 +420,11 @@ export default function BrandVoiceStep(): React.ReactElement {
   const setBrandVoice = useWizardStore((s) => s.setBrandVoice);
   const confirmBrandVoice = useWizardStore((s) => s.confirmBrandVoice);
   const rejectBrandVoice = useWizardStore((s) => s.rejectBrandVoice);
+  const loadPresetVoice = useWizardStore((s) => s.loadPresetVoice);
   const setStep = useWizardStore((s) => s.setStep);
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
+  const [showPresetPicker, setShowPresetPicker] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   if (!brandVoice) return <></>;
 
@@ -436,6 +443,17 @@ export default function BrandVoiceStep(): React.ReactElement {
     rejectBrandVoice();
   }
 
+  function handleSnapshotPdf(): void {
+    if (!contentRef.current || !brandVoice) return;
+    const slug = brandVoice.brandName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    downloadBrandVoiceAsSnapshot(contentRef.current, `${slug}-brand-voice.pdf`);
+  }
+
+  function handlePresetSelected(presetId: number, name: string, voice: BrandVoice): void {
+    loadPresetVoice(presetId, name, voice);
+    setShowPresetPicker(false);
+  }
+
   return (
     <div>
       <h1 className="step-heading step-heading--serif">Does this sound like you?</h1>
@@ -445,6 +463,31 @@ export default function BrandVoiceStep(): React.ReactElement {
         your brand before we begin drafting. If the voice isn&rsquo;t quite right, you
         can select from our curated personas below, instead.
       </p>
+
+      {/* Top actions */}
+      <div className="step-actions step-actions--top">
+        <DownloadButton
+          formats={[
+            {
+              label: 'Text Document (.txt)',
+              icon: <FileText size={14} />,
+              onClick: () => downloadBrandVoiceAsText(brandVoice!),
+            },
+            {
+              label: 'PDF Document (.pdf)',
+              icon: <FileDown size={14} />,
+              onClick: handleSnapshotPdf,
+            },
+          ]}
+        />
+        <button className="btn btn--accent" onClick={() => setShowPresetPicker(true)}>
+          <Mic size={14} />
+          Load Preset Voice
+        </button>
+      </div>
+
+      {/* Brand voice content — captured for PDF snapshot */}
+      <div ref={contentRef}>
 
       {/* Brand name */}
       <EditableSection
@@ -703,17 +746,49 @@ export default function BrandVoiceStep(): React.ReactElement {
         </EditableSection>
       )}
 
+      </div>{/* end contentRef wrapper */}
+
       {/* Actions */}
       <div className="step-actions">
-        <button className="btn btn--outline" onClick={handleTryAgain}>
-          <RefreshCw size={14} />
-          Try Again
-        </button>
-        <button className="btn btn--primary" onClick={handleConfirm}>
-          <CheckSquare size={16} />
-          Yes
-        </button>
+        <div className="step-actions__left">
+          <button className="btn btn--outline" onClick={handleTryAgain}>
+            <RefreshCw size={14} />
+            Try Again
+          </button>
+          <button className="btn btn--accent" onClick={() => setShowPresetPicker(true)}>
+            <Mic size={14} />
+            Load Preset Voice
+          </button>
+        </div>
+        <div className="step-actions__right">
+          <DownloadButton
+            formats={[
+              {
+                label: 'Text Document (.txt)',
+                icon: <FileText size={14} />,
+                onClick: () => downloadBrandVoiceAsText(brandVoice!),
+              },
+              {
+                label: 'PDF Document (.pdf)',
+                icon: <FileDown size={14} />,
+                onClick: handleSnapshotPdf,
+              },
+            ]}
+          />
+          <button className="btn btn--primary" onClick={handleConfirm}>
+            <CheckSquare size={16} />
+            Yes
+          </button>
+        </div>
       </div>
+
+      {/* Preset voice picker modal */}
+      {showPresetPicker && (
+        <PresetVoicePicker
+          onSelect={handlePresetSelected}
+          onCancel={() => setShowPresetPicker(false)}
+        />
+      )}
     </div>
   );
 }

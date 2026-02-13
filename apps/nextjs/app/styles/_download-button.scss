@@ -1,0 +1,88 @@
+// ============================================================
+// Download Button — reusable dropdown for file exports
+// ============================================================
+
+.download-btn {
+  position: relative;
+  display: inline-flex;
+}
+
+.download-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 220px;
+  background: white;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.06);
+  z-index: 20;
+  overflow: hidden;
+  animation: downloadMenuIn 0.15s ease-out;
+
+  // Open upward when near bottom of viewport
+  &--up {
+    top: auto;
+    bottom: calc(100% + 6px);
+    animation: downloadMenuInUp 0.15s ease-out;
+  }
+
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-gray-600);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.1s;
+
+    &:hover {
+      background: var(--color-gray-50, #f9fafb);
+      color: var(--color-gray-700);
+    }
+
+    &:not(:last-child) {
+      border-bottom: 1px solid var(--color-gray-100, #f3f4f6);
+    }
+  }
+
+  &__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-sm, 6px);
+    background: var(--color-gray-100, #f3f4f6);
+    color: var(--color-gray-500);
+    flex-shrink: 0;
+  }
+}
+
+@keyframes downloadMenuIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes downloadMenuInUp {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

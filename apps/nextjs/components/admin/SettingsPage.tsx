@@ -15,16 +15,17 @@ import {
   fetchAppVersion,
 } from '@/lib/admin-api';
 import type { AdminBrandLabel } from '@/lib/admin-api';
-import { Save, Check, Key, Bot, Loader2, Trash2, Database, Package, RefreshCw, FileText, Palette, Plus, Tag } from 'lucide-react';
+import { Save, Check, Key, Bot, Loader2, Trash2, Database, Package, RefreshCw, FileText, Palette, Plus, Tag, Mic } from 'lucide-react';
 import SearchSelect from '@/components/ui/SearchSelect';
 import Toggle from '@/components/ui/Toggle';
 import type { SearchSelectGroup } from '@/components/ui/SearchSelect';
 import DressMultiSelect from '@/components/ui/DressMultiSelect';
 import ThemesTab from './ThemesTab';
+import VoicesTab from './VoicesTab';
 import AgentModelsTab from './AgentModelsTab';
 import type { Dress } from '@/types';
 
-type SettingsTab = 'api' | 'agents' | 'products' | 'themes' | 'cache' | 'blog';
+type SettingsTab = 'api' | 'agents' | 'products' | 'themes' | 'voices' | 'cache' | 'blog';
 
 interface SettingsPageProps {
   token: string;
@@ -482,6 +483,13 @@ export default function SettingsPage({ token }: SettingsPageProps): React.ReactE
             Themes
           </button>
           <button
+            className={`settings-tab ${activeTab === 'voices' ? 'settings-tab--active' : ''}`}
+            onClick={() => setActiveTab('voices')}
+          >
+            <Mic size={15} />
+            Voices
+          </button>
+          <button
             className={`settings-tab ${activeTab === 'cache' ? 'settings-tab--active' : ''}`}
             onClick={() => setActiveTab('cache')}
           >
@@ -768,6 +776,11 @@ export default function SettingsPage({ token }: SettingsPageProps): React.ReactE
         {/* Themes Tab */}
         {activeTab === 'themes' && (
           <ThemesTab token={token} />
+        )}
+
+        {/* Voices Tab */}
+        {activeTab === 'voices' && (
+          <VoicesTab token={token} />
         )}
 
         {/* Cache Tab */}

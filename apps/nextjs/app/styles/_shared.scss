@@ -65,6 +65,17 @@
       background: #fef2f2;
     }
   }
+
+  &--accent {
+    background: #f0fdf4;
+    color: #15803d;
+    border: 1px solid #86efac;
+
+    &:hover:not(:disabled) {
+      background: #dcfce7;
+      border-color: #4ade80;
+    }
+  }
 }
 
 // ============================================================
@@ -181,10 +192,28 @@
   @media (min-width: 640px) {
     margin-top: 40px;
   }
+
+  &--top {
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 0;
+    margin-bottom: 16px;
+
+    @media (min-width: 640px) {
+      margin-top: 0;
+    }
+  }
+}
+
+.step-actions__left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .step-actions__right {
   display: flex;
+  align-items: center;
   gap: 12px;
 }
 

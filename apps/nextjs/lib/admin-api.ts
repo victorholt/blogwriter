@@ -1,3 +1,6 @@
+import type { BrandVoice } from '@/types';
+import { normalizeBrandVoice } from './brand-voice-compat';
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://blogwriter.test:4444';
 
 interface ApiResponse<T> {
@@ -282,4 +285,115 @@ export async function enhanceText(
     body: JSON.stringify({ text, context }),
   });
   return res.json();
+}
+
+// --- Voice Presets ---
+
+export interface AdminVoicePreset {
+  id: number;
+  name: string;
+  description: string | null;
+  rawSourceText: string | null;
+  formattedVoice: string | null;
+  additionalInstructions: string | null;
+  isActive: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function fetchVoicePresets(token: string): Promise<ApiResponse<AdminVoicePreset[]>> {
+  const res = await fetch(`${API_BASE}/api/admin/${token}/voice-presets`);
+  return res.json();
+}
+
+export async function createVoicePreset(
+  token: string,
+  data: { name: string; description?: string; rawSourceText?: string; formattedVoice?: string; additionalInstructions?: string },
+): Promise<ApiResponse<AdminVoicePreset>> {
+  const res = await fetch(`${API_BASE}/api/admin/${token}/voice-presets`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  return res.json();
+}
+
+export async function updateVoicePreset(
+  token: string,
+  id: number,
+  data: { name?: string; description?: string; rawSourceText?: string; formattedVoice?: string; additionalInstructions?: string; isActive?: boolean; sortOrder?: number },
+): Promise<ApiResponse<AdminVoicePreset>> {
+  const res = await fetch(`${API_BASE}/api/admin/${token}/voice-presets/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  return res.json();
+}
+
+export async function deleteVoicePreset(token: string, id: number): Promise<ApiResponse<{ deleted: boolean }>> {
+  const res = await fetch(`${API_BASE}/api/admin/${token}/voice-presets/${id}`, {
+    method: 'DELETE',
+  });
+  return res.json();
+}
+
+export async function formatVoicePresetStream(
+  token: string,
+  rawText: string,
+  onStatus: (message: string) => void,
+  additionalInstructions?: string,
+): Promise<ApiResponse<BrandVoice>> {
+  const body: Record<string, string> = { rawText };
+  if (additionalInstructions) body.additionalInstructions = additionalInstructions;
+
+  const res = await fetch(`${API_BASE}/api/admin/${token}/voice-presets/format-stream`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok || !res.body) {
+    return { success: false, error: 'Failed to connect to formatting service' };
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let result: ApiResponse<BrandVoice> = { success: false, error: 'Formatting did not complete' };
+
+  function processLine(line: string): void {
+    if (!line.startsWith('data: ')) return;
+    try {
+      const event = JSON.parse(line.slice(6));
+      if (event.type === 'status') {
+        onStatus(event.data);
+      } else if (event.type === 'result') {
+        const normalized = normalizeBrandVoice(event.data.data);
+        result = { success: true, data: normalized };
+      } else if (event.type === 'error') {
+        result = { success: false, error: event.data };
+      }
+    } catch { /* skip malformed lines */ }
+  }
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+      for (const line of lines) {
+        processLine(line.trim());
+      }
+    }
+    if (buffer.trim()) processLine(buffer.trim());
+  } finally {
+    reader.releaseLock();
+  }
+
+  return result;
 }

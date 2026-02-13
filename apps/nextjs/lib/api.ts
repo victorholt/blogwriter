@@ -209,3 +209,16 @@ export async function deleteSharedBlog(hash: string, token: string): Promise<Api
   });
   return res.json();
 }
+
+// --- Voice Presets ---
+
+export interface VoicePreset {
+  id: number;
+  name: string;
+  formattedVoice: string;
+}
+
+export async function fetchVoicePresets(): Promise<ApiResponse<VoicePreset[]>> {
+  const res = await fetch(`${API_BASE}/api/voice-presets`);
+  return res.json();
+}
