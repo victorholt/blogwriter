@@ -130,6 +130,16 @@ export async function analyzeBrandVoice(
   return extractJson(text);
 }
 
+/** Parse a tool-result stream event into a usable object */
+function parseToolResult(value: any): Record<string, any> {
+  const raw = value?.payload?.result || value?.payload || value?.result || value;
+  if (typeof raw === 'string') {
+    try { return JSON.parse(raw); } catch { return { text: raw }; }
+  }
+  if (typeof raw === 'object' && raw !== null) return raw;
+  return {};
+}
+
 export async function streamBrandVoiceAnalysis(
   url: string,
   onEvent: (event: { type: string; data?: unknown }) => void,
@@ -151,66 +161,130 @@ export async function streamBrandVoiceAnalysis(
   }
 
   let sentAnalyzingMsg = false;
+  let pageCount = 0;
+  const TARGET_PAGES = 6; // approximate — agent aims for 5-8
+  const scrapedPages: { url: string; title: string; text: string }[] = [];
 
-  const fullText = await streamAgentWithRetry(
-    agent,
-    [{ role: 'user' as const, content: prompt }],
-    {
-      maxRetries,
-      onStreamEvent: (value) => {
-        const payload = (value as any).payload;
+  const handleStreamEvent = (value: { type: string; payload?: any }) => {
+    const payload = (value as any).payload;
 
-        if (value.type === 'tool-call') {
-          const toolUrl = payload?.args?.url || (value as any).args?.url || url;
-          try {
-            onEvent({ type: 'status', data: `Scraping ${new URL(toolUrl).hostname}${new URL(toolUrl).pathname}...` });
-          } catch {
-            onEvent({ type: 'status', data: `Scraping page...` });
-          }
-          if (options?.debugMode) {
-            onEvent({ type: 'debug', data: {
-              kind: 'tool-call',
-              toolName: payload?.toolName || 'scrape-webpage',
-              args: payload?.args || {},
-            }});
-          }
-        } else if (value.type === 'tool-result') {
-          onEvent({ type: 'status', data: 'Reading page content...' });
-          if (options?.debugMode) {
-            const raw = payload?.result || payload || (value as any).result || value;
-            let toolResult: Record<string, any> = {};
-            if (typeof raw === 'string') {
-              try { toolResult = JSON.parse(raw); } catch { toolResult = { text: raw }; }
-            } else if (typeof raw === 'object' && raw !== null) {
-              toolResult = raw;
-            }
-            const resultUrl = payload?.args?.url || '';
-            onEvent({ type: 'debug', data: {
-              kind: 'tool-result',
-              url: resultUrl,
-              title: toolResult.title || '',
-              metaDescription: toolResult.metaDescription || '',
-              contentPreview: (toolResult.text || '').slice(0, 500),
-              contentLength: (toolResult.text || '').length,
-              ...(toolResult.error ? { error: toolResult.error } : {}),
-            }});
-          }
-        } else if (value.type === 'text-delta') {
-          if (!sentAnalyzingMsg) {
-            onEvent({ type: 'status', data: 'Building brand voice profile...' });
-            sentAnalyzingMsg = true;
-          }
-        } else if (value.type === 'error') {
-          const errMsg = payload?.message || payload?.error || JSON.stringify(payload) || 'Unknown model error';
-          console.error(`[BrandVoice] Stream error event:`, errMsg);
-        }
+    if (value.type === 'tool-call') {
+      pageCount++;
+      const toolUrl = payload?.args?.url || (value as any).args?.url || url;
+      let pagePath = '';
+      try {
+        const parsed = new URL(toolUrl);
+        pagePath = parsed.pathname === '/' ? parsed.hostname : `${parsed.hostname}${parsed.pathname}`;
+      } catch {
+        pagePath = 'page';
+      }
+      onEvent({ type: 'status', data: `Scraping page ${pageCount} of ~${TARGET_PAGES} (${pagePath})...` });
+      if (options?.debugMode) {
+        onEvent({ type: 'debug', data: {
+          kind: 'tool-call',
+          toolName: payload?.toolName || 'scrape-webpage',
+          args: payload?.args || {},
+        }});
+      }
+    } else if (value.type === 'tool-result') {
+      const toolResult = parseToolResult(value);
+
+      // Always collect scraped content for potential fast retry
+      if (toolResult.text) {
+        scrapedPages.push({
+          url: toolResult.url || payload?.args?.url || '',
+          title: toolResult.title || '',
+          text: toolResult.text.slice(0, 4000),
+        });
+      }
+
+      onEvent({ type: 'status', data: 'Reading page content...' });
+      if (options?.debugMode) {
+        const resultUrl = payload?.args?.url || '';
+        onEvent({ type: 'debug', data: {
+          kind: 'tool-result',
+          url: resultUrl,
+          title: toolResult.title || '',
+          metaDescription: toolResult.metaDescription || '',
+          contentPreview: (toolResult.text || '').slice(0, 500),
+          contentLength: (toolResult.text || '').length,
+          ...(toolResult.error ? { error: toolResult.error } : {}),
+        }});
+      }
+    } else if (value.type === 'text-delta') {
+      if (!sentAnalyzingMsg) {
+        onEvent({ type: 'status', data: `Building brand voice profile from ${pageCount} pages...` });
+        sentAnalyzingMsg = true;
+      }
+    } else if (value.type === 'error') {
+      const errMsg = payload?.message || payload?.error || JSON.stringify(payload) || 'Unknown model error';
+      console.error(`[BrandVoice] Stream error event:`, errMsg);
+    }
+  };
+
+  // --- Attempt 1: full scrape + generate ---
+  let fullText = '';
+  try {
+    fullText = await streamAgentWithRetry(
+      agent,
+      [{ role: 'user' as const, content: prompt }],
+      {
+        maxRetries: 0, // Don't auto-retry (would re-scrape everything)
+        onStreamEvent: handleStreamEvent,
       },
-      onRetry: (attempt, maxAttempts) => {
-        sentAnalyzingMsg = false; // Reset for retry
-        onEvent({ type: 'status', data: `Model didn\u2019t respond \u2014 retrying (attempt ${attempt + 1}/${maxAttempts})...` });
-      },
-    },
-  );
+    );
+  } catch (firstErr) {
+    const errMsg = firstErr instanceof Error ? firstErr.message : '';
+    if (!errMsg.includes('No response')) throw firstErr;
+
+    // --- Attempt 2: fast generation-only retry (reuse scraped data) ---
+    if (scrapedPages.length > 0) {
+      console.log(`[BrandVoice] Empty response but have ${scrapedPages.length} scraped pages — trying fast retry`);
+      onEvent({ type: 'status', data: `Generating profile from ${scrapedPages.length} scraped pages...` });
+
+      const contentSummary = scrapedPages.map(p =>
+        `--- ${p.title || p.url || 'Page'} ---\n${p.text}`
+      ).join('\n\n');
+
+      const fastPrompt = `I have already scraped ${scrapedPages.length} pages from ${url}. Here is the content:\n\n${contentSummary}\n\nBased on this content, produce the brand voice JSON analysis. Do NOT call any tools — just analyze the text above and output the JSON.`;
+
+      try {
+        const retryResult = await agent.generate([
+          { role: 'user' as const, content: fastPrompt },
+        ]);
+        fullText = typeof retryResult.text === 'string' ? retryResult.text : '';
+      } catch (fastErr) {
+        console.error('[BrandVoice] Fast retry failed:', fastErr);
+      }
+    }
+
+    // --- Attempt 3+: full re-scrape as last resort ---
+    if (!fullText.trim() && maxRetries > 0) {
+      console.warn(`[BrandVoice] Fast retry failed, falling back to full re-scrape`);
+      pageCount = 0;
+      sentAnalyzingMsg = false;
+      scrapedPages.length = 0;
+      onEvent({ type: 'status', data: 'Retrying full analysis...' });
+
+      fullText = await streamAgentWithRetry(
+        agent,
+        [{ role: 'user' as const, content: prompt }],
+        {
+          maxRetries: maxRetries - 1,
+          onStreamEvent: handleStreamEvent,
+          onRetry: (attempt, maxAttempts) => {
+            pageCount = 0;
+            sentAnalyzingMsg = false;
+            onEvent({ type: 'status', data: `Retrying (attempt ${attempt + 1}/${maxAttempts})...` });
+          },
+        },
+      );
+    }
+
+    if (!fullText.trim()) {
+      throw firstErr;
+    }
+  }
 
   console.log(`[BrandVoice] Raw response (${fullText.length} chars):`, fullText.slice(0, 500));
 

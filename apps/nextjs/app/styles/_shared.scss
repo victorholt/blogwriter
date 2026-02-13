@@ -136,19 +136,19 @@
 // ============================================================
 
 .step-heading {
-  font-size: 1.75rem;
+  font-size: 1.35rem;
   font-weight: 700;
   color: var(--color-gray-600);
   margin-bottom: 20px;
   line-height: 1.15;
 
   @media (min-width: 640px) {
-    font-size: 2.75rem;
+    font-size: 1.85rem;
     margin-bottom: 32px;
   }
 
   @media (min-width: 768px) {
-    font-size: 3.25rem;
+    font-size: 2.25rem;
   }
 
   &--serif {

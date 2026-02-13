@@ -262,6 +262,13 @@ export async function deleteAdditionalInstruction(
   return res.json();
 }
 
+// --- App Version ---
+
+export async function fetchAppVersion(token: string): Promise<ApiResponse<{ version: string }>> {
+  const res = await fetch(`${API_BASE}/api/admin/${token}/version`);
+  return res.json();
+}
+
 // --- Enhance Text ---
 
 export async function enhanceText(

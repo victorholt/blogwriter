@@ -13,6 +13,7 @@ interface DressMultiSelectProps {
   addDressesToMap: (dresses: Dress[]) => void;
   unfiltered?: boolean;
   brand?: string;
+  showNames?: boolean;
 }
 
 const PAGE_SIZE = 20;
@@ -25,6 +26,7 @@ export default function DressMultiSelect({
   addDressesToMap,
   unfiltered = false,
   brand,
+  showNames = true,
 }: DressMultiSelectProps): React.ReactElement {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -259,9 +261,9 @@ export default function DressMultiSelect({
                       {isSelected && <Check size={12} />}
                     </span>
                     <span className="dress-multi-select__option-info">
-                      <span className="dress-multi-select__option-name">{dress.name}</span>
-                      {dress.styleId && (
-                        <span className="dress-multi-select__option-style">{dress.styleId}</span>
+                      <span className="dress-multi-select__option-style">{dress.styleId || dress.externalId}</span>
+                      {showNames && dress.name && (
+                        <span className="dress-multi-select__option-name">{dress.name}</span>
                       )}
                     </span>
                   </button>

@@ -32,15 +32,8 @@ export default function DressSelectionStep(): React.ReactElement {
         dressesMap={dressesMap}
         addDressesToMap={addDressesToMap}
         brand={selectedBrandSlug ?? undefined}
+        showNames={false}
       />
-
-      {/* Selection count */}
-      <div
-        className={`selection-count ${selectedDressIds.size > 0 ? 'selection-count--active' : 'selection-count--empty'}`}
-        style={{ marginTop: '16px' }}
-      >
-        {selectedDressIds.size} dress{selectedDressIds.size !== 1 ? 'es' : ''} selected
-      </div>
 
       {/* Navigation */}
       <div className="step-actions">

@@ -15,6 +15,7 @@ services:
     volumes:
       - ../../apps/api:/app
       - /app/node_modules
+      - ../../VERSION:/etc/app-version:ro
     ports:
       - ${API_EXTERNAL_PORT:-4444}:4000
     command: npm run dev
@@ -26,6 +27,7 @@ services:
     volumes:
       - ../../apps/nextjs:/app
       - /app/node_modules
+      - ../../VERSION:/etc/app-version:ro
     ports:
       - ${NEXTJS_EXTERNAL_PORT:-4443}:3000
     command: npm run dev

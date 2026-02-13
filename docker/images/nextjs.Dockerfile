@@ -14,6 +14,7 @@ FROM base AS development
 COPY apps/nextjs/package*.json ./
 RUN npm install
 COPY apps/nextjs/ ./
+COPY VERSION /etc/app-version
 
 # Copy entrypoint
 COPY docker/scripts/nextjs-entrypoint.sh /usr/local/bin/entrypoint.sh
@@ -31,6 +32,7 @@ ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 COPY apps/nextjs/package*.json ./
 RUN npm ci
 COPY apps/nextjs/ ./
+COPY VERSION /etc/app-version
 RUN npm run build
 
 # Stage 4: Production

@@ -7,6 +7,7 @@ FROM base AS development
 COPY apps/api/package*.json ./
 RUN npm install
 COPY apps/api/ ./
+COPY VERSION /etc/app-version
 
 COPY docker/scripts/api-entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
@@ -37,6 +38,9 @@ COPY --from=builder /app/dist ./dist
 
 # Copy migration files for runtime migrations on startup
 COPY --from=builder /app/drizzle ./drizzle
+
+# Copy version file
+COPY VERSION /etc/app-version
 
 ENV NODE_ENV=production
 EXPOSE 4000

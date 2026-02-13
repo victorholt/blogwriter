@@ -83,6 +83,14 @@
     text-align: center;
   }
 
+  &__elapsed {
+    font-size: 12px;
+    color: var(--color-gray-300);
+    margin-top: 4px;
+    padding-left: 20px;
+    font-variant-numeric: tabular-nums;
+  }
+
   &--complete {
     .analysis-log__item {
       animation: none;

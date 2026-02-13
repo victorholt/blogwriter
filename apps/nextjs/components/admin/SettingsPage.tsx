@@ -12,6 +12,7 @@ import {
   createBrandLabel,
   updateBrandLabel,
   deleteBrandLabel,
+  fetchAppVersion,
 } from '@/lib/admin-api';
 import type { AdminBrandLabel } from '@/lib/admin-api';
 import { Save, Check, Key, Bot, Loader2, Trash2, Database, Package, RefreshCw, FileText, Palette, Plus, Tag } from 'lucide-react';
@@ -69,6 +70,9 @@ export default function SettingsPage({ token }: SettingsPageProps): React.ReactE
   const [newBrandName, setNewBrandName] = useState('');
   const [brandCreateStatus, setBrandCreateStatus] = useState<'idle' | 'saving' | 'error'>('idle');
 
+  // App version
+  const [appVersion, setAppVersion] = useState<string>('');
+
   const loadData = useCallback(async (): Promise<void> => {
     const settingsResult = await fetchSettings(token);
 
@@ -81,6 +85,11 @@ export default function SettingsPage({ token }: SettingsPageProps): React.ReactE
     const s = settingsResult.data ?? {};
     setAllSettings(s);
     setApiKeyDisplay(s.openrouter_api_key ?? '');
+
+    // Fetch version (non-blocking)
+    fetchAppVersion(token).then((v) => {
+      if (v.success && v.data) setAppVersion(v.data.version);
+    });
   }, [token]);
 
   useEffect(() => {
@@ -436,7 +445,10 @@ export default function SettingsPage({ token }: SettingsPageProps): React.ReactE
   return (
     <div className="page-shell">
       <div className="paper">
-        <h1 className="settings-title">Settings</h1>
+        <div className="settings-header">
+          <h1 className="settings-title">Settings</h1>
+          {appVersion && <span className="settings-version">v{appVersion}</span>}
+        </div>
         <p className="settings-subtitle">Manage API keys, agent models, and product API configuration</p>
 
         {/* Tab Bar */}

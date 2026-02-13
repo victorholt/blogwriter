@@ -52,7 +52,7 @@ export default function StepIndicator(): React.ReactElement {
               <span>Writing blog post&hellip;</span>
             ) : (
               <>
-                <ActiveIcon size={16} />
+                <ActiveIcon size={14} />
                 <span>
                   Step {currentStep} of {STEPS.length} &mdash; {activeStep.label}
                 </span>
@@ -86,7 +86,7 @@ export default function StepIndicator(): React.ReactElement {
               disabled={isPending}
               className={`step-indicator__btn ${modifier}`}
             >
-              {isCompleted ? <Check size={20} /> : <Icon size={20} />}
+              {isCompleted ? <Check size={16} /> : <Icon size={16} />}
               <span>{step.label}</span>
             </button>
           );

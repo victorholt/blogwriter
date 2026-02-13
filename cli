@@ -48,6 +48,7 @@ Commands:
     certs       Generate SSL certificates (self-signed or Let's Encrypt)
     certs-renew Renew Let's Encrypt certificates
     env         Interactive environment configuration
+    version     Show or bump the project version
     deploy      Guided deployment wizard
     help        Show this help message
 
@@ -120,6 +121,9 @@ case "${COMMAND}" in
         ;;
     env)
         source "${SCRIPT_DIR}/bin/cli/commands/env.sh"
+        ;;
+    version)
+        source "${SCRIPT_DIR}/bin/cli/commands/version.sh"
         ;;
     deploy)
         source "${SCRIPT_DIR}/bin/cli/commands/deploy.sh"

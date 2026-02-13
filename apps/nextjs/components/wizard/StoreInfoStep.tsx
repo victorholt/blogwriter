@@ -26,15 +26,24 @@ export default function StoreInfoStep(): React.ReactElement {
   const brandVoiceAttemptCount = useWizardStore((s) => s.brandVoiceAttemptCount);
 
   const [error, setError] = useState<string | null>(null);
+  const [elapsed, setElapsed] = useState(0);
   const retryTriggered = useRef(false);
   const autoAdvancedRef = useRef(false);
+
+  // Elapsed timer — ticks every second while analyzing
+  useEffect(() => {
+    if (!isAnalyzing) { setElapsed(0); return; }
+    const start = Date.now();
+    const timer = setInterval(() => setElapsed(Math.floor((Date.now() - start) / 1000)), 1000);
+    return () => clearInterval(timer);
+  }, [isAnalyzing]);
 
   // Map status log messages to debug events by matching patterns
   function getDebugEventForMessage(msg: string, msgIndex: number): import('@/types').DebugEvent | null {
     if (debugData.length === 0) return null;
 
-    if (msg.startsWith('Scraping ')) {
-      const scrapeIndex = statusLog.slice(0, msgIndex + 1).filter(m => m.startsWith('Scraping ')).length - 1;
+    if (msg.startsWith('Scraping page') || msg.startsWith('Scraping ')) {
+      const scrapeIndex = statusLog.slice(0, msgIndex + 1).filter(m => m.startsWith('Scraping page') || m.startsWith('Scraping ')).length - 1;
       const toolCalls = debugData.filter(e => e.kind === 'tool-call');
       return toolCalls[scrapeIndex] ?? null;
     }
@@ -43,7 +52,7 @@ export default function StoreInfoStep(): React.ReactElement {
       const toolResults = debugData.filter(e => e.kind === 'tool-result');
       return toolResults[readIndex] ?? null;
     }
-    if (msg === 'Building brand profile...') {
+    if (msg.startsWith('Building brand voice')) {
       return debugData.find(e => e.kind === 'raw-response') ?? null;
     }
     return null;
@@ -122,8 +131,8 @@ export default function StoreInfoStep(): React.ReactElement {
       <h1 className="step-heading step-heading--serif">Let&rsquo;s get to know you</h1>
       <p className="step-subtitle">
         We&rsquo;ll start by getting to know your store. Paste your website URL below so we can
-        analyze your brand&rsquo;s DNA &mdash; from your specific voice and tone to your
-        store&rsquo;s location &mdash; to create a perfectly tailored blog post.
+        analyze your brand&rsquo;s DNA &mdash; your unique voice, tone, and style &mdash; to
+        create a perfectly tailored blog post.
       </p>
 
       {brandVoiceAttemptCount > 0 && isAnalyzing && (
@@ -135,7 +144,7 @@ export default function StoreInfoStep(): React.ReactElement {
       <div className="store-input">
         <input
           type="url"
-          placeholder="Paste your website or blog URL here"
+          placeholder="Paste your website or store page URL"
           value={storeUrl}
           onChange={(e) => handleUrlChange(e.target.value)}
           onKeyDown={(e) => {
@@ -182,6 +191,11 @@ export default function StoreInfoStep(): React.ReactElement {
               </div>
             );
           })}
+          {elapsed > 0 && (
+            <div className="analysis-log__elapsed">
+              {elapsed < 60 ? `${elapsed}s` : `${Math.floor(elapsed / 60)}m ${elapsed % 60}s`} elapsed
+            </div>
+          )}
         </div>
       )}
 

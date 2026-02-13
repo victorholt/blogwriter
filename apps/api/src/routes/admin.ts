@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
+import { readFileSync } from 'fs';
 import { db } from '../db';
 import { agentModelConfigs, agentAdditionalInstructions, appSettings, brandVoiceCache, themes, brandLabels } from '../db/schema';
 import { eq, asc, and } from 'drizzle-orm';
@@ -10,6 +11,14 @@ import { clearDressCache, syncDressesFromApi, getCacheStats } from '../services/
 import { AGENT_DEFAULTS } from '../mastra/lib/agent-defaults';
 import { loadProductApiConfig } from '../services/product-api-client';
 import { invalidateInsightsCache } from '../services/agent-trace';
+
+// Read app version once at startup
+let appVersion = '0.0.0';
+try {
+  appVersion = readFileSync('/etc/app-version', 'utf-8').trim();
+} catch {
+  // VERSION file may not exist in some environments
+}
 
 const router = Router();
 
@@ -532,6 +541,12 @@ router.post('/:token/enhance', validateAdminToken, async (req, res) => {
     console.error('[Admin] Enhance error:', message);
     return res.status(500).json({ success: false, error: message });
   }
+});
+
+// --- App Version ---
+
+router.get('/:token/version', async (_req, res) => {
+  return res.json({ success: true, data: { version: appVersion } });
 });
 
 export default router;

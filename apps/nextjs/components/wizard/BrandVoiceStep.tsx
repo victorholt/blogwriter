@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useWizardStore } from '@/stores/wizard-store';
 import {
-  Check, Users, Sparkles,
+  Check, CheckSquare, Users, Sparkles,
   MessageSquareQuote, RefreshCw, Plus, X, Theater, BookOpen, Ban,
 } from 'lucide-react';
 import EditableSection from '@/components/ui/EditableSection';
@@ -710,8 +710,8 @@ export default function BrandVoiceStep(): React.ReactElement {
           Try Again
         </button>
         <button className="btn btn--primary" onClick={handleConfirm}>
-          <Check size={16} />
-          Confirm
+          <CheckSquare size={16} />
+          Yes
         </button>
       </div>
     </div>
