@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useWizardStore } from '@/stores/wizard-store';
 import { analyzeBrandVoiceStream } from '@/lib/api';
-import { Play, Loader2, Check, ArrowRight } from 'lucide-react';
+import { Play, Loader2, Check, ArrowRight, RotateCcw } from 'lucide-react';
 import InsightPopup from '@/components/InsightPopup';
 
 export default function StoreInfoStep(): React.ReactElement {
@@ -201,7 +201,19 @@ export default function StoreInfoStep(): React.ReactElement {
         </div>
       )}
 
-      {error && <p className="error-text">{error}</p>}
+      {error && (
+        <div className="analysis-error">
+          <p className="analysis-error__message">{error}</p>
+          <button
+            className="btn btn--primary btn--sm"
+            onClick={handleAnalyze}
+            disabled={isAnalyzing}
+          >
+            <RotateCcw size={14} />
+            Try Again
+          </button>
+        </div>
+      )}
 
       {/* Navigation footer — matches Steps 2-4 pattern */}
       {analysisComplete && (

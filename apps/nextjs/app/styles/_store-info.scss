@@ -102,6 +102,31 @@
   }
 }
 
+// --- Analysis error ---
+
+.analysis-error {
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: var(--radius-md);
+
+  &__message {
+    flex: 1;
+    font-size: 13px;
+    color: #dc2626;
+    margin: 0;
+    line-height: 1.4;
+  }
+
+  .btn {
+    flex-shrink: 0;
+  }
+}
+
 // --- Debug panel ---
 
 .debug-panel {

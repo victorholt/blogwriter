@@ -1,4 +1,4 @@
-import { createConfiguredAgent } from '../lib/agent-factory';
+import { createConfiguredAgent, getMaxRetries, streamAgentWithRetry } from '../lib/agent-factory';
 import { scrapeWebpage } from '../tools/scrape-webpage';
 
 const INSTRUCTIONS = `You are an expert brand strategist who builds comprehensive writing voice guides by analyzing websites. When given a URL, use the scrape-webpage tool to explore the site thoroughly, then produce a detailed voice profile.
@@ -39,7 +39,7 @@ Your ENTIRE response must be a single JSON object matching this exact structure:
   "toneAttributes": [
     {
       "name": "string — e.g. 'Warm & Approachable'",
-      "description": "string — detailed description with specific language examples from the site, e.g. 'Uses conversational language like \"we're here to help\" and \"your journey\"'"
+      "description": "string — detailed description with specific language examples from the site, e.g. 'Uses conversational language like \\"we're here to help\\" and \\"your journey\\"'"
     }
   ],
   "vocabulary": [
@@ -140,6 +140,7 @@ export async function streamBrandVoiceAnalysis(
   const agent = await createConfiguredAgent('brand-voice-analyzer', INSTRUCTIONS, {
     'scrape-webpage': scrapeWebpage,
   });
+  const maxRetries = await getMaxRetries('brand-voice-analyzer');
 
   let prompt = `Analyze the brand voice of this website: ${url}`;
   if (options?.previousAttempt) {
@@ -149,79 +150,67 @@ export async function streamBrandVoiceAnalysis(
     onEvent({ type: 'status', data: `Visiting ${new URL(url).hostname}...` });
   }
 
-  const result = await agent.stream([
-    { role: 'user' as const, content: prompt },
-  ]);
-
-  let fullText = '';
-  const reader = result.fullStream.getReader();
   let sentAnalyzingMsg = false;
-  let streamError: string | null = null;
 
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
+  const fullText = await streamAgentWithRetry(
+    agent,
+    [{ role: 'user' as const, content: prompt }],
+    {
+      maxRetries,
+      onStreamEvent: (value) => {
+        const payload = (value as any).payload;
 
-    const payload = (value as any).payload;
-
-    if (value.type === 'tool-call') {
-      const toolUrl = payload?.args?.url || (value as any).args?.url || url;
-      try {
-        onEvent({ type: 'status', data: `Scraping ${new URL(toolUrl).hostname}${new URL(toolUrl).pathname}...` });
-      } catch {
-        onEvent({ type: 'status', data: `Scraping page...` });
-      }
-      if (options?.debugMode) {
-        onEvent({ type: 'debug', data: {
-          kind: 'tool-call',
-          toolName: payload?.toolName || 'scrape-webpage',
-          args: payload?.args || {},
-        }});
-      }
-    } else if (value.type === 'tool-result') {
-      onEvent({ type: 'status', data: 'Reading page content...' });
-      if (options?.debugMode) {
-        const raw = payload?.result || payload || (value as any).result || value;
-        let toolResult: Record<string, any> = {};
-        if (typeof raw === 'string') {
-          try { toolResult = JSON.parse(raw); } catch { toolResult = { text: raw }; }
-        } else if (typeof raw === 'object' && raw !== null) {
-          toolResult = raw;
+        if (value.type === 'tool-call') {
+          const toolUrl = payload?.args?.url || (value as any).args?.url || url;
+          try {
+            onEvent({ type: 'status', data: `Scraping ${new URL(toolUrl).hostname}${new URL(toolUrl).pathname}...` });
+          } catch {
+            onEvent({ type: 'status', data: `Scraping page...` });
+          }
+          if (options?.debugMode) {
+            onEvent({ type: 'debug', data: {
+              kind: 'tool-call',
+              toolName: payload?.toolName || 'scrape-webpage',
+              args: payload?.args || {},
+            }});
+          }
+        } else if (value.type === 'tool-result') {
+          onEvent({ type: 'status', data: 'Reading page content...' });
+          if (options?.debugMode) {
+            const raw = payload?.result || payload || (value as any).result || value;
+            let toolResult: Record<string, any> = {};
+            if (typeof raw === 'string') {
+              try { toolResult = JSON.parse(raw); } catch { toolResult = { text: raw }; }
+            } else if (typeof raw === 'object' && raw !== null) {
+              toolResult = raw;
+            }
+            const resultUrl = payload?.args?.url || '';
+            onEvent({ type: 'debug', data: {
+              kind: 'tool-result',
+              url: resultUrl,
+              title: toolResult.title || '',
+              metaDescription: toolResult.metaDescription || '',
+              contentPreview: (toolResult.text || '').slice(0, 500),
+              contentLength: (toolResult.text || '').length,
+              ...(toolResult.error ? { error: toolResult.error } : {}),
+            }});
+          }
+        } else if (value.type === 'text-delta') {
+          if (!sentAnalyzingMsg) {
+            onEvent({ type: 'status', data: 'Building brand voice profile...' });
+            sentAnalyzingMsg = true;
+          }
+        } else if (value.type === 'error') {
+          const errMsg = payload?.message || payload?.error || JSON.stringify(payload) || 'Unknown model error';
+          console.error(`[BrandVoice] Stream error event:`, errMsg);
         }
-        const resultUrl = payload?.args?.url || '';
-        onEvent({ type: 'debug', data: {
-          kind: 'tool-result',
-          url: resultUrl,
-          title: toolResult.title || '',
-          metaDescription: toolResult.metaDescription || '',
-          contentPreview: (toolResult.text || '').slice(0, 500),
-          contentLength: (toolResult.text || '').length,
-          ...(toolResult.error ? { error: toolResult.error } : {}),
-        }});
-      }
-    } else if (value.type === 'text-delta') {
-      if (!sentAnalyzingMsg) {
-        onEvent({ type: 'status', data: 'Building brand voice profile...' });
-        sentAnalyzingMsg = true;
-      }
-      fullText += payload?.text ?? '';
-    } else if (value.type === 'error') {
-      const errMsg = payload?.message || payload?.error || JSON.stringify(payload) || 'Unknown model error';
-      console.error(`[BrandVoice] Stream error event:`, errMsg);
-      streamError = errMsg;
-    }
-  }
-
-  // If streaming didn't capture text, fall back to the result's text property
-  if (!fullText.trim() && result.text) {
-    fullText = typeof result.text === 'string' ? result.text : await result.text;
-  }
-
-  if (!fullText.trim()) {
-    const detail = streamError || 'No response from model';
-    console.error(`[BrandVoice] Empty response for ${url}. Detail: ${detail}`);
-    throw new Error(`Brand voice analysis failed: ${detail}`);
-  }
+      },
+      onRetry: (attempt, maxAttempts) => {
+        sentAnalyzingMsg = false; // Reset for retry
+        onEvent({ type: 'status', data: `Model didn\u2019t respond \u2014 retrying (attempt ${attempt + 1}/${maxAttempts})...` });
+      },
+    },
+  );
 
   console.log(`[BrandVoice] Raw response (${fullText.length} chars):`, fullText.slice(0, 500));
 

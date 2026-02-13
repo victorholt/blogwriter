@@ -176,10 +176,18 @@ router.post('/analyze-stream', async (req, res) => {
   } catch (err) {
     const errDetail = err instanceof Error ? `${err.message}\n${err.stack}` : String(err);
     console.error(`[BrandVoice] Stream error for ${url}:\n${errDetail}`);
-    const message =
-      err instanceof Error && err.message === 'AI_SERVICE_UNAVAILABLE'
-        ? 'Our analysis service is temporarily unavailable. Please try again later.'
-        : 'Something went wrong while analyzing the website. Please try again.';
+    const errMsg = err instanceof Error ? err.message : '';
+
+    let message: string;
+    if (errMsg === 'AI_SERVICE_UNAVAILABLE') {
+      message = 'Our analysis service is temporarily unavailable. Please try again in a few minutes.';
+    } else if (errMsg.includes('No response from model') || errMsg.includes('Empty response')) {
+      message = 'The AI model didn\u2019t return a response after retrying. This is usually temporary \u2014 please try again.';
+    } else if (errMsg.includes('Failed to parse')) {
+      message = 'The analysis completed but produced an unreadable result. Please try again.';
+    } else {
+      message = 'Something went wrong while analyzing the website. Please try again.';
+    }
     try { sendEvent('error', message); } catch { /* connection already closed */ }
     try { res.end(); } catch { /* connection already closed */ }
   } finally {

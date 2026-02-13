@@ -403,6 +403,7 @@ export default function ResultView(): React.ReactElement {
         </div>
 
         {/* Collapsible Panels */}
+        {(review || seoMetadata) && (
         <div className="result__panels">
           {/* Review Panel */}
           {review && (
@@ -509,18 +510,22 @@ export default function ResultView(): React.ReactElement {
             </div>
           )}
         </div>
+        )}
 
         {/* Agent Insights (only visible in debug mode) */}
         {debugMode && Object.keys(blogTraceIds).length > 0 && (
           <div className="result__insights">
             <h3 className="result__insights-title">Agent Insights</h3>
-            {Object.entries(blogTraceIds).map(([agentId, traceId]) => (
-              <AgentInsight
-                key={agentId}
-                traceId={traceId}
-                agentLabel={agentId.split('-').map(w => w[0].toUpperCase() + w.slice(1)).join(' ')}
-              />
-            ))}
+            {generationPipeline
+              .filter((a) => blogTraceIds[a.id])
+              .map((agent) => (
+                <AgentInsight
+                  key={agent.id}
+                  traceId={blogTraceIds[agent.id]}
+                  agentId={agent.id}
+                  agentLabel={agent.label}
+                />
+              ))}
           </div>
         )}
       </div>

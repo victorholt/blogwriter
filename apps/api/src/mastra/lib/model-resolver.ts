@@ -8,6 +8,7 @@ export interface AgentConfig {
   maxTokens: number;
   instructions: string | null;
   enabled: boolean;
+  maxRetries: number;
 }
 
 let configCache: Map<string, AgentConfig> = new Map();
@@ -30,6 +31,7 @@ async function refreshCache(): Promise<void> {
         maxTokens: parseInt(c.maxTokens ?? '4096', 10),
         instructions: c.instructions ?? null,
         enabled: c.enabled,
+        maxRetries: c.maxRetries ?? 3,
       },
     ]),
   );
@@ -54,6 +56,7 @@ export async function getAgentModelConfig(agentId: string): Promise<AgentConfig>
       maxTokens: 4096,
       instructions: null,
       enabled: true,
+      maxRetries: 3,
     }
   );
 }

@@ -4,6 +4,7 @@ import { eq } from 'drizzle-orm';
 import { db } from '../../db';
 import { agentAdditionalInstructions } from '../../db/schema';
 import { getAgentModelConfig, getOpenRouterApiKey } from './model-resolver';
+import type { AgentConfig } from './model-resolver';
 
 function createOpenRouterModel(modelId: string, apiKey: string): ModelRouterLanguageModel {
   // modelId is stored as "openrouter/vendor/model-name" in the DB
@@ -129,4 +130,75 @@ export async function createConfiguredAgent(
     model,
     tools,
   });
+}
+
+/**
+ * Get the configured max retries for an agent.
+ */
+export async function getMaxRetries(agentId: string): Promise<number> {
+  const config = await getAgentModelConfig(agentId);
+  return config.maxRetries;
+}
+
+/**
+ * Stream an agent call with automatic retry on empty responses.
+ *
+ * Consumes the fullStream, collecting text chunks and forwarding all stream
+ * events to the optional `onStreamEvent` callback. If the response is empty,
+ * retries up to `maxRetries` times (read from agent config).
+ *
+ * Returns the full text output on success, throws on exhausted retries.
+ */
+export interface StreamWithRetryOptions {
+  /** Called for every stream event (text-delta, tool-call, etc.) */
+  onStreamEvent?: (value: { type: string; payload?: any }) => void;
+  /** Called when a retry is about to happen */
+  onRetry?: (attempt: number, maxAttempts: number, error: string) => void;
+  /** Override the max retries from config */
+  maxRetries?: number;
+}
+
+export async function streamAgentWithRetry(
+  agent: Agent,
+  messages: Parameters<Agent['stream']>[0],
+  options?: StreamWithRetryOptions,
+): Promise<string> {
+  const maxAttempts = (options?.maxRetries ?? 3) + 1; // retries + initial attempt
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const result = await agent.stream(messages);
+
+    let fullText = '';
+    const reader = result.fullStream.getReader();
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      if (value.type === 'text-delta') {
+        const chunk = (value as any).payload?.text ?? '';
+        fullText += chunk;
+      }
+
+      // Forward all events to caller
+      options?.onStreamEvent?.(value as any);
+    }
+
+    // Fallback to result.text if streaming didn't capture
+    if (!fullText.trim() && result.text) {
+      fullText = typeof result.text === 'string' ? result.text : await result.text;
+    }
+
+    if (fullText.trim()) {
+      return fullText;
+    }
+
+    // Empty response — retry if attempts remain
+    if (attempt < maxAttempts) {
+      console.warn(`[AgentRetry] Empty response on attempt ${attempt}/${maxAttempts}. Retrying...`);
+      options?.onRetry?.(attempt, maxAttempts, 'Empty response from model');
+    }
+  }
+
+  throw new Error('No response from model after ' + maxAttempts + ' attempts');
 }

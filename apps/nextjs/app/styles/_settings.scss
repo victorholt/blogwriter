@@ -197,6 +197,10 @@
     }
   }
 
+  &--sm {
+    flex: 0 0 100px;
+  }
+
   &__hint {
     font-weight: 400;
     color: var(--color-gray-400);

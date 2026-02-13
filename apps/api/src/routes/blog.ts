@@ -10,6 +10,7 @@ import { createSeniorEditorAgent } from '../mastra/agents/senior-editor';
 import { createBlogReviewerAgent } from '../mastra/agents/blog-reviewer';
 import { isInsightsEnabled, startTrace, log as traceLog, getSessionTraces } from '../services/agent-trace';
 import { isAgentEnabled } from '../mastra/lib/model-resolver';
+import { getMaxRetries, streamAgentWithRetry } from '../mastra/lib/agent-factory';
 
 const router = Router();
 
@@ -162,26 +163,25 @@ router.get('/:sessionId/stream', async (req, res) => {
       }
 
       const agent = await createBlogWriterAgent(brandVoice, selectedDressIds, effectiveInstructions, { generateImages, generateLinks }, globalContext);
-      const result = await agent.stream([
-        { role: 'user' as const, content: inputPrompt },
-      ]);
+      const writerRetries = await getMaxRetries('blog-writer');
 
-      let text = '';
-      const reader = result.fullStream.getReader();
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        if (value.type === 'text-delta') {
-          const chunk = (value as any).payload?.text ?? '';
-          text += chunk;
-          if (chunk) sendEvent(res, 'agent-chunk', { agent: 'blog-writer', chunk });
-        }
-      }
-
-      // Fallback to result.text if streaming didn't capture
-      if (!text.trim() && result.text) {
-        text = typeof result.text === 'string' ? result.text : await result.text;
-      }
+      const text = await streamAgentWithRetry(
+        agent,
+        [{ role: 'user' as const, content: inputPrompt }],
+        {
+          maxRetries: writerRetries,
+          onStreamEvent: (value) => {
+            if (value.type === 'text-delta') {
+              const chunk = (value as any).payload?.text ?? '';
+              if (chunk) sendEvent(res, 'agent-chunk', { agent: 'blog-writer', chunk });
+            }
+          },
+          onRetry: (attempt, maxAttempts) => {
+            console.warn(`[Blog] blog-writer empty response, retry ${attempt + 1}/${maxAttempts}`);
+            sendEvent(res, 'agent-retry', { agent: 'blog-writer', attempt: attempt + 1, maxAttempts });
+          },
+        },
+      );
 
       currentOutput = text;
 
@@ -216,25 +216,25 @@ router.get('/:sessionId/stream', async (req, res) => {
       }
 
       const agent = await opt.creator(globalContext);
-      const result = await agent.stream([
-        { role: 'user' as const, content: agentInput },
-      ]);
+      const agentRetries = await getMaxRetries(opt.id);
 
-      let text = '';
-      const reader = result.fullStream.getReader();
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        if (value.type === 'text-delta') {
-          const chunk = (value as any).payload?.text ?? '';
-          text += chunk;
-          if (chunk) sendEvent(res, 'agent-chunk', { agent: opt.id, chunk });
-        }
-      }
-
-      if (!text.trim() && result.text) {
-        text = typeof result.text === 'string' ? result.text : await result.text;
-      }
+      const text = await streamAgentWithRetry(
+        agent,
+        [{ role: 'user' as const, content: agentInput }],
+        {
+          maxRetries: agentRetries,
+          onStreamEvent: (value) => {
+            if (value.type === 'text-delta') {
+              const chunk = (value as any).payload?.text ?? '';
+              if (chunk) sendEvent(res, 'agent-chunk', { agent: opt.id, chunk });
+            }
+          },
+          onRetry: (attempt, maxAttempts) => {
+            console.warn(`[Blog] ${opt.id} empty response, retry ${attempt + 1}/${maxAttempts}`);
+            sendEvent(res, 'agent-retry', { agent: opt.id, attempt: attempt + 1, maxAttempts });
+          },
+        },
+      );
 
       currentOutput = text;
 

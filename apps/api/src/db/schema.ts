@@ -10,6 +10,7 @@ export const agentModelConfigs = pgTable('agent_model_configs', {
   instructions: text('instructions'),
   enabled: boolean('enabled').default(true).notNull(),
   showPreview: boolean('show_preview').default(false).notNull(),
+  maxRetries: integer('max_retries').default(3).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });

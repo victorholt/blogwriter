@@ -1,0 +1,1 @@
+ALTER TABLE "agent_model_configs" ADD COLUMN IF NOT EXISTS "max_retries" integer DEFAULT 3 NOT NULL;

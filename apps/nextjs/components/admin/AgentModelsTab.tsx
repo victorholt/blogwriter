@@ -141,6 +141,18 @@ export default function AgentModelsTab({ token }: AgentModelsTabProps): React.Re
     }
   }
 
+  function getAgentNumericValue(agentId: string, field: keyof AgentConfig): number {
+    const edit = agentEdits[agentId];
+    if (edit && field in edit) {
+      const val = Number(edit[field]);
+      return isNaN(val) ? 0 : val;
+    }
+    const agent = agents.find((a) => a.agentId === agentId);
+    if (!agent) return 0;
+    const val = Number(agent[field]);
+    return isNaN(val) ? 0 : val;
+  }
+
   async function handleSaveAgent(agentId: string): Promise<void> {
     setAgentSaveStatus((prev) => ({ ...prev, [agentId]: 'saving' }));
     const instructions = getAgentValue(agentId, 'instructions');
@@ -148,6 +160,7 @@ export default function AgentModelsTab({ token }: AgentModelsTabProps): React.Re
       modelId: getAgentValue(agentId, 'modelId'),
       temperature: getAgentValue(agentId, 'temperature'),
       maxTokens: getAgentValue(agentId, 'maxTokens'),
+      maxRetries: getAgentNumericValue(agentId, 'maxRetries'),
       ...(instructions !== undefined && { instructions: instructions || '' }),
     });
 
@@ -359,17 +372,18 @@ export default function AgentModelsTab({ token }: AgentModelsTabProps): React.Re
                     />
                   </div>
 
+                  <div className="settings-field">
+                    <Slider
+                      label="Temperature"
+                      value={parseFloat(getAgentValue(agent.agentId, 'temperature')) || 0.7}
+                      onChange={(val) => setAgentValue(agent.agentId, 'temperature', val.toFixed(1))}
+                      min={0}
+                      max={2}
+                      step={0.1}
+                    />
+                  </div>
+
                   <div className="settings-card__row">
-                    <div className="settings-field">
-                      <Slider
-                        label="Temperature"
-                        value={parseFloat(getAgentValue(agent.agentId, 'temperature')) || 0.7}
-                        onChange={(val) => setAgentValue(agent.agentId, 'temperature', val.toFixed(1))}
-                        min={0}
-                        max={2}
-                        step={0.1}
-                      />
-                    </div>
                     <div className="settings-field">
                       <label className="settings-field__label">Max Tokens</label>
                       <input
@@ -379,6 +393,18 @@ export default function AgentModelsTab({ token }: AgentModelsTabProps): React.Re
                         min="256"
                         value={getAgentValue(agent.agentId, 'maxTokens')}
                         onChange={(e) => setAgentValue(agent.agentId, 'maxTokens', e.target.value)}
+                      />
+                    </div>
+                    <div className="settings-field settings-field--sm">
+                      <label className="settings-field__label">Max Retries</label>
+                      <input
+                        className="input"
+                        type="number"
+                        step="1"
+                        min="0"
+                        max="10"
+                        value={getAgentNumericValue(agent.agentId, 'maxRetries')}
+                        onChange={(e) => setAgentValue(agent.agentId, 'maxRetries', e.target.value)}
                       />
                     </div>
                   </div>
