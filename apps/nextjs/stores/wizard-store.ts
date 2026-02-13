@@ -55,6 +55,7 @@ interface WizardState {
   generationChunks: string;
   generationAgentLabel: string;
   generationError: string | null;
+  generationRecovering: boolean;
   agentOutputs: Record<string, string>;
 
   // Debug
@@ -98,6 +99,7 @@ interface WizardState {
   clearChunks: () => void;
   setGeneratedBlog: (blog: string, seo?: { title: string; description: string; keywords: string[] }, review?: BlogReview) => void;
   setGenerationError: (error: string) => void;
+  setGenerationRecovering: (recovering: boolean) => void;
   setBlogTraceId: (agentId: string, traceId: string) => void;
   setAgentOutput: (agentId: string, output: string) => void;
   setDebugMode: (enabled: boolean) => void;
@@ -148,6 +150,7 @@ const initialState = {
   generationPipeline: [] as { id: string; label: string }[],
   generationChunks: '',
   generationError: null as string | null,
+  generationRecovering: false,
   generatedBlog: null as string | null,
   seoMetadata: null as { title: string; description: string; keywords: string[] } | null,
   review: null as BlogReview | null,
@@ -257,7 +260,8 @@ export const useWizardStore = create<WizardState>()(
       clearChunks: () => set({ generationChunks: '' }),
       setGeneratedBlog: (blog, seo, review) =>
         set({ generatedBlog: blog, seoMetadata: seo ?? null, review: review ?? null }),
-      setGenerationError: (error) => set({ generationError: error }),
+      setGenerationError: (error) => set({ generationError: error, generationRecovering: false }),
+      setGenerationRecovering: (recovering) => set({ generationRecovering: recovering }),
       setBlogTraceId: (agentId, traceId) =>
         set((state) => ({ blogTraceIds: { ...state.blogTraceIds, [agentId]: traceId } })),
       setAgentOutput: (agentId, output) =>
@@ -294,6 +298,7 @@ export const useWizardStore = create<WizardState>()(
           generationPipeline: [],
           generationChunks: '',
           generationError: null,
+          generationRecovering: false,
           generatedBlog: null,
           seoMetadata: null,
           review: null,
@@ -322,6 +327,7 @@ export const useWizardStore = create<WizardState>()(
           generationTotalSteps: 0,
           generationPipeline: [],
           generationError: null,
+          generationRecovering: false,
           blogTraceIds: {},
           agentOutputs: {},
         }),

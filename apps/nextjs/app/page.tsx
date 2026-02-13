@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { useWizardStore } from '@/stores/wizard-store';
-import { createBlogStream, fetchDebugMode, fetchBlogSettings } from '@/lib/api';
+import { createBlogStream, fetchSessionStatus, fetchDebugMode, fetchBlogSettings } from '@/lib/api';
 import StepIndicator from '@/components/wizard/StepIndicator';
 import StoreInfoStep from '@/components/wizard/StoreInfoStep';
 import BrandVoiceStep from '@/components/wizard/BrandVoiceStep';
@@ -39,6 +39,46 @@ function WizardStep(): React.ReactElement {
   );
 }
 
+/**
+ * Poll the session status after SSE drops. The backend keeps generating even
+ * when the client disconnects, so we check if the result is already there.
+ * Polls every 3s up to ~2 minutes before giving up.
+ */
+async function pollSessionStatus(
+  sessionId: string,
+  setGeneratedBlog: (blog: string, seo: any, review: any) => void,
+  setView: (v: 'wizard' | 'generating' | 'result') => void,
+  setGenerationError: (msg: string) => void,
+  setGenerationRecovering: (recovering: boolean) => void,
+): Promise<void> {
+  setGenerationRecovering(true);
+  const MAX_POLLS = 40;
+  const INTERVAL_MS = 3000;
+
+  for (let i = 0; i < MAX_POLLS; i++) {
+    try {
+      const result = await fetchSessionStatus(sessionId);
+      if (result.success && result.status === 'completed' && result.blog) {
+        setGenerationRecovering(false);
+        setGeneratedBlog(result.blog, result.seoMetadata ?? null, result.review ?? null);
+        setView('result');
+        return;
+      }
+      if (result.status === 'error') {
+        setGenerationError('Generation failed on the server');
+        return;
+      }
+      // Still generating — wait and poll again
+    } catch {
+      // Network error on poll — keep trying
+    }
+    await new Promise((r) => setTimeout(r, INTERVAL_MS));
+  }
+
+  // Exhausted all polls
+  setGenerationError('Connection to generation pipeline lost');
+}
+
 function GeneratingWithSSE(): React.ReactElement {
   const sessionId = useWizardStore((s) => s.sessionId);
   const updateGeneration = useWizardStore((s) => s.updateGeneration);
@@ -46,6 +86,7 @@ function GeneratingWithSSE(): React.ReactElement {
   const clearChunks = useWizardStore((s) => s.clearChunks);
   const setGeneratedBlog = useWizardStore((s) => s.setGeneratedBlog);
   const setGenerationError = useWizardStore((s) => s.setGenerationError);
+  const setGenerationRecovering = useWizardStore((s) => s.setGenerationRecovering);
   const setView = useWizardStore((s) => s.setView);
   const setBlogTraceId = useWizardStore((s) => s.setBlogTraceId);
   const setAgentOutput = useWizardStore((s) => s.setAgentOutput);
@@ -109,14 +150,16 @@ function GeneratingWithSSE(): React.ReactElement {
 
     es.onerror = () => {
       es.close();
-      setGenerationError('Connection to generation pipeline lost');
+      // Don't immediately fail — the backend may still be generating.
+      // Poll the session status to recover the result if it completed.
+      pollSessionStatus(sessionId, setGeneratedBlog, setView, setGenerationError, setGenerationRecovering);
     };
 
     return () => {
       es.close();
       connectedRef.current = false;
     };
-  }, [sessionId, updateGeneration, appendChunk, clearChunks, setGeneratedBlog, setGenerationError, setView, setBlogTraceId, setAgentOutput, addPipelineAgent]);
+  }, [sessionId, updateGeneration, appendChunk, clearChunks, setGeneratedBlog, setGenerationError, setGenerationRecovering, setView, setBlogTraceId, setAgentOutput, addPipelineAgent]);
 
   return <GeneratingView />;
 }

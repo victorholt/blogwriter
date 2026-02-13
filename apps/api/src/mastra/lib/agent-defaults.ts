@@ -4,6 +4,7 @@ import { DEFAULT_INSTRUCTIONS as seoSpecialist } from '../agents/seo-specialist'
 import { DEFAULT_INSTRUCTIONS as seniorEditor } from '../agents/senior-editor';
 import { DEFAULT_INSTRUCTIONS as blogReviewer } from '../agents/blog-reviewer';
 import { DEFAULT_INSTRUCTIONS as textEnhancer } from '../agents/text-enhancer';
+import { DEFAULT_INSTRUCTIONS as brandVoiceFast } from '../agents/brand-voice-fast';
 import { BLOG_WRITER_TEMPLATE as blogWriter } from '../agents/blog-writer';
 
 export interface AgentDefault {
@@ -19,4 +20,5 @@ export const AGENT_DEFAULTS: Record<string, AgentDefault> = {
   'senior-editor': { instructions: seniorEditor, isDynamic: false },
   'blog-reviewer': { instructions: blogReviewer, isDynamic: false },
   'text-enhancer': { instructions: textEnhancer, isDynamic: false },
+  'brand-voice-fast': { instructions: brandVoiceFast, isDynamic: false },
 };

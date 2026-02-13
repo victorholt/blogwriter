@@ -12,6 +12,7 @@ const DEFAULT_AGENTS = [
   { agentId: 'senior-editor', agentLabel: 'Senior Editor', modelId: DEFAULT_MODEL, temperature: '0.5', maxTokens: '4096' },
   { agentId: 'blog-reviewer', agentLabel: 'Blog Reviewer', modelId: DEFAULT_MODEL, temperature: '0.3', maxTokens: '4096' },
   { agentId: 'text-enhancer', agentLabel: 'Text Enhancer', modelId: DEFAULT_MODEL, temperature: '0.7', maxTokens: '2048' },
+  { agentId: 'brand-voice-fast', agentLabel: 'Brand Voice (Fast)', modelId: DEFAULT_MODEL, temperature: '0.5', maxTokens: '4096', enabled: false },
 ];
 
 const DEFAULT_SETTINGS = [

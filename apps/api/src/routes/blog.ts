@@ -281,6 +281,29 @@ router.get('/:sessionId/stream', async (req, res) => {
   res.end();
 });
 
+// GET /api/blog/:sessionId/status - Check session status (used for SSE reconnection)
+router.get('/:sessionId/status', async (req, res) => {
+  try {
+    const rows = await db.select().from(blogSessions).where(eq(blogSessions.id, req.params.sessionId)).limit(1);
+    if (rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Session not found' });
+    }
+    const session = rows[0];
+    const result: Record<string, unknown> = { success: true, status: session.status };
+
+    if (session.status === 'completed' && session.generatedBlog) {
+      result.blog = session.generatedBlog;
+      result.seoMetadata = session.seoMetadata ? JSON.parse(session.seoMetadata) : null;
+      result.review = session.agentLog ? JSON.parse(session.agentLog) : null;
+    }
+
+    return res.json(result);
+  } catch (err) {
+    console.error(`[Blog] Error fetching status for session ${req.params.sessionId}:`, err);
+    return res.status(500).json({ success: false, error: 'Failed to fetch session status' });
+  }
+});
+
 // Fetch all traces for a blog session
 router.get('/:sessionId/traces', async (req, res) => {
   try {

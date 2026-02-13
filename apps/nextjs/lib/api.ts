@@ -133,6 +133,18 @@ export function createBlogStream(sessionId: string): EventSource {
   return new EventSource(`${API_BASE}/api/blog/${sessionId}/stream`);
 }
 
+export async function fetchSessionStatus(sessionId: string): Promise<{
+  success: boolean;
+  status?: string;
+  blog?: string;
+  seoMetadata?: { title: string; description: string; keywords: string[] } | null;
+  review?: { qualityScore: number; strengths: string[]; suggestions: string[]; flags: string[] } | null;
+  error?: string;
+}> {
+  const res = await fetch(`${API_BASE}/api/blog/${sessionId}/status`);
+  return res.json();
+}
+
 // --- Debug / Trace ---
 
 export async function fetchDebugMode(): Promise<{ debugMode: boolean }> {

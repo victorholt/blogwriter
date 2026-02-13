@@ -57,6 +57,7 @@ export default function GeneratingView(): React.ReactElement {
   const generationAgentLabel = useWizardStore((s) => s.generationAgentLabel);
   const generationChunks = useWizardStore((s) => s.generationChunks);
   const generationError = useWizardStore((s) => s.generationError);
+  const generationRecovering = useWizardStore((s) => s.generationRecovering);
   const generationPipeline = useWizardStore((s) => s.generationPipeline);
   const agentOutputs = useWizardStore((s) => s.agentOutputs);
   const timelineStyle = useWizardStore((s) => s.timelineStyle);
@@ -199,7 +200,9 @@ export default function GeneratingView(): React.ReactElement {
       <p className="step-subtitle">
         {generationError
           ? 'An error occurred during generation'
-          : 'Sit tight while we draft an initial version of your post'}
+          : generationRecovering
+            ? 'Connection interrupted — waiting for the server to finish your blog...'
+            : 'Sit tight while we draft an initial version of your post'}
       </p>
 
       {/* Rotating messages (timeline/stepper only — preview-bar shows them inline) */}

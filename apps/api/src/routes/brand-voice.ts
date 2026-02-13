@@ -4,6 +4,8 @@ import { db } from '../db';
 import { appSettings, brandVoiceCache } from '../db/schema';
 import { eq } from 'drizzle-orm';
 import { analyzeBrandVoice, streamBrandVoiceAnalysis } from '../mastra/agents/brand-voice-analyzer';
+import { streamBrandVoiceFastAnalysis } from '../mastra/agents/brand-voice-fast';
+import { isAgentEnabled } from '../mastra/lib/model-resolver';
 import { isInsightsEnabled, startTrace, log as traceLog, getTrace } from '../services/agent-trace';
 
 const router = Router();
@@ -137,25 +139,32 @@ router.post('/analyze-stream', async (req, res) => {
     // Set up tracing
     const insightsOn = await isInsightsEnabled();
     let traceId: string | null = null;
+    // Determine which analyzer to use
+    const useFast = await isAgentEnabled('brand-voice-fast');
+    const analyzerLabel = useFast ? 'brand-voice-fast' : 'brand-voice-analyzer';
+
     if (insightsOn) {
-      traceId = await startTrace('brand-voice-analyzer');
-      traceLog(traceId, null, 'brand-voice-analyzer', 'agent-input', { url });
+      traceId = await startTrace(analyzerLabel);
+      traceLog(traceId, null, analyzerLabel, 'agent-input', { url });
     }
 
     // Stream the analysis
-    console.log(`[BrandVoice] Streaming analysis for ${url}...`);
-    const analysis = await streamBrandVoiceAnalysis(url, (event) => {
-      sendEvent(event.type, event.data);
+    console.log(`[BrandVoice] Streaming analysis for ${url} (${analyzerLabel})...`);
 
-      // Log debug events to trace
+    const eventHandler = (event: { type: string; data?: unknown }) => {
+      sendEvent(event.type, event.data);
       if (insightsOn && traceId && event.type === 'debug') {
-        traceLog(traceId, null, 'brand-voice-analyzer', (event.data as any)?.kind ?? 'debug', event.data);
+        traceLog(traceId, null, analyzerLabel, (event.data as any)?.kind ?? 'debug', event.data);
       }
-    }, { debugMode, previousAttempt });
+    };
+
+    const analysis = useFast
+      ? await streamBrandVoiceFastAnalysis(url, eventHandler, { debugMode, previousAttempt })
+      : await streamBrandVoiceAnalysis(url, eventHandler, { debugMode, previousAttempt });
 
     // Log final output to trace
     if (insightsOn && traceId) {
-      traceLog(traceId, null, 'brand-voice-analyzer', 'agent-output', analysis);
+      traceLog(traceId, null, analyzerLabel, 'agent-output', analysis);
     }
 
     // Cache result (7-day TTL)
