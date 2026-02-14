@@ -45,6 +45,7 @@ export default function VoicesTab({ token }: VoicesTabProps): React.ReactElement
   const [newRawText, setNewRawText] = useState('');
   const [newAdditionalInstructions, setNewAdditionalInstructions] = useState('');
   const [createStatus, setCreateStatus] = useState<'idle' | 'saving' | 'formatting' | 'error'>('idle');
+  const [createErrorMessage, setCreateErrorMessage] = useState('');
   const [createStatusMessages, setCreateStatusMessages] = useState<string[]>([]);
   const [createPreview, setCreatePreview] = useState<BrandVoice | null>(null);
 
@@ -190,6 +191,7 @@ export default function VoicesTab({ token }: VoicesTabProps): React.ReactElement
     setCreateStatus('formatting');
     setCreateStatusMessages([]);
     setCreatePreview(null);
+    setCreateErrorMessage('');
 
     // First format the raw text
     const formatResult = await formatVoicePresetStream(
@@ -201,7 +203,8 @@ export default function VoicesTab({ token }: VoicesTabProps): React.ReactElement
 
     if (!formatResult.success || !formatResult.data) {
       setCreateStatus('error');
-      setTimeout(() => setCreateStatus('idle'), 3000);
+      setCreateErrorMessage(formatResult.error || 'Failed to format voice preset');
+      setTimeout(() => setCreateStatus('idle'), 5000);
       return;
     }
 
@@ -232,7 +235,8 @@ export default function VoicesTab({ token }: VoicesTabProps): React.ReactElement
       setCreateStatus('idle');
     } else {
       setCreateStatus('error');
-      setTimeout(() => setCreateStatus('idle'), 3000);
+      setCreateErrorMessage(result.error || 'Failed to save voice preset');
+      setTimeout(() => setCreateStatus('idle'), 5000);
     }
   }
 
@@ -244,6 +248,7 @@ export default function VoicesTab({ token }: VoicesTabProps): React.ReactElement
     setNewAdditionalInstructions('');
     setCreatePreview(null);
     setCreateStatusMessages([]);
+    setCreateErrorMessage('');
     setCreateStatus('idle');
   }
 
@@ -395,7 +400,7 @@ export default function VoicesTab({ token }: VoicesTabProps): React.ReactElement
               )}
             </div>
           </div>
-          {createStatus === 'error' && <p className="error-text">Failed to format or save voice preset</p>}
+          {createStatus === 'error' && <p className="error-text">{createErrorMessage}</p>}
         </div>
       )}
 
