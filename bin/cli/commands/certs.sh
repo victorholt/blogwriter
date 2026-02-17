@@ -14,7 +14,7 @@ show_cert_help() {
     echo "  ./cli certs [OPTIONS]"
     echo ""
     echo "Options:"
-    echo "  --domain=<domain>  Domain to generate cert for (default: blogwriter.test)"
+    echo "  --domain=<domain>  Domain to generate cert for (default: writer.essensedesigns.com)"
     echo "  --days=<days>      Certificate validity in days (default: 365, local only)"
     echo "  --force            Regenerate existing certificates"
     echo "  --email=<email>    Email for Let's Encrypt registration (staging/prod)"
@@ -26,7 +26,7 @@ show_cert_help() {
     echo "  staging/prod       Let's Encrypt certificate via certbot"
     echo ""
     echo "Examples:"
-    echo "  ./cli certs                                   # Local: self-signed for blogwriter.test"
+    echo "  ./cli certs                                   # Local: self-signed for writer.essensedesigns.com"
     echo "  ./cli certs --force                           # Regenerate certificates"
     echo "  ./cli certs --email=admin@example.com         # Staging/Prod: Let's Encrypt"
     echo "  ./cli certs --staging-le                      # Test with LE staging server"
@@ -44,7 +44,7 @@ show_cert_help() {
 
 load_env
 
-DOMAIN="${DOMAIN:-blogwriter.test}"
+DOMAIN="${DOMAIN:-writer.essensedesigns.com}"
 DAYS="365"
 FORCE=""
 EMAIL="${CERT_EMAIL:-admin@${DOMAIN}}"

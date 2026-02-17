@@ -1,7 +1,7 @@
 import type { BrandVoice, Dress, DressFacet, Theme, BrandLabel, SharedBlog, ApiResponse, DebugEvent, AgentLogEntry } from '@/types';
 import { normalizeBrandVoice } from './brand-voice-compat';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://blogwriter.test:4444';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://writer.essensedesigns.com:4444';
 
 // --- Brand Voice ---
 

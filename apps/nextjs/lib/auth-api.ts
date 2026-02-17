@@ -1,4 +1,4 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://blogwriter.test:4444';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://writer.essensedesigns.com:4444';
 
 export interface AuthUser {
   id: string;

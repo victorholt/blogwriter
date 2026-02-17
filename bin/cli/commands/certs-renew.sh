@@ -6,7 +6,7 @@
 load_env
 
 ENV="${APP_ENV:-local}"
-DOMAIN="${DOMAIN:-blogwriter.test}"
+DOMAIN="${DOMAIN:-writer.essensedesigns.com}"
 
 if [ "${ENV}" = "local" ]; then
     info "Local environment uses self-signed certificates."

@@ -72,7 +72,7 @@ echo ""
 # ── Environment ──────────────────────────────────────────────────
 prompt APP_ENV "Environment (local/staging/prod)" "${APP_ENV:-local}"
 
-prompt DOMAIN "Domain" "${DOMAIN:-blogwriter.test}"
+prompt DOMAIN "Domain" "${DOMAIN:-writer.essensedesigns.com}"
 
 # ── Docker ───────────────────────────────────────────────────────
 prompt CONTAINER_PREFIX "Container prefix" "${CONTAINER_PREFIX:-blogwriter}"
@@ -104,7 +104,7 @@ info "Next.js configuration"
 if [[ "${APP_ENV}" != "local" ]]; then
     DEFAULT_API_URL="https://${DOMAIN}"
 else
-    DEFAULT_API_URL="${NEXT_PUBLIC_API_URL:-http://blogwriter.test:4444}"
+    DEFAULT_API_URL="${NEXT_PUBLIC_API_URL:-http://writer.essensedesigns.com:4444}"
 fi
 prompt NEXT_PUBLIC_API_URL "Public API URL (browser)" "${DEFAULT_API_URL}"
 

@@ -50,6 +50,7 @@ Commands:
     certs-renew Renew Let's Encrypt certificates
     env         Interactive environment configuration
     version     Show or bump the project version
+    domain      Show or change the project domain
     deploy      Guided deployment wizard
     help        Show this help message
 
@@ -128,6 +129,10 @@ case "${COMMAND}" in
         ;;
     version)
         source "${SCRIPT_DIR}/bin/cli/commands/version.sh"
+        ;;
+    domain)
+        load_env
+        source "${SCRIPT_DIR}/bin/cli/commands/domain.sh"
         ;;
     deploy)
         source "${SCRIPT_DIR}/bin/cli/commands/deploy.sh"

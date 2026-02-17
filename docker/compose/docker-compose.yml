@@ -62,7 +62,7 @@ services:
     container_name: ${CONTAINER_PREFIX:-blogwriter}-nextjs
     environment:
       NEXT_TELEMETRY_DISABLED: "1"
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://blogwriter.test:4444}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://writer.essensedesigns.com:4444}
     networks:
       - app-network
     restart: unless-stopped
