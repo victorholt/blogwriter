@@ -12,7 +12,7 @@ import blogSharingRoutes from './blog-sharing'
 import { db } from '../db'
 import { appSettings, agentModelConfigs } from '../db/schema'
 import { eq, inArray } from 'drizzle-orm'
-import { isGuestModeEnabled } from '../services/guest-mode'
+import { isGuestModeEnabled, isRegistrationEnabled } from '../services/site-settings'
 
 const router = Router()
 
@@ -49,14 +49,17 @@ router.use('/admin', adminRoutes)
 // Public settings endpoint (no auth required)
 router.get('/settings/debug-mode', async (_req, res) => {
   try {
-    const setting = await db
+    const settings = await db
       .select()
       .from(appSettings)
-      .where(eq(appSettings.key, 'debug_mode'))
-      .limit(1);
-    return res.json({ debugMode: setting[0]?.value === 'true' });
+      .where(inArray(appSettings.key, ['debug_mode', 'insights_enabled']));
+    const map = Object.fromEntries(settings.map((s) => [s.key, s.value]));
+    return res.json({
+      debugMode: map.debug_mode === 'true',
+      insightsEnabled: map.insights_enabled !== 'false',
+    });
   } catch {
-    return res.json({ debugMode: false });
+    return res.json({ debugMode: false, insightsEnabled: true });
   }
 })
 
@@ -103,10 +106,56 @@ router.get('/settings/app', async (_req, res) => {
 // Public auth settings endpoint (no auth required)
 router.get('/settings/auth', async (_req, res) => {
   try {
-    const guestModeEnabled = await isGuestModeEnabled();
-    return res.json({ guestModeEnabled });
+    const [guestModeEnabled, registrationEnabled] = await Promise.all([
+      isGuestModeEnabled(),
+      isRegistrationEnabled(),
+    ]);
+    return res.json({ guestModeEnabled, registrationEnabled });
   } catch {
-    return res.json({ guestModeEnabled: true });
+    return res.json({ guestModeEnabled: true, registrationEnabled: true });
+  }
+})
+
+// Consolidated public settings — returns everything the client needs on init in a single call
+router.get('/settings/init', async (_req, res) => {
+  try {
+    const [settingsRows, agents, guestModeEnabled, registrationEnabled] = await Promise.all([
+      db.select()
+        .from(appSettings)
+        .where(inArray(appSettings.key, [
+          'debug_mode', 'insights_enabled',
+          'blog_timeline_style', 'blog_generate_images', 'blog_generate_links', 'blog_sharing_enabled',
+          'app_name',
+        ])),
+      db.select({ agentId: agentModelConfigs.agentId })
+        .from(agentModelConfigs)
+        .where(eq(agentModelConfigs.showPreview, true)),
+      isGuestModeEnabled(),
+      isRegistrationEnabled(),
+    ]);
+
+    const map = Object.fromEntries(settingsRows.map((s) => [s.key, s.value]));
+    const previewIds = agents.map((a) => a.agentId);
+
+    return res.json({
+      debugMode: map.debug_mode === 'true',
+      insightsEnabled: map.insights_enabled !== 'false',
+      timelineStyle: map.blog_timeline_style || 'preview-bar',
+      generateImages: map.blog_generate_images !== 'false',
+      generateLinks: map.blog_generate_links !== 'false',
+      sharingEnabled: map.blog_sharing_enabled === 'true',
+      previewAgents: previewIds.length > 0 ? previewIds.join(',') : 'none',
+      appName: map.app_name || 'BlogWriter',
+      guestModeEnabled,
+      registrationEnabled,
+    });
+  } catch {
+    return res.json({
+      debugMode: false, insightsEnabled: true,
+      timelineStyle: 'preview-bar', generateImages: true, generateLinks: true,
+      sharingEnabled: false, previewAgents: 'none', appName: 'BlogWriter',
+      guestModeEnabled: true, registrationEnabled: true,
+    });
   }
 })
 

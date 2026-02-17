@@ -7,7 +7,12 @@ import type { BrandVoice } from '@/types';
 export function normalizeBrandVoice(raw: Record<string, unknown>): BrandVoice {
   // New shape — already has personality
   if (raw.personality && typeof raw.personality === 'object') {
-    return raw as unknown as BrandVoice;
+    const result = raw as unknown as BrandVoice;
+    // Ensure location field exists (may be missing from older cached results)
+    if (result.location === undefined) {
+      result.location = (raw.location as string) || '';
+    }
+    return result;
   }
 
   // Old shape — upgrade it
@@ -20,6 +25,7 @@ export function normalizeBrandVoice(raw: Record<string, unknown>): BrandVoice {
     targetAudience: (raw.targetAudience as string) || '',
     priceRange: (raw.priceRange as string) || '',
     businessType: 'retail',
+    location: (raw.location as string) || '',
     uniqueSellingPoints: usps,
     personality: {
       archetype: 'Brand Voice',

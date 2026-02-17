@@ -53,12 +53,12 @@ export async function getMe(): Promise<AuthResponse> {
   }
 }
 
-export async function getAuthSettings(): Promise<{ guestModeEnabled: boolean }> {
+export async function getAuthSettings(): Promise<{ guestModeEnabled: boolean; registrationEnabled: boolean }> {
   try {
     const res = await fetch(`${API_BASE}/api/settings/auth`);
     return res.json();
   } catch {
-    return { guestModeEnabled: true };
+    return { guestModeEnabled: true, registrationEnabled: true };
   }
 }
 

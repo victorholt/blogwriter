@@ -10,7 +10,7 @@ import AttributionOverlay from '@/components/AttributionOverlay';
 import CompareDropdown from '@/components/CompareDropdown';
 import type { CompareMode } from '@/components/CompareDropdown';
 import { copyRichText } from '@/lib/copy-utils';
-import { fetchDebugMode, createShareLink, deleteSharedBlog } from '@/lib/api';
+import { fetchDebugMode, fetchBrandLabels, createShareLink, deleteSharedBlog } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth-store';
 import Modal from '@/components/ui/Modal';
 
@@ -87,8 +87,8 @@ function preprocessImages(markdown: string): string {
   return result.replace(/\n{3,}/g, '\n\n');
 }
 
-/** Convert slugs like "sorella-dress" to "Sorella Dress" */
-function formatBrandName(raw: string): string {
+/** Fallback: convert slugs like "sorella-dress" to "Sorella Dress" */
+function formatBrandSlug(raw: string): string {
   return raw
     .replace(/[-_]/g, ' ')
     .replace(/\b\w/g, (c) => c.toUpperCase());
@@ -108,9 +108,20 @@ export default function ResultView(): React.ReactElement {
   const generateImages = useWizardStore((s) => s.generateImages);
   const sharingEnabled = useWizardStore((s) => s.sharingEnabled);
 
-  // Re-fetch debug mode on mount so changes made in admin since page load take effect
+  const [insightsEnabled, setInsightsEnabled] = useState(true);
+  const [brandLabelMap, setBrandLabelMap] = useState<Map<string, string>>(new Map());
+
+  // Re-fetch debug mode + brand labels on mount
   useEffect(() => {
-    fetchDebugMode().then((result) => setDebugMode(result.debugMode));
+    fetchDebugMode().then((result) => {
+      setDebugMode(result.debugMode);
+      setInsightsEnabled(result.insightsEnabled);
+    });
+    fetchBrandLabels().then((result) => {
+      if (result.success && result.data) {
+        setBrandLabelMap(new Map(result.data.map((b) => [b.slug, b.displayName])));
+      }
+    });
   }, [setDebugMode]);
 
   // Build imageUrl → Dress lookup for structured captions
@@ -174,7 +185,7 @@ export default function ResultView(): React.ReactElement {
   async function handleCopy(): Promise<void> {
     if (!generatedBlog) return;
     try {
-      await copyRichText(generatedBlog, { includeImages, dressMap: imageUrlToDress });
+      await copyRichText(generatedBlog, { includeImages, dressMap: imageUrlToDress, brandLabelMap });
     } catch {
       // Fallback already handled inside copyRichText
     }
@@ -348,7 +359,7 @@ export default function ResultView(): React.ReactElement {
                       {dress?.designer || dress?.styleId ? (
                         <span className="result__figure-meta">
                           {dress.designer && (
-                            <span className="result__figure-brand">{formatBrandName(dress.designer)}</span>
+                            <span className="result__figure-brand">{brandLabelMap.get(dress.designer) || formatBrandSlug(dress.designer)}</span>
                           )}
                           {dress.styleId && (
                             <span className="result__figure-style">{dress.styleId}</span>
@@ -512,8 +523,8 @@ export default function ResultView(): React.ReactElement {
         </div>
         )}
 
-        {/* Agent Insights (only visible in debug mode) */}
-        {debugMode && Object.keys(blogTraceIds).length > 0 && (
+        {/* Agent Insights (admin + debug mode + insights enabled) */}
+        {debugMode && insightsEnabled && isAdmin && Object.keys(blogTraceIds).length > 0 && (
           <div className="result__insights">
             <h3 className="result__insights-title">Agent Insights</h3>
             {generationPipeline

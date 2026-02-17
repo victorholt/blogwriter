@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import { useAuthStore } from '@/stores/auth-store';
 import { useRouter } from 'next/navigation';
 
@@ -10,8 +10,18 @@ export default function LoginPage(): React.ReactElement {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const login = useAuthStore((s) => s.login);
+  const { isAuthenticated, isLoading: authLoading } = useAuthStore();
   const guestModeEnabled = useAuthStore((s) => s.guestModeEnabled);
+  const registrationEnabled = useAuthStore((s) => s.registrationEnabled);
   const router = useRouter();
+
+  useEffect(() => {
+    if (isAuthenticated && !authLoading) router.replace('/');
+  }, [isAuthenticated, authLoading, router]);
+
+  if (isAuthenticated && !authLoading) {
+    return <div className="auth-page" />;
+  }
 
   async function handleSubmit(e: FormEvent): Promise<void> {
     e.preventDefault();
@@ -66,12 +76,14 @@ export default function LoginPage(): React.ReactElement {
             Forgot password?
           </button>
         </div>
-        <div className="auth-card__footer">
-          <span>Don&apos;t have an account?</span>{' '}
-          <button className="auth-card__link" onClick={() => router.push('/register')}>
-            Register
-          </button>
-        </div>
+        {registrationEnabled && (
+          <div className="auth-card__footer">
+            <span>Don&apos;t have an account?</span>{' '}
+            <button className="auth-card__link" onClick={() => router.push('/register')}>
+              Register
+            </button>
+          </div>
+        )}
         {guestModeEnabled && (
           <div className="auth-card__footer">
             <button className="auth-card__link" onClick={() => router.push('/')}>

@@ -13,7 +13,7 @@ import { loadProductApiConfig } from '../services/product-api-client';
 import { invalidateInsightsCache } from '../services/agent-trace';
 import { formatBrandVoiceText } from '../mastra/agents/brand-voice-formatter';
 import { testSmtpConnection } from '../services/email';
-import { invalidateGuestModeCache } from '../services/guest-mode';
+import { invalidateGuestModeCache, invalidateRegistrationCache } from '../services/site-settings';
 import adminUsersRoutes from './admin-users';
 
 // Read app version once at startup
@@ -281,6 +281,7 @@ const updateSettingsSchema = z.object({
   blog_generate_links: z.enum(['true', 'false']).optional(),
   blog_sharing_enabled: z.enum(['true', 'false']).optional(),
   guest_mode_enabled: z.enum(['true', 'false']).optional(),
+  registration_enabled: z.enum(['true', 'false']).optional(),
   smtp_host: z.string().optional(),
   smtp_port: z.string().optional(),
   smtp_user: z.string().optional(),
@@ -320,6 +321,10 @@ router.put('/settings', async (req, res) => {
     // Invalidate guest mode cache if guest_mode_enabled was changed
     if (updates.guest_mode_enabled !== undefined) {
       invalidateGuestModeCache();
+    }
+    // Invalidate registration cache if registration_enabled was changed
+    if (updates.registration_enabled !== undefined) {
+      invalidateRegistrationCache();
     }
 
     // Return masked values
@@ -476,6 +481,8 @@ router.get('/brand-labels', async (_req, res) => {
 const createBrandLabelSchema = z.object({
   slug: z.string().min(1, 'Slug is required'),
   displayName: z.string().min(1, 'Display name is required'),
+  seoKeywords: z.string().optional(),
+  avoidTerms: z.string().optional(),
 });
 
 router.post('/brand-labels', async (req, res) => {
@@ -498,6 +505,8 @@ const updateBrandLabelSchema = z.object({
   displayName: z.string().min(1).optional(),
   isActive: z.boolean().optional(),
   sortOrder: z.number().optional(),
+  seoKeywords: z.string().optional(),
+  avoidTerms: z.string().optional(),
 });
 
 router.put('/brand-labels/:id', async (req, res) => {

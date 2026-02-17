@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuthStore } from '@/stores/auth-store';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://blogwriter.test:4444';
 
@@ -10,7 +11,16 @@ export default function ForgotPasswordPage(): React.ReactElement {
   const [sent, setSent] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const { isAuthenticated, isLoading: authLoading } = useAuthStore();
   const router = useRouter();
+
+  useEffect(() => {
+    if (isAuthenticated && !authLoading) router.replace('/');
+  }, [isAuthenticated, authLoading, router]);
+
+  if (isAuthenticated && !authLoading) {
+    return <div className="auth-page" />;
+  }
 
   async function handleSubmit(e: FormEvent): Promise<void> {
     e.preventDefault();

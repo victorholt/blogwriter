@@ -4,11 +4,14 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://blogwriter.test:4444
 
 interface AppSettingsState {
   appName: string;
+  setAppName: (name: string) => void;
   fetchAppSettings: () => Promise<void>;
 }
 
 export const useAppSettingsStore = create<AppSettingsState>((set) => ({
   appName: 'BlogWriter',
+
+  setAppName: (name) => set({ appName: name || 'BlogWriter' }),
 
   fetchAppSettings: async () => {
     try {

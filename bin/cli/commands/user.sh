@@ -51,12 +51,14 @@ show_set_password_help() {
     cat << EOF
 Set a user's password (bypasses current password check).
 
-Usage: ./cli user set_password <email> <password>
+Usage: ./cli user set_password <email> [password]
 
 The password must be at least 8 characters.
+If omitted, you will be prompted to enter it interactively.
 
 Examples:
-    ./cli user set_password admin@example.com newpassword123
+    ./cli user set_password admin@example.com            # prompts for password
+    ./cli user set_password admin@example.com newpass123  # inline password
 
 EOF
 }
@@ -112,15 +114,19 @@ cmd_set_password() {
         return 0
     fi
 
+    # If no password argument, prompt interactively (avoids shell escaping issues with $, !, etc.)
     if [ -z "$password" ]; then
-        error "Missing password. Usage: ./cli user set_password <email> <password>"
+        printf "New password: "
+        read -rs password
         echo ""
-        show_set_password_help
-        return 1
+        if [ -z "$password" ]; then
+            error "Password cannot be empty."
+            return 1
+        fi
     fi
 
     if [ ${#password} -lt 8 ]; then
-        error "Password must be at least 8 characters."
+        error "Password must be at least 8 characters (got ${#password})."
         return 1
     fi
 

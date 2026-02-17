@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react';
 import { useWizardStore } from '@/stores/wizard-store';
 import {
-  Check, CheckSquare, Users, Sparkles,
+  Check, CheckSquare, Users, Sparkles, MapPin,
   MessageSquareQuote, Plus, X, Theater, BookOpen, Ban,
   FileText, FileDown, Mic,
 } from 'lucide-react';
@@ -30,6 +30,34 @@ function NameEditor({ initial, onSave, onCancel }: {
       <div className="brand-voice__header">
         <input
           className="inline-edit brand-voice__name"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          autoFocus
+        />
+      </div>
+      <div className="editable-section__actions">
+        <button className="btn btn--outline" onClick={onCancel}>Cancel</button>
+        <button className="btn btn--primary" onClick={() => onSave(draft)}><Check size={14} /> Save</button>
+      </div>
+    </>
+  );
+}
+
+function LocationEditor({ initial, onSave, onCancel }: {
+  initial: string;
+  onSave: (v: string) => void;
+  onCancel: () => void;
+}) {
+  const [draft, setDraft] = useState(initial);
+  return (
+    <>
+      <div className="brand-voice__location">
+        <div className="brand-voice__location-label">
+          <MapPin size={12} />
+          Location
+        </div>
+        <input
+          className="inline-edit brand-voice__location-value"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           autoFocus
@@ -484,6 +512,30 @@ export default function BrandVoiceStep(): React.ReactElement {
           <h2 className="brand-voice__name">{brandVoice.brandName}</h2>
         </div>
       </EditableSection>
+
+      {/* Location */}
+      {brandVoice.location && (
+        <EditableSection
+          sectionId="location"
+          editingSectionId={editingSectionId}
+          onEditingChange={setEditingSectionId}
+          renderEdit={({ onSave, onCancel }) => (
+            <LocationEditor
+              initial={brandVoice.location}
+              onSave={(v) => { updateBrandVoice({ location: v }); onSave(); }}
+              onCancel={onCancel}
+            />
+          )}
+        >
+          <div className="brand-voice__location">
+            <div className="brand-voice__location-label">
+              <MapPin size={12} />
+              Location
+            </div>
+            <p className="brand-voice__location-value">{brandVoice.location}</p>
+          </div>
+        </EditableSection>
+      )}
 
       {/* Summary */}
       <EditableSection

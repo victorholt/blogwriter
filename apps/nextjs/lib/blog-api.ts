@@ -11,6 +11,12 @@ export interface BlogListItem {
   updatedAt: string;
 }
 
+export interface BlogDressInfo {
+  imageUrl: string;
+  designer: string;
+  styleId: string;
+}
+
 export interface BlogDetail {
   id: string;
   title: string | null;
@@ -19,6 +25,7 @@ export interface BlogDetail {
   generatedBlog: string | null;
   seoMetadata: { title: string; description: string; keywords: string[] } | null;
   review: { qualityScore: number; strengths: string[]; suggestions: string[]; flags: string[] } | null;
+  dresses?: BlogDressInfo[];
   createdAt: string;
   updatedAt: string;
 }
@@ -43,6 +50,19 @@ export async function updateBlogTitle(id: string, title: string): Promise<ApiRes
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
     body: JSON.stringify({ title }),
+  });
+  return res.json();
+}
+
+export interface BlogDebugData {
+  agentOutputs: Record<string, string>;
+  blogTraceIds: Record<string, string>;
+  pipeline: { id: string; label: string }[];
+}
+
+export async function fetchBlogDebugData(id: string): Promise<ApiResponse<BlogDebugData>> {
+  const res = await fetch(`${API_BASE}/api/blogs/${id}/debug`, {
+    credentials: 'include',
   });
   return res.json();
 }

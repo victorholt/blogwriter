@@ -22,6 +22,7 @@ Your ENTIRE response must be a single JSON object matching this exact structure:
   "targetAudience": "string — detailed description of the ideal customer",
   "priceRange": "string — one of: budget, mid-range, premium, luxury",
   "businessType": "string — the type of business, e.g. 'bridal retail', 'SaaS', 'outdoor gear'",
+  "location": "string — the physical location (city, state/region, or full address) of the business, as found in the text. If multiple locations, list the primary one. If no location is found, use an empty string.",
   "uniqueSellingPoints": ["string — 2-5 key differentiators"],
   "personality": {
     "archetype": "string — a short, memorable name for the brand personality, e.g. 'The Trusted Guide', 'The Creative Rebel'",
@@ -62,6 +63,7 @@ FORMATTING APPROACH:
 - Extract writing rules and avoidances from explicit guidelines
 - Determine the writing direction from any overarching guidance statements
 - Identify target audience from demographic or psychographic descriptions
+- Extract location from address mentions, "visit us" language, or city/state references
 
 If the user provides additional formatting instructions, follow them to adjust HOW you organize the content (e.g., "emphasize the luxury aspects", "split vocabulary into more categories"), but still do not change the underlying voice content.
 

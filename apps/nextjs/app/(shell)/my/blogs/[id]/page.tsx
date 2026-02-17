@@ -1,14 +1,19 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Copy, Check, Share2, ImageOff, Link2, Trash2 } from 'lucide-react';
+import { ArrowLeft, Copy, Check, Share2, ImageOff, Link2, Trash2, FileQuestion } from 'lucide-react';
 import Markdown from 'react-markdown';
-import { fetchBlog, type BlogDetail } from '@/lib/blog-api';
-import { createShareLink, deleteSharedBlog, fetchBlogSettings } from '@/lib/api';
+import { fetchBlog, fetchBlogDebugData, type BlogDetail, type BlogDebugData } from '@/lib/blog-api';
+import { createShareLink, deleteSharedBlog, fetchBlogSettings, fetchDebugMode } from '@/lib/api';
 import { copyRichText } from '@/lib/copy-utils';
 import { useAuthStore } from '@/stores/auth-store';
 import Modal from '@/components/ui/Modal';
+import CompareDropdown from '@/components/CompareDropdown';
+import type { CompareMode } from '@/components/CompareDropdown';
+import AgentInsight from '@/components/AgentInsight';
+import AgentDiffPanel from '@/components/AgentDiffPanel';
+import AttributionOverlay from '@/components/AttributionOverlay';
 
 const IMAGE_EXTENSIONS = /\.(jpe?g|png|webp|gif|avif|svg)(\?[^\s)]*)?$/i;
 const IMAGE_CDNS = /cdn\.(essensedesigns|maggie|maggiesottero|sotteroandmidgley|morilee|allurebridals|justinalexander)\./i;
@@ -57,6 +62,12 @@ export default function BlogDetailPage(): React.ReactElement {
   const [sharingEnabled, setSharingEnabled] = useState(false);
   const [brokenImages, setBrokenImages] = useState<Set<string>>(new Set());
 
+  // Debug/compare state (admin only)
+  const [debugMode, setDebugMode] = useState(false);
+  const [insightsEnabled, setInsightsEnabled] = useState(false);
+  const [debugData, setDebugData] = useState<BlogDebugData | null>(null);
+  const [compareMode, setCompareMode] = useState<CompareMode>({ type: 'none' });
+
   // Share modal state
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [shareStatus, setShareStatus] = useState<'confirm' | 'sharing' | 'shared'>('confirm');
@@ -79,6 +90,38 @@ export default function BlogDetailPage(): React.ReactElement {
     });
   }, [params.id]);
 
+  // Fetch debug data for admins
+  useEffect(() => {
+    if (!isAdmin || !params.id) return;
+    fetchDebugMode().then((result) => {
+      setDebugMode(result.debugMode);
+      setInsightsEnabled(result.insightsEnabled);
+      if (result.debugMode) {
+        fetchBlogDebugData(params.id as string).then((res) => {
+          if (res.success && res.data) {
+            setDebugData(res.data);
+          }
+        });
+      }
+    });
+  }, [isAdmin, params.id]);
+
+  const compareAgents = debugData?.pipeline.filter((a) => debugData.agentOutputs[a.id]) ?? [];
+  const hasMultipleOutputs = compareAgents.length >= 2;
+
+  // Build imageUrl → dress lookup for brand/style labels under images
+  const imageUrlToDress = useMemo(() => {
+    const map = new Map<string, { designer: string; styleId: string }>();
+    if (blog?.dresses) {
+      for (const d of blog.dresses) {
+        if (d.imageUrl) {
+          map.set(d.imageUrl, { designer: d.designer, styleId: d.styleId });
+        }
+      }
+    }
+    return map;
+  }, [blog?.dresses]);
+
   const handleImageError = useCallback((src: string) => {
     setBrokenImages((prev) => {
       const next = new Set(prev);
@@ -87,10 +130,19 @@ export default function BlogDetailPage(): React.ReactElement {
     });
   }, []);
 
+  // Build clipboard-compatible dress map for copy
+  const clipboardDressMap = useMemo(() => {
+    const map = new Map<string, { designer?: string; styleId?: string }>();
+    for (const [url, info] of imageUrlToDress) {
+      map.set(url, { designer: info.designer || undefined, styleId: info.styleId || undefined });
+    }
+    return map;
+  }, [imageUrlToDress]);
+
   async function handleCopy(): Promise<void> {
     if (!blog?.generatedBlog) return;
     try {
-      await copyRichText(blog.generatedBlog);
+      await copyRichText(blog.generatedBlog, { dressMap: clipboardDressMap });
     } catch { /* fallback handled inside copyRichText */ }
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
@@ -169,12 +221,17 @@ export default function BlogDetailPage(): React.ReactElement {
 
   if (!blog) {
     return (
-      <div className="blog-detail">
-        <div className="blog-detail__not-found">
-          <h2>Blog not found</h2>
-          <p>This blog may have been deleted.</p>
+      <div className="status-page">
+        <div className="status-page__icon status-page__icon--not-found">
+          <FileQuestion size={36} strokeWidth={1.5} />
+        </div>
+        <h1 className="status-page__title">Blog Not Found</h1>
+        <p className="status-page__text">
+          This blog may have been deleted or doesn't exist.
+        </p>
+        <div className="status-page__actions">
           <button className="btn btn--primary" onClick={() => router.push('/my/blogs')}>
-            Back to blogs
+            Back to Blogs
           </button>
         </div>
       </div>
@@ -200,6 +257,16 @@ export default function BlogDetailPage(): React.ReactElement {
           {copied ? <Check size={14} /> : <Copy size={14} />}
           <span>{copied ? 'Copied!' : 'Copy to Clipboard'}</span>
         </button>
+        {debugMode && hasMultipleOutputs && (
+          <>
+            <div className="result__action-divider" />
+            <CompareDropdown
+              value={compareMode}
+              onChange={setCompareMode}
+              agents={compareAgents}
+            />
+          </>
+        )}
         {sharingEnabled && (
           <>
             <div className="result__action-divider" />
@@ -221,14 +288,28 @@ export default function BlogDetailPage(): React.ReactElement {
         </time>
       </div>
 
-      {/* Markdown content */}
-      {blog.generatedBlog ? (
-        <div className="result__content">
+      {/* Blog content — switches based on compare mode */}
+      <div className="result__content">
+        {compareMode.type === 'attribution' && blog.generatedBlog && debugData ? (
+          <AttributionOverlay
+            overrideOutputs={debugData.agentOutputs}
+            overridePipeline={debugData.pipeline}
+            overrideBlog={blog.generatedBlog}
+          />
+        ) : compareMode.type === 'diff' && debugData ? (
+          <AgentDiffPanel
+            leftAgent={compareMode.left}
+            rightAgent={compareMode.right}
+            overrideOutputs={debugData.agentOutputs}
+            overridePipeline={debugData.pipeline}
+          />
+        ) : blog.generatedBlog ? (
           <Markdown
             components={{
               img: ({ src: rawSrc, alt }) => {
                 const src = typeof rawSrc === 'string' ? rawSrc : undefined;
                 const isBroken = src ? brokenImages.has(src) : true;
+                const dress = src ? imageUrlToDress.get(src) : undefined;
 
                 return (
                   <span className="result__figure" data-figure="true">
@@ -244,6 +325,16 @@ export default function BlogDetailPage(): React.ReactElement {
                         onError={() => src && handleImageError(src)}
                       />
                     )}
+                    {dress?.designer || dress?.styleId ? (
+                      <span className="result__figure-meta">
+                        {dress.designer && (
+                          <span className="result__figure-brand">{dress.designer}</span>
+                        )}
+                        {dress.styleId && (
+                          <span className="result__figure-style">{dress.styleId}</span>
+                        )}
+                      </span>
+                    ) : null}
                     {alt && <span className="result__figure-caption">{alt}</span>}
                   </span>
                 );
@@ -252,10 +343,29 @@ export default function BlogDetailPage(): React.ReactElement {
           >
             {preprocessImages(blog.generatedBlog)}
           </Markdown>
-        </div>
-      ) : (
-        <div className="blog-detail__empty">
-          <p>No content available for this blog.</p>
+        ) : (
+          <div className="blog-detail__empty">
+            <p>No content available for this blog.</p>
+          </div>
+        )}
+      </div>
+
+      {/* Agent Insights (admin + debug mode + insights enabled) */}
+      {debugMode && insightsEnabled && debugData && Object.keys(debugData.blogTraceIds).length > 0 && (
+        <div className="result__insights">
+          <h3 className="result__insights-title">Agent Insights</h3>
+          {debugData.pipeline
+            .filter((a) => debugData.blogTraceIds[a.id])
+            .map((agent) => (
+              <AgentInsight
+                key={agent.id}
+                traceId={debugData.blogTraceIds[agent.id]}
+                agentId={agent.id}
+                agentLabel={agent.label}
+                overrideOutputs={debugData.agentOutputs}
+                overridePipeline={debugData.pipeline}
+              />
+            ))}
         </div>
       )}
 

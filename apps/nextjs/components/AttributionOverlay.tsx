@@ -16,11 +16,23 @@ interface TooltipState {
   segment: AttributionSegment | null;
 }
 
-export default function AttributionOverlay(): React.ReactElement | null {
-  const agentOutputs = useWizardStore((s) => s.agentOutputs);
-  const generationPipeline = useWizardStore((s) => s.generationPipeline);
-  const generatedBlog = useWizardStore((s) => s.generatedBlog);
-  const debugMode = useWizardStore((s) => s.debugMode);
+interface AttributionOverlayProps {
+  /** Override store values — used on the blog detail page */
+  overrideOutputs?: Record<string, string>;
+  overridePipeline?: { id: string; label: string }[];
+  overrideBlog?: string;
+}
+
+export default function AttributionOverlay({ overrideOutputs, overridePipeline, overrideBlog }: AttributionOverlayProps = {}): React.ReactElement | null {
+  const storeOutputs = useWizardStore((s) => s.agentOutputs);
+  const storePipeline = useWizardStore((s) => s.generationPipeline);
+  const storeBlog = useWizardStore((s) => s.generatedBlog);
+  const storeDebugMode = useWizardStore((s) => s.debugMode);
+
+  const agentOutputs = overrideOutputs ?? storeOutputs;
+  const generationPipeline = overridePipeline ?? storePipeline;
+  const generatedBlog = overrideBlog ?? storeBlog;
+  const debugMode = overrideOutputs ? true : storeDebugMode;
 
   const [tooltip, setTooltip] = useState<TooltipState>({
     visible: false,

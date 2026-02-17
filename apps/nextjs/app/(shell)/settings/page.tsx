@@ -7,7 +7,7 @@ export default function SettingsPage(): React.ReactElement {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace('/settings/api');
+    router.replace('/settings/general');
   }, [router]);
 
   return <></>;

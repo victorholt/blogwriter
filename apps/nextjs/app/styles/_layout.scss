@@ -3,7 +3,9 @@
 // ============================================================
 
 .page-shell {
-  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - var(--shell-header-h, 0px));
   padding: 12px 12px 0;
 
   @media (min-width: 640px) {
@@ -12,16 +14,16 @@
 }
 
 .paper {
+  flex: 1;
   max-width: 1200px;
+  width: 100%;
   margin: 0 auto;
   background: var(--color-paper);
   border-radius: 6px 6px 0 0;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 8px 24px rgba(0, 0, 0, 0.06);
   padding: 24px 16px;
-  min-height: calc(100vh - 12px);
 
   @media (min-width: 640px) {
     padding: 40px 48px;
-    min-height: calc(100vh - 24px);
   }
 }

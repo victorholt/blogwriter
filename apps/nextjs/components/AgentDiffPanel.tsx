@@ -21,11 +21,17 @@ const AGENT_LABELS: Record<string, string> = {
 interface AgentDiffPanelProps {
   leftAgent: string;
   rightAgent: string;
+  /** Override store values — used on the blog detail page */
+  overrideOutputs?: Record<string, string>;
+  overridePipeline?: { id: string; label: string }[];
 }
 
-export default function AgentDiffPanel({ leftAgent, rightAgent }: AgentDiffPanelProps): React.ReactElement {
-  const agentOutputs = useWizardStore((s) => s.agentOutputs);
-  const generationPipeline = useWizardStore((s) => s.generationPipeline);
+export default function AgentDiffPanel({ leftAgent, rightAgent, overrideOutputs, overridePipeline }: AgentDiffPanelProps): React.ReactElement {
+  const storeOutputs = useWizardStore((s) => s.agentOutputs);
+  const storePipeline = useWizardStore((s) => s.generationPipeline);
+
+  const agentOutputs = overrideOutputs ?? storeOutputs;
+  const generationPipeline = overridePipeline ?? storePipeline;
 
   const [viewMode, setViewMode] = useState<DiffViewMode>('inline');
 

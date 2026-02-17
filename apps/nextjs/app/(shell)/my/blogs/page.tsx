@@ -62,14 +62,16 @@ function BlogRow({ blog, onDelete, onRename }: {
             </button>
           </div>
         ) : (
-          <span className="blog-table__title">{blog.title || 'Untitled Blog'}</span>
+          <div>
+            <span className="blog-table__title">{blog.title || 'Untitled Blog'}</span>
+            {blog.brandLabelSlug && (
+              <span className="blog-table__subtitle">{blog.brandLabelSlug}</span>
+            )}
+          </div>
         )}
       </td>
       <td className="blog-table__td blog-table__td--status">
         <StatusBadge status={blog.status} />
-      </td>
-      <td className="blog-table__td blog-table__td--brand">
-        {blog.brandLabelSlug || '\u2014'}
       </td>
       <td className="blog-table__td blog-table__td--date">
         {new Date(blog.createdAt).toLocaleDateString('en-US', {
@@ -170,13 +172,6 @@ export default function BlogsPage(): React.ReactElement {
             <p className="blog-dashboard__count">{total} blog{total !== 1 ? 's' : ''}</p>
           )}
         </div>
-        <button
-          className="btn btn--primary"
-          onClick={() => router.push('/')}
-        >
-          <Plus size={15} />
-          New Blog
-        </button>
       </div>
 
       {loading ? (
@@ -209,7 +204,6 @@ export default function BlogsPage(): React.ReactElement {
                 <tr>
                   <th className="blog-table__th">Title</th>
                   <th className="blog-table__th">Status</th>
-                  <th className="blog-table__th">Brand</th>
                   <th className="blog-table__th">Created</th>
                   <th className="blog-table__th blog-table__th--actions" />
                 </tr>

@@ -150,12 +150,13 @@ export async function fetchSessionStatus(sessionId: string): Promise<{
 
 // --- Debug / Trace ---
 
-export async function fetchDebugMode(): Promise<{ debugMode: boolean }> {
+export async function fetchDebugMode(): Promise<{ debugMode: boolean; insightsEnabled: boolean }> {
   try {
     const res = await fetch(`${API_BASE}/api/settings/debug-mode`);
-    return res.json();
+    const data = await res.json();
+    return { debugMode: !!data.debugMode, insightsEnabled: data.insightsEnabled !== false };
   } catch {
-    return { debugMode: false };
+    return { debugMode: false, insightsEnabled: true };
   }
 }
 
@@ -173,6 +174,36 @@ export async function fetchBlogSettings(): Promise<{
     return res.json();
   } catch {
     return { timelineStyle: 'preview-bar', generateImages: true, generateLinks: true, sharingEnabled: false, previewAgents: 'last' };
+  }
+}
+
+export interface InitSettings {
+  debugMode: boolean;
+  insightsEnabled: boolean;
+  timelineStyle: TimelineStyle;
+  generateImages: boolean;
+  generateLinks: boolean;
+  sharingEnabled: boolean;
+  previewAgents: string;
+  appName: string;
+  guestModeEnabled: boolean;
+  registrationEnabled: boolean;
+}
+
+const INIT_DEFAULTS: InitSettings = {
+  debugMode: false, insightsEnabled: true,
+  timelineStyle: 'preview-bar', generateImages: true, generateLinks: true,
+  sharingEnabled: false, previewAgents: 'none', appName: 'BlogWriter',
+  guestModeEnabled: true, registrationEnabled: true,
+};
+
+export async function fetchInitSettings(): Promise<InitSettings> {
+  try {
+    const res = await fetch(`${API_BASE}/api/settings/init`);
+    const data = await res.json();
+    return { ...INIT_DEFAULTS, ...data };
+  } catch {
+    return INIT_DEFAULTS;
   }
 }
 

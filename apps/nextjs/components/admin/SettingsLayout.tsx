@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ShieldX } from 'lucide-react';
 import { SettingsProvider, useSettings } from './SettingsContext';
 import SettingsSidebar from './SettingsSidebar';
 
@@ -32,9 +32,19 @@ function SettingsShell({ children }: { children: React.ReactNode }): React.React
     return (
       <div className="page-shell">
         <div className="paper">
-          <div className="settings-forbidden">
-            <h1 className="settings-title">Access Denied</h1>
-            <p className="settings-subtitle">You need an admin account to access settings.</p>
+          <div className="status-page">
+            <div className="status-page__icon status-page__icon--denied">
+              <ShieldX size={36} strokeWidth={1.5} />
+            </div>
+            <h1 className="status-page__title">Access Denied</h1>
+            <p className="status-page__text">
+              You need an admin account to access settings. Contact your administrator if you believe this is a mistake.
+            </p>
+            <div className="status-page__actions">
+              <button className="btn btn--ghost" onClick={() => router.push('/')}>
+                Go Home
+              </button>
+            </div>
           </div>
         </div>
       </div>

@@ -68,6 +68,9 @@ export function buildWriterInstructions(
   } else if (brandVoice.tone?.length) {
     voiceSummary += `Tone: ${brandVoice.tone.join(', ')}\n`;
   }
+  if (brandVoice.location) {
+    voiceSummary += `Location: ${brandVoice.location}\n`;
+  }
 
   return `You are a professional ${businessType} blog writer for ${brandName}. Write an engaging, SEO-friendly blog post.
 
@@ -89,6 +92,7 @@ Requirements:
 - Write in Markdown format
 - Include a compelling introduction and conclusion
 - If the client provided a Call to Action, make it stand out — use a bold, compelling closing section with the CTA as a clear heading or blockquote. Weave the CTA naturally into the conclusion and make it feel like an exciting invitation, not a generic afterthought.
+- If a location is known, mention it naturally at least once — ideally near the conclusion as an invitation (e.g., "Visit us at [location]" or "Stop by our [city] boutique")
 ${imageRequirements}${linkRequirements}`;
 }
 

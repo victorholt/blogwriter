@@ -32,8 +32,15 @@ function buildContextPreamble(): string {
   return `[Context] Today's date is ${month} ${year}. Always reference the current year (${year}) when mentioning trends, seasons, or timely content. Never reference past years as current.\n\n`;
 }
 
+export interface BrandRule {
+  displayName: string;
+  seoKeywords: string[];
+  avoidTerms: string[];
+}
+
 export interface GlobalContext {
   allowedBrands?: string[];
+  brandRules?: BrandRule[];
   themeDescription?: string;
   brandVoice?: Record<string, unknown>;
 }
@@ -75,6 +82,25 @@ export async function createConfiguredAgent(
     contextPreamble += `[Brand Exclusivity] You must ONLY mention or reference these wedding dress brands: ${brandList}. Do NOT mention, recommend, or compare with any other wedding dress brands or designers from other companies. If you are unsure whether a brand is allowed, do not mention it.\n\n`;
   }
 
+  if (globalContext?.brandRules?.length) {
+    const rulesWithContent = globalContext.brandRules.filter(
+      (r) => r.seoKeywords.length > 0 || r.avoidTerms.length > 0,
+    );
+    if (rulesWithContent.length > 0) {
+      let rulesBlock = '[Brand Vocabulary Rules]';
+      for (const rule of rulesWithContent) {
+        rulesBlock += `\n${rule.displayName}:`;
+        if (rule.seoKeywords.length > 0) {
+          rulesBlock += `\n  Keywords to use: ${rule.seoKeywords.join(', ')}`;
+        }
+        if (rule.avoidTerms.length > 0) {
+          rulesBlock += `\n  Terms to AVOID: ${rule.avoidTerms.join(', ')}`;
+        }
+      }
+      contextPreamble += rulesBlock + '\n\n';
+    }
+  }
+
   if (globalContext?.themeDescription) {
     contextPreamble += `[Blog Theme] ${globalContext.themeDescription}\n\n`;
   }
@@ -82,6 +108,10 @@ export async function createConfiguredAgent(
   if (globalContext?.brandVoice) {
     const bv = globalContext.brandVoice as Record<string, any>;
     let voiceBlock = `[Brand Voice]\nBrand: ${bv.brandName || 'Unknown'}`;
+
+    if (bv.location) {
+      voiceBlock += `\nLocation: ${bv.location}`;
+    }
 
     if (bv.personality) {
       voiceBlock += `\nPersonality: ${bv.personality.archetype} — ${bv.personality.description}`;

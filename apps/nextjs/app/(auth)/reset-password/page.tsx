@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
+import { useAuthStore } from '@/stores/auth-store';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://blogwriter.test:4444';
 
@@ -14,7 +15,16 @@ function ResetPasswordForm(): React.ReactElement {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const { isAuthenticated, isLoading: authLoading } = useAuthStore();
   const router = useRouter();
+
+  useEffect(() => {
+    if (isAuthenticated && !authLoading) router.replace('/');
+  }, [isAuthenticated, authLoading, router]);
+
+  if (isAuthenticated && !authLoading) {
+    return <div className="auth-page" />;
+  }
 
   async function handleSubmit(e: FormEvent): Promise<void> {
     e.preventDefault();

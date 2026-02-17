@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Copy, Check, Trash2, ImageOff } from 'lucide-react';
+import { Copy, Check, Trash2, ImageOff, FileQuestion, Trash } from 'lucide-react';
 import Markdown from 'react-markdown';
 import { fetchSharedBlog, deleteSharedBlog } from '@/lib/api';
 import { copyRichText } from '@/lib/copy-utils';
@@ -119,10 +119,15 @@ export default function SharedBlogView({ hash }: SharedBlogViewProps): React.Rea
   if (deleted) {
     return (
       <div className="page-shell">
-        <div className="paper shared-blog">
-          <div className="shared-blog__deleted">
-            <h2>Shared blog deleted</h2>
-            <p>This share link is no longer active.</p>
+        <div className="paper">
+          <div className="status-page">
+            <div className="status-page__icon status-page__icon--info">
+              <Trash size={36} strokeWidth={1.5} />
+            </div>
+            <h1 className="status-page__title">Share Link Removed</h1>
+            <p className="status-page__text">
+              This shared blog has been deleted and the link is no longer active.
+            </p>
           </div>
         </div>
       </div>
@@ -132,10 +137,15 @@ export default function SharedBlogView({ hash }: SharedBlogViewProps): React.Rea
   if (error || !blog) {
     return (
       <div className="page-shell">
-        <div className="paper shared-blog">
-          <div className="shared-blog__error">
-            <h2>Not Found</h2>
-            <p>{error || 'This shared blog does not exist or has been removed.'}</p>
+        <div className="paper">
+          <div className="status-page">
+            <div className="status-page__icon status-page__icon--not-found">
+              <FileQuestion size={36} strokeWidth={1.5} />
+            </div>
+            <h1 className="status-page__title">Not Found</h1>
+            <p className="status-page__text">
+              {error || 'This shared blog does not exist or has been removed.'}
+            </p>
           </div>
         </div>
       </div>

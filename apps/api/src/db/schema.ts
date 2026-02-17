@@ -193,6 +193,8 @@ export const brandLabels = pgTable('brand_labels', {
   displayName: text('display_name').notNull(),
   isActive: boolean('is_active').default(true).notNull(),
   sortOrder: integer('sort_order').default(0).notNull(),
+  seoKeywords: text('seo_keywords').default('[]').notNull(),
+  avoidTerms: text('avoid_terms').default('[]').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });

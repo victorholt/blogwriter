@@ -1,8 +1,10 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuthStore } from '@/stores/auth-store';
 import { useWizardStore } from '@/stores/wizard-store';
-import { createBlogStream, fetchSessionStatus, fetchDebugMode, fetchBlogSettings } from '@/lib/api';
+import { createBlogStream, fetchSessionStatus } from '@/lib/api';
 import StepIndicator from '@/components/wizard/StepIndicator';
 import StoreInfoStep from '@/components/wizard/StoreInfoStep';
 import BrandVoiceStep from '@/components/wizard/BrandVoiceStep';
@@ -165,27 +167,29 @@ function GeneratingWithSSE(): React.ReactElement {
 }
 
 export default function Home(): React.ReactElement {
+  const router = useRouter();
+  const { isAuthenticated, isLoading: authLoading, guestModeEnabled } = useAuthStore();
   const view = useWizardStore((s) => s.view);
-  const setDebugMode = useWizardStore((s) => s.setDebugMode);
-  const setTimelineStyle = useWizardStore((s) => s.setTimelineStyle);
-  const setGenerateImages = useWizardStore((s) => s.setGenerateImages);
-  const setGenerateLinks = useWizardStore((s) => s.setGenerateLinks);
-  const setSharingEnabled = useWizardStore((s) => s.setSharingEnabled);
-  const setPreviewAgents = useWizardStore((s) => s.setPreviewAgents);
+  const currentStep = useWizardStore((s) => s.currentStep);
 
-  // Fetch app settings on mount
+  // Redirect to login when guest mode is off and user isn't authenticated
   useEffect(() => {
-    fetchDebugMode().then((result) => {
-      setDebugMode(result.debugMode);
-    });
-    fetchBlogSettings().then((result) => {
-      setTimelineStyle(result.timelineStyle);
-      setGenerateImages(result.generateImages);
-      setGenerateLinks(result.generateLinks);
-      setSharingEnabled(result.sharingEnabled);
-      setPreviewAgents(result.previewAgents);
-    });
-  }, [setDebugMode, setTimelineStyle, setGenerateImages, setGenerateLinks, setSharingEnabled, setPreviewAgents]);
+    if (!authLoading && !isAuthenticated && !guestModeEnabled) {
+      router.replace('/login');
+    }
+  }, [authLoading, isAuthenticated, guestModeEnabled, router]);
+
+  // Warn before refresh/close when user has made progress
+  useEffect(() => {
+    const hasProgress = currentStep > 1 || view === 'generating' || view === 'result';
+    if (!hasProgress) return;
+
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [currentStep, view]);
 
   if (view === 'result') {
     return <ResultView />;

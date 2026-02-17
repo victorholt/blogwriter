@@ -8,8 +8,10 @@ interface AuthState {
   isAuthenticated: boolean;
   isGuest: boolean;
   guestModeEnabled: boolean;
+  registrationEnabled: boolean;
 
   checkAuth: () => Promise<void>;
+  setAuthState: (user: AuthUser | null, guestModeEnabled: boolean, registrationEnabled: boolean) => void;
   login: (email: string, password: string) => Promise<{ error?: string }>;
   register: (email: string, password: string, displayName: string) => Promise<{ error?: string }>;
   logout: () => Promise<void>;
@@ -22,6 +24,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   isAuthenticated: false,
   isGuest: false,
   guestModeEnabled: true,
+  registrationEnabled: true,
 
   checkAuth: async () => {
     set({ isLoading: true });
@@ -37,6 +40,7 @@ export const useAuthStore = create<AuthState>((set) => ({
           isAuthenticated: true,
           isGuest: false,
           guestModeEnabled: settingsResult.guestModeEnabled,
+          registrationEnabled: settingsResult.registrationEnabled,
           isLoading: false,
         });
       } else {
@@ -45,11 +49,20 @@ export const useAuthStore = create<AuthState>((set) => ({
           isAuthenticated: false,
           isGuest: settingsResult.guestModeEnabled,
           guestModeEnabled: settingsResult.guestModeEnabled,
+          registrationEnabled: settingsResult.registrationEnabled,
           isLoading: false,
         });
       }
     } catch {
       set({ user: null, isAuthenticated: false, isGuest: true, isLoading: false });
+    }
+  },
+
+  setAuthState: (user, guestModeEnabled, registrationEnabled) => {
+    if (user) {
+      set({ user, isAuthenticated: true, isGuest: false, guestModeEnabled, registrationEnabled, isLoading: false });
+    } else {
+      set({ user: null, isAuthenticated: false, isGuest: guestModeEnabled, guestModeEnabled, registrationEnabled, isLoading: false });
     }
   },
 

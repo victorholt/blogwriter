@@ -11,6 +11,7 @@ import {
 import type { AdminBrandLabel } from '@/lib/admin-api';
 import { Package, Save, Check, Loader2, Trash2, Plus, Tag } from 'lucide-react';
 import Toggle from '@/components/ui/Toggle';
+import TagInput from '@/components/ui/TagInput';
 import DressMultiSelect from '@/components/ui/DressMultiSelect';
 import { useSettings } from './SettingsContext';
 import type { Dress } from '@/types';
@@ -161,11 +162,33 @@ export default function ProductApiSection(): React.ReactElement {
     }
   }
 
+  function parseTags(json: string): string[] {
+    try { const arr = JSON.parse(json); return Array.isArray(arr) ? arr : []; } catch { return []; }
+  }
+
+  function getBrandTags(id: number, field: 'seoKeywords' | 'avoidTerms'): string[] {
+    const edit = brandLabelEdits[id];
+    if (edit && field in edit) return parseTags(edit[field] as string);
+    const label = brandLabels.find((b) => b.id === id);
+    return label ? parseTags(label[field]) : [];
+  }
+
+  function setBrandTags(id: number, field: 'seoKeywords' | 'avoidTerms', tags: string[]): void {
+    setBrandLabelEdits((prev) => ({
+      ...prev,
+      [id]: { ...prev[id], [field]: JSON.stringify(tags) },
+    }));
+  }
+
   async function handleSaveBrandLabel(id: number): Promise<void> {
     const edit = brandLabelEdits[id];
     if (!edit) return;
     setBrandLabelSaveStatus((prev) => ({ ...prev, [id]: 'saving' }));
-    const result = await updateBrandLabel(id, { displayName: edit.displayName });
+    const payload: Record<string, unknown> = {};
+    if (edit.displayName !== undefined) payload.displayName = edit.displayName;
+    if (edit.seoKeywords !== undefined) payload.seoKeywords = edit.seoKeywords;
+    if (edit.avoidTerms !== undefined) payload.avoidTerms = edit.avoidTerms;
+    const result = await updateBrandLabel(id, payload as any);
     if (result.success && result.data) {
       setBrandLabelSaveStatus((prev) => ({ ...prev, [id]: 'saved' }));
       setBrandLabels((prev) => prev.map((b) => (b.id === id ? result.data! : b)));
@@ -296,77 +319,78 @@ export default function ProductApiSection(): React.ReactElement {
           Map product API slugs to display names. These are used for brand filtering and agent brand exclusivity.
         </p>
 
-        {brandLabels.length > 0 && (
-          <table className="brand-labels__table">
-            <thead>
-              <tr>
-                <th className="brand-labels__th">Slug</th>
-                <th className="brand-labels__th">Display Name</th>
-                <th className="brand-labels__th">Active</th>
-                <th className="brand-labels__th" />
-              </tr>
-            </thead>
-            <tbody>
-              {brandLabels.map((label) => {
-                const status = brandLabelSaveStatus[label.id] ?? 'idle';
-                const hasEdits = label.id in brandLabelEdits;
-                const isDeleting = brandLabelDeleteConfirm === label.id;
+        {brandLabels.map((label) => {
+          const status = brandLabelSaveStatus[label.id] ?? 'idle';
+          const hasEdits = label.id in brandLabelEdits;
+          const isDeleting = brandLabelDeleteConfirm === label.id;
 
-                return (
-                  <tr key={label.id} style={!label.isActive ? { opacity: 0.5 } : undefined}>
-                    <td className="brand-labels__td brand-labels__td--slug">{label.slug}</td>
-                    <td className="brand-labels__td">
-                      <input
-                        className="brand-labels__name-input"
-                        type="text"
-                        value={getBrandLabelValue(label.id, 'displayName')}
-                        onChange={(e) =>
-                          setBrandLabelEdits((prev) => ({
-                            ...prev,
-                            [label.id]: { ...prev[label.id], displayName: e.target.value },
-                          }))
-                        }
-                      />
-                    </td>
-                    <td className="brand-labels__td">
-                      <Toggle
-                        checked={label.isActive}
-                        onChange={() => handleToggleBrandLabel(label)}
-                      />
-                    </td>
-                    <td className="brand-labels__td brand-labels__td--actions">
-                      {isDeleting ? (
-                        <>
-                          <button className="btn btn--outline btn--danger btn--sm" onClick={() => handleDeleteBrandLabel(label.id)}>
-                            Yes
-                          </button>
-                          <button className="btn btn--ghost btn--sm" onClick={() => setBrandLabelDeleteConfirm(null)}>
-                            No
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          {hasEdits && (
-                            <button
-                              className="btn btn--primary btn--sm"
-                              onClick={() => handleSaveBrandLabel(label.id)}
-                              disabled={status === 'saving'}
-                            >
-                              {status === 'saving' ? <Loader2 size={12} className="spin" /> : status === 'saved' ? <Check size={12} /> : <Save size={12} />}
-                            </button>
-                          )}
-                          <button className="btn btn--ghost btn--sm" onClick={() => setBrandLabelDeleteConfirm(label.id)}>
-                            <Trash2 size={12} />
-                          </button>
-                        </>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
+          return (
+            <div key={label.id} className="brand-labels__card" style={!label.isActive ? { opacity: 0.5 } : undefined}>
+              <div className="brand-labels__card-header">
+                <div className="brand-labels__card-info">
+                  <span className="brand-labels__card-slug">{label.slug}</span>
+                  <input
+                    className="brand-labels__name-input"
+                    type="text"
+                    value={getBrandLabelValue(label.id, 'displayName')}
+                    onChange={(e) =>
+                      setBrandLabelEdits((prev) => ({
+                        ...prev,
+                        [label.id]: { ...prev[label.id], displayName: e.target.value },
+                      }))
+                    }
+                  />
+                </div>
+                <div className="brand-labels__card-actions">
+                  <Toggle
+                    checked={label.isActive}
+                    onChange={() => handleToggleBrandLabel(label)}
+                  />
+                  {isDeleting ? (
+                    <>
+                      <button className="btn btn--outline btn--danger btn--sm" onClick={() => handleDeleteBrandLabel(label.id)}>Yes</button>
+                      <button className="btn btn--ghost btn--sm" onClick={() => setBrandLabelDeleteConfirm(null)}>No</button>
+                    </>
+                  ) : (
+                    <button className="btn btn--ghost btn--sm" onClick={() => setBrandLabelDeleteConfirm(label.id)}>
+                      <Trash2 size={12} />
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div className="brand-labels__card-fields">
+                <div className="brand-labels__tag-field">
+                  <label className="settings-field__label">SEO Keywords</label>
+                  <TagInput
+                    tags={getBrandTags(label.id, 'seoKeywords')}
+                    onChange={(tags) => setBrandTags(label.id, 'seoKeywords', tags)}
+                    placeholder="Type a keyword and press Enter"
+                  />
+                </div>
+                <div className="brand-labels__tag-field">
+                  <label className="settings-field__label">Terms to Avoid</label>
+                  <TagInput
+                    tags={getBrandTags(label.id, 'avoidTerms')}
+                    onChange={(tags) => setBrandTags(label.id, 'avoidTerms', tags)}
+                    placeholder="Type a term to avoid and press Enter"
+                  />
+                </div>
+              </div>
+              {hasEdits && (
+                <div className="brand-labels__card-footer">
+                  <button
+                    className="btn btn--primary btn--sm"
+                    onClick={() => handleSaveBrandLabel(label.id)}
+                    disabled={status === 'saving'}
+                  >
+                    {status === 'saving' ? <Loader2 size={12} className="spin" /> : status === 'saved' ? <Check size={12} /> : <Save size={12} />}
+                    {status === 'saved' ? 'Saved' : 'Save'}
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        })}
 
         <div className="brand-labels__create-row">
           <input

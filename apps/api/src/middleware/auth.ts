@@ -1,13 +1,14 @@
 import type { Request, Response, NextFunction } from 'express';
 import { verifyToken, generateAccessToken, type TokenPayload } from '../services/auth';
-import { isGuestModeEnabled } from '../services/guest-mode';
+import { isGuestModeEnabled } from '../services/site-settings';
 import { db } from '../db';
-import { spaceMembers } from '../db/schema';
+import { users, spaceMembers } from '../db/schema';
 import { eq } from 'drizzle-orm';
 
 export interface AuthUser {
   id: string;
   email: string;
+  displayName: string;
   role: string;
   spaceId: string | null;
 }
@@ -21,14 +22,26 @@ declare global {
   }
 }
 
-async function resolveSpaceId(userId: string): Promise<string | null> {
+/**
+ * Resolve the user's current role and spaceId from the DB.
+ * This ensures role changes (via CLI or admin panel) take effect
+ * immediately without requiring re-login.
+ */
+async function resolveUserContext(userId: string): Promise<{ displayName: string; role: string; spaceId: string | null } | null> {
   try {
-    const row = await db
-      .select({ spaceId: spaceMembers.spaceId })
-      .from(spaceMembers)
-      .where(eq(spaceMembers.userId, userId))
+    const rows = await db
+      .select({
+        displayName: users.displayName,
+        role: users.role,
+        spaceId: spaceMembers.spaceId,
+      })
+      .from(users)
+      .leftJoin(spaceMembers, eq(spaceMembers.userId, users.id))
+      .where(eq(users.id, userId))
       .limit(1);
-    return row[0]?.spaceId ?? null;
+    if (!rows.length) return null;
+
+    return { displayName: rows[0].displayName, role: rows[0].role, spaceId: rows[0].spaceId ?? null };
   } catch {
     return null;
   }
@@ -50,7 +63,7 @@ function extractToken(req: Request): TokenPayload | null {
   if (refreshToken) {
     try {
       const payload = verifyToken(refreshToken);
-      // Issue a new access token via cookie
+      // Issue a new access token via cookie (role will be corrected by middleware from DB)
       const newAccess = generateAccessToken({ userId: payload.userId, email: payload.email, role: payload.role });
       (req.res as Response)?.cookie('blogwriter_access', newAccess, {
         httpOnly: true,
@@ -76,8 +89,12 @@ export async function optionalAuth(req: Request, res: Response, next: NextFuncti
   const payload = extractToken(req);
 
   if (payload) {
-    const spaceId = await resolveSpaceId(payload.userId);
-    req.user = { id: payload.userId, email: payload.email, role: payload.role, spaceId };
+    const ctx = await resolveUserContext(payload.userId);
+    if (!ctx) {
+      res.status(401).json({ error: 'User not found' });
+      return;
+    }
+    req.user = { id: payload.userId, email: payload.email, displayName: ctx.displayName, role: ctx.role, spaceId: ctx.spaceId };
     return next();
   }
 
@@ -103,8 +120,12 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     return;
   }
 
-  const spaceId = await resolveSpaceId(payload.userId);
-  req.user = { id: payload.userId, email: payload.email, role: payload.role, spaceId };
+  const ctx = await resolveUserContext(payload.userId);
+  if (!ctx) {
+    res.status(401).json({ error: 'User not found' });
+    return;
+  }
+  req.user = { id: payload.userId, email: payload.email, displayName: ctx.displayName, role: ctx.role, spaceId: ctx.spaceId };
   next();
 }
 
@@ -119,12 +140,17 @@ export async function requireAdmin(req: Request, res: Response, next: NextFuncti
     return;
   }
 
-  if (payload.role !== 'admin') {
+  const ctx = await resolveUserContext(payload.userId);
+  if (!ctx) {
+    res.status(401).json({ error: 'User not found' });
+    return;
+  }
+
+  if (ctx.role !== 'admin') {
     res.status(403).json({ error: 'Admin access required' });
     return;
   }
 
-  const spaceId = await resolveSpaceId(payload.userId);
-  req.user = { id: payload.userId, email: payload.email, role: payload.role, spaceId };
+  req.user = { id: payload.userId, email: payload.email, displayName: ctx.displayName, role: ctx.role, spaceId: ctx.spaceId };
   next();
 }

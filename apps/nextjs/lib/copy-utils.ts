@@ -13,8 +13,8 @@ export interface ClipboardDressInfo {
   styleId?: string;
 }
 
-/** Convert slugs like "sorella-dress" to "Sorella Dress" */
-function formatBrandName(raw: string): string {
+/** Fallback: convert slugs like "sorella-dress" to "Sorella Dress" */
+function formatBrandSlug(raw: string): string {
   return raw
     .replace(/[-_]/g, ' ')
     .replace(/\b\w/g, (c) => c.toUpperCase());
@@ -25,6 +25,7 @@ export function markdownToClipboardHtml(
   options?: {
     includeImages?: boolean;
     dressMap?: Map<string, ClipboardDressInfo>;
+    brandLabelMap?: Map<string, string>;
   },
 ): string {
   const rawHtml = marked.parse(markdown, { async: false }) as string;
@@ -41,6 +42,7 @@ export function markdownToClipboardHtml(
   // for maximum compatibility across WYSIWYG editors.
   if (options?.includeImages) {
     const dressMap = options.dressMap;
+    const brandLabelMap = options.brandLabelMap;
 
     // Replace every <img> with: close </p> + image block + reopen <p>
     let html = rawHtml.replace(
@@ -63,7 +65,8 @@ export function markdownToClipboardHtml(
         if (dress?.designer || dress?.styleId) {
           const parts: string[] = [];
           if (dress.designer) {
-            parts.push(`<strong style="font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:#374151;">${formatBrandName(dress.designer)}</strong>`);
+            const displayName = brandLabelMap?.get(dress.designer) || formatBrandSlug(dress.designer);
+            parts.push(`<strong style="font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:#374151;">${displayName}</strong>`);
           }
           if (dress.styleId) {
             parts.push(`<span style="color:#9ca3af;">${dress.styleId}</span>`);
@@ -148,7 +151,7 @@ function fallbackCopyRichText(html: string): void {
  */
 export async function copyRichText(
   markdown: string,
-  options?: { includeImages?: boolean; dressMap?: Map<string, ClipboardDressInfo> },
+  options?: { includeImages?: boolean; dressMap?: Map<string, ClipboardDressInfo>; brandLabelMap?: Map<string, string> },
 ): Promise<void> {
   const html = markdownToClipboardHtml(markdown, options);
 

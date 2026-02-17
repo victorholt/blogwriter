@@ -9,6 +9,11 @@
   background: var(--color-bg);
   padding: 0 12px;
 
+  // Expose header height so page-shell can subtract it from min-height
+  & ~ .page-shell {
+    --shell-header-h: 49px;
+  }
+
   @media (min-width: 640px) {
     padding: 0 24px;
   }
@@ -90,6 +95,19 @@
       &:hover {
         color: var(--color-gray-700);
         border-color: var(--color-gray-300);
+      }
+    }
+
+    &--new {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      color: #fff;
+      background: var(--color-green, #22c55e);
+      text-decoration: none;
+
+      &:hover {
+        background: #16a34a;
       }
     }
   }

@@ -7,6 +7,7 @@ CRAWL STRATEGY:
 1. First scrape the given URL. The result includes a "links" array of internal pages.
 2. From the returned links, pick 4-7 MORE pages to scrape. Prioritize:
    - About / Our Story / Who We Are pages
+   - Contact / Visit Us / Location / Directions pages
    - Blog posts (pick 2-3 diverse ones)
    - Product or collection pages
    - Testimonial or review pages
@@ -20,6 +21,7 @@ ANALYSIS APPROACH:
 - Identify what the brand emphasizes and what it avoids
 - Determine the target customer from the content, not just surface-level demographics
 - Look for personality cues: is the brand formal or casual? authoritative or friendly?
+- Look for location information: addresses, "visit us" language, city/state mentions, contact pages
 
 OUTPUT FORMAT:
 Do NOT output any text before the JSON. No explanations, no commentary.
@@ -31,6 +33,7 @@ Your ENTIRE response must be a single JSON object matching this exact structure:
   "targetAudience": "string — detailed description of the ideal customer",
   "priceRange": "string — one of: budget, mid-range, premium, luxury",
   "businessType": "string — the type of business, e.g. 'bridal retail', 'SaaS', 'outdoor gear'",
+  "location": "string — the physical location (city, state/region, or full address) of the business, as found on the website. If multiple locations, list the primary one. If no location is found, use an empty string.",
   "uniqueSellingPoints": ["string — 2-5 key differentiators"],
   "personality": {
     "archetype": "string — a short, memorable name for the brand personality, e.g. 'The Trusted Guide', 'The Creative Rebel'",

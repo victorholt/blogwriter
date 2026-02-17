@@ -76,12 +76,21 @@ interface AgentInsightProps {
   agentLabel: string;
   inline?: DebugEvent[];
   live?: boolean;
+  /** Override store values — used on the blog detail page */
+  overrideOutputs?: Record<string, string>;
+  overridePipeline?: { id: string; label: string }[];
 }
 
-export default function AgentInsight({ traceId, agentId, agentLabel, inline, live }: AgentInsightProps): React.ReactElement | null {
-  const debugMode = useWizardStore((s) => s.debugMode);
-  const agentOutputs = useWizardStore((s) => s.agentOutputs);
-  const generationPipeline = useWizardStore((s) => s.generationPipeline);
+export default function AgentInsight({ traceId, agentId, agentLabel, inline, live, overrideOutputs, overridePipeline }: AgentInsightProps): React.ReactElement | null {
+  const storeDebugMode = useWizardStore((s) => s.debugMode);
+  const storeOutputs = useWizardStore((s) => s.agentOutputs);
+  const storePipeline = useWizardStore((s) => s.generationPipeline);
+
+  // Use overrides if provided (blog detail page), otherwise wizard store
+  const debugMode = overrideOutputs ? true : storeDebugMode;
+  const agentOutputs = overrideOutputs ?? storeOutputs;
+  const generationPipeline = overridePipeline ?? storePipeline;
+
   const [expanded, setExpanded] = useState(false);
   const [traceData, setTraceData] = useState<AgentLogEntry[] | null>(null);
   const [loading, setLoading] = useState(false);

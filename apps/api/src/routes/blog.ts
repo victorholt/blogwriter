@@ -115,12 +115,26 @@ router.get('/:sessionId/stream', async (req, res) => {
   if (!generateLinks) contentDirectives += 'Do NOT include any hyperlinks in the blog post.\n';
   const effectiveInstructions = contentDirectives + additionalInstructions;
 
-  // Load global context for agent brand exclusivity and theme
+  // Load global context for agent brand exclusivity, vocabulary rules, and theme
   const allBrandLabels = await db
-    .select({ displayName: brandLabels.displayName })
+    .select({
+      displayName: brandLabels.displayName,
+      seoKeywords: brandLabels.seoKeywords,
+      avoidTerms: brandLabels.avoidTerms,
+    })
     .from(brandLabels)
     .where(eq(brandLabels.isActive, true));
   const allowedBrands = allBrandLabels.map((b) => b.displayName);
+
+  const brandRules = allBrandLabels
+    .map((b) => {
+      let keywords: string[] = [];
+      let avoid: string[] = [];
+      try { keywords = JSON.parse(b.seoKeywords); } catch { /* ignore */ }
+      try { avoid = JSON.parse(b.avoidTerms); } catch { /* ignore */ }
+      return { displayName: b.displayName, seoKeywords: keywords, avoidTerms: avoid };
+    })
+    .filter((r) => r.seoKeywords.length > 0 || r.avoidTerms.length > 0);
 
   let themeDescription: string | undefined;
   if (session.themeId) {
@@ -132,7 +146,7 @@ router.get('/:sessionId/stream', async (req, res) => {
     themeDescription = theme?.description;
   }
 
-  const globalContext = { allowedBrands, themeDescription, brandVoice };
+  const globalContext = { allowedBrands, brandRules, themeDescription, brandVoice };
 
   // Set up SSE
   res.writeHead(200, {
@@ -268,6 +282,15 @@ router.get('/:sessionId/stream', async (req, res) => {
     // Parse final output
     const { blog, seoMetadata, review } = parseFinalOutput(currentOutput);
 
+    // Extract a proper title from the generated content
+    let generatedTitle: string | undefined;
+    if (seoMetadata?.title) {
+      generatedTitle = seoMetadata.title;
+    } else {
+      const h1Match = blog.match(/^#\s+(.+)$/m);
+      if (h1Match) generatedTitle = h1Match[1].trim();
+    }
+
     // Save to DB
     await db.update(blogSessions)
       .set({
@@ -275,6 +298,7 @@ router.get('/:sessionId/stream', async (req, res) => {
         generatedBlog: blog,
         seoMetadata: seoMetadata ? JSON.stringify(seoMetadata) : null,
         agentLog: review ? JSON.stringify(review) : null,
+        ...(generatedTitle ? { title: generatedTitle } : {}),
         updatedAt: new Date(),
       })
       .where(eq(blogSessions.id, sessionId));

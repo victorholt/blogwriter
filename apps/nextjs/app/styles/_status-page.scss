@@ -1,0 +1,70 @@
+// ============================================================
+// Status Page — Access denied, not found, error states
+// ============================================================
+
+.status-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 80px 24px;
+
+  @media (min-width: 640px) {
+    padding: 100px 32px;
+  }
+
+  &__icon {
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    margin-bottom: 24px;
+
+    &--denied {
+      background: #fef2f2;
+      color: #dc2626;
+    }
+
+    &--not-found {
+      background: #fffbeb;
+      color: #d97706;
+    }
+
+    &--error {
+      background: #fef2f2;
+      color: #dc2626;
+    }
+
+    &--info {
+      background: var(--color-blue-light);
+      color: var(--color-blue);
+    }
+  }
+
+  &__title {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--color-gray-800);
+    margin: 0 0 8px;
+
+    @media (min-width: 640px) {
+      font-size: 1.5rem;
+    }
+  }
+
+  &__text {
+    font-size: 14px;
+    color: var(--color-gray-500);
+    max-width: 360px;
+    line-height: 1.6;
+    margin: 0 0 28px;
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+}

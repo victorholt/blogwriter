@@ -20,6 +20,7 @@ export interface BrandVoice {
   targetAudience: string;
   priceRange: string;
   businessType: string;
+  location: string;
   uniqueSellingPoints: string[];
 
   // Rich voice definition

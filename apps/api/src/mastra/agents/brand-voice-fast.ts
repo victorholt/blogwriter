@@ -13,6 +13,7 @@ ANALYSIS APPROACH:
 - Identify what the brand emphasizes and what it avoids
 - Determine the target customer from the content, not just surface-level demographics
 - Look for personality cues: is the brand formal or casual? authoritative or friendly?
+- Look for location information: addresses, "visit us" language, city/state mentions, contact pages
 
 OUTPUT FORMAT:
 Do NOT output any text before the JSON. No explanations, no commentary.
@@ -24,6 +25,7 @@ Your ENTIRE response must be a single JSON object matching this exact structure:
   "targetAudience": "string — detailed description of the ideal customer",
   "priceRange": "string — one of: budget, mid-range, premium, luxury",
   "businessType": "string — the type of business, e.g. 'bridal retail', 'SaaS', 'outdoor gear'",
+  "location": "string — the physical location (city, state/region, or full address) of the business, as found on the website. If multiple locations, list the primary one. If no location is found, use an empty string.",
   "uniqueSellingPoints": ["string — 2-5 key differentiators"],
   "personality": {
     "archetype": "string — a short, memorable name for the brand personality, e.g. 'The Trusted Guide', 'The Creative Rebel'",
@@ -90,7 +92,7 @@ const HTML_LIMIT = 200_000;
 const TEXT_LIMIT = 15_000;
 
 // URL patterns scored by priority for brand voice analysis
-const HIGH_PRIORITY = /\/(about|our-story|who-we-are|team|testimonials?|reviews?|blog|journal|stories|mission|values)/i;
+const HIGH_PRIORITY = /\/(about|our-story|who-we-are|team|testimonials?|reviews?|blog|journal|stories|mission|values|contact|visit|location|directions)/i;
 const MEDIUM_PRIORITY = /\/(collections?|products?|pages?|services?|gallery|portfolio|faq)/i;
 const SKIP_PATTERNS = /\/(cart|login|sign-?in|register|account|privacy|terms|legal|search|checkout|wishlist|compare|cdn-cgi|\.well-known)/i;
 const FILE_EXTENSIONS = /\.(jpg|jpeg|png|gif|svg|pdf|css|js|ico|woff2?|ttf|eot|mp4|mp3|zip|xml|json)$/i;

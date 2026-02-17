@@ -98,6 +98,14 @@
     text-align: center;
   }
 
+  &__description {
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--color-gray-500);
+    text-align: center;
+    margin-bottom: 8px;
+  }
+
   &__footer {
     margin-top: 16px;
     text-align: center;

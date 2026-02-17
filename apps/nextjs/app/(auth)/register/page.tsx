@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import { useAuthStore } from '@/stores/auth-store';
 import { useRouter } from 'next/navigation';
 
@@ -11,7 +11,36 @@ export default function RegisterPage(): React.ReactElement {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const register = useAuthStore((s) => s.register);
+  const { isAuthenticated, isLoading: authLoading } = useAuthStore();
+  const registrationEnabled = useAuthStore((s) => s.registrationEnabled);
   const router = useRouter();
+
+  useEffect(() => {
+    if (isAuthenticated && !authLoading) router.replace('/');
+  }, [isAuthenticated, authLoading, router]);
+
+  if (isAuthenticated && !authLoading) {
+    return <div className="auth-page" />;
+  }
+
+  if (!authLoading && !registrationEnabled) {
+    return (
+      <div className="auth-page">
+        <div className="auth-card">
+          <h1 className="auth-card__title">Registration Closed</h1>
+          <p className="auth-card__description">
+            New account registration is currently disabled. Please contact an administrator if you need access.
+          </p>
+          <div className="auth-card__footer">
+            <span>Already have an account?</span>{' '}
+            <button className="auth-card__link" onClick={() => router.push('/login')}>
+              Log in
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   async function handleSubmit(e: FormEvent): Promise<void> {
     e.preventDefault();

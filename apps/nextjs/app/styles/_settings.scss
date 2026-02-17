@@ -669,49 +669,69 @@
 // ============================================================
 
 .brand-labels {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-
-  &__table {
-    width: 100%;
-    border-collapse: collapse;
-    min-width: 400px;
+  &__card {
+    border: 1px solid var(--color-gray-200);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    margin-bottom: 12px;
+    background: white;
   }
 
-  &__th {
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
+  &__card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  &__card-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__card-slug {
+    font-family: monospace;
+    font-size: 12px;
     color: var(--color-gray-400);
-    text-align: left;
-    padding: 8px 12px;
-    border-bottom: 1px solid var(--color-gray-200);
+    flex-shrink: 0;
   }
 
-  &__td {
-    padding: 10px 12px;
-    font-size: 14px;
-    color: var(--color-gray-700);
-    border-bottom: 1px solid var(--color-gray-100);
-    vertical-align: middle;
+  &__card-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
 
-    &--slug {
-      font-family: monospace;
-      font-size: 13px;
-      color: var(--color-gray-500);
-    }
+  &__card-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
 
-    &--actions {
-      text-align: right;
-      white-space: nowrap;
+  &__tag-field {
+    .settings-field__label {
+      font-size: 11px;
+      margin-bottom: 4px;
     }
+  }
+
+  &__card-footer {
+    margin-top: 12px;
+    display: flex;
+    justify-content: flex-end;
   }
 
   &__name-input {
     width: 100%;
+    max-width: 240px;
     padding: 6px 10px;
     font-size: 14px;
+    font-weight: 600;
     border: 1px solid var(--color-gray-200);
     border-radius: var(--radius-md);
     background: white;

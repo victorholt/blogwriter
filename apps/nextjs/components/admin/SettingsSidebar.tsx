@@ -2,9 +2,10 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Key, Bot, Package, Palette, Mic, Database, FileText, Mail, Users, ClipboardList } from 'lucide-react';
+import { Settings, Key, Bot, Package, Palette, Mic, Database, FileText, Mail, Users, ClipboardList } from 'lucide-react';
 
 const NAV_ITEMS = [
+  { slug: 'general', label: 'General', icon: Settings },
   { slug: 'api', label: 'API Config', icon: Key },
   { slug: 'agents', label: 'Agent Models', icon: Bot },
   { slug: 'products', label: 'Product API', icon: Package },
@@ -25,7 +26,7 @@ export default function SettingsSidebar({ basePath }: SettingsSidebarProps): Rea
   const pathname = usePathname();
 
   // Extract current section from pathname
-  const currentSection = pathname.replace(basePath, '').replace(/^\//, '') || 'api';
+  const currentSection = pathname.replace(basePath, '').replace(/^\//, '') || 'general';
 
   return (
     <nav className="settings-sidebar">

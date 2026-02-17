@@ -159,6 +159,8 @@ export interface AdminBrandLabel {
   displayName: string;
   isActive: boolean;
   sortOrder: number;
+  seoKeywords: string;
+  avoidTerms: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -182,7 +184,7 @@ export async function createBrandLabel(
 
 export async function updateBrandLabel(
   id: number,
-  data: { slug?: string; displayName?: string; isActive?: boolean; sortOrder?: number },
+  data: { slug?: string; displayName?: string; isActive?: boolean; sortOrder?: number; seoKeywords?: string; avoidTerms?: string },
 ): Promise<ApiResponse<AdminBrandLabel>> {
   const res = await fetch(`${API_BASE}/api/admin/brand-labels/${id}`, {
     method: 'PUT',

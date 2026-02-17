@@ -6,12 +6,18 @@ import { hashPassword, verifyPassword, setAuthCookies, clearAuthCookies } from '
 import { requireAuth } from '../middleware/auth';
 import { sendPasswordResetEmail } from '../services/email';
 import { logAudit } from '../services/audit';
+import { isRegistrationEnabled } from '../services/site-settings';
 
 const router = Router();
 
 // POST /api/auth/register
 router.post('/register', async (req, res) => {
   try {
+    const registrationEnabled = await isRegistrationEnabled();
+    if (!registrationEnabled) {
+      return res.status(403).json({ error: 'Registration is currently disabled' });
+    }
+
     const { email, password, displayName } = req.body;
 
     if (!email || !password || !displayName) {
@@ -142,34 +148,19 @@ router.post('/logout', (_req, res) => {
 });
 
 // GET /api/auth/me
-router.get('/me', requireAuth, async (req, res) => {
-  try {
-    const [user] = await db
-      .select({
-        id: users.id,
-        email: users.email,
-        displayName: users.displayName,
-        role: users.role,
-      })
-      .from(users)
-      .where(eq(users.id, req.user!.id))
-      .limit(1);
-
-    if (!user) {
-      clearAuthCookies(res);
-      return res.status(401).json({ error: 'User not found' });
-    }
-
-    return res.json({
-      user: {
-        ...user,
-        spaceId: req.user!.spaceId,
-      },
-    });
-  } catch (err) {
-    console.error('[Auth] /me error:', err);
-    return res.status(500).json({ error: 'Failed to fetch user' });
-  }
+// User data is already resolved by requireAuth middleware (single JOIN query),
+// so we just return it directly — no extra DB query needed.
+router.get('/me', requireAuth, (req, res) => {
+  const u = req.user!;
+  return res.json({
+    user: {
+      id: u.id,
+      email: u.email,
+      displayName: u.displayName,
+      role: u.role,
+      spaceId: u.spaceId,
+    },
+  });
 });
 
 // POST /api/auth/change-password
