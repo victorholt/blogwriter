@@ -2,45 +2,82 @@
 // Settings Page
 // ============================================================
 
-.settings-tabs {
-  display: flex;
-  gap: 0;
-  border-bottom: 1px solid var(--color-gray-200);
-  margin-bottom: 20px;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
+// ---- Sidebar layout (desktop: sidebar + content, mobile: horizontal scroll) ----
 
-  @media (min-width: 640px) {
-    margin-bottom: 32px;
+.settings-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+
+  @media (min-width: 768px) {
+    flex-direction: row;
+    gap: 32px;
   }
 }
 
-.settings-tab {
+.settings-layout__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.settings-sidebar {
   display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 12px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--color-gray-500);
-  cursor: pointer;
-  border-bottom: 2px solid transparent;
-  background: none;
-  white-space: nowrap;
-  transition: color 0.15s, border-color 0.15s;
+  gap: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-bottom: 1px solid var(--color-gray-200);
+  margin-bottom: 20px;
 
-  @media (min-width: 640px) {
-    padding: 10px 16px;
-    font-size: 14px;
+  @media (min-width: 768px) {
+    flex-direction: column;
+    flex-shrink: 0;
+    width: 180px;
+    overflow-x: visible;
+    border-bottom: none;
+    border-right: 1px solid var(--color-gray-200);
+    margin-bottom: 0;
+    padding-right: 24px;
+    gap: 2px;
   }
 
-  &:hover {
-    color: var(--color-gray-700);
-  }
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-gray-500);
+    white-space: nowrap;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    text-decoration: none;
+    transition: color 0.15s, background 0.15s, border-color 0.15s;
 
-  &--active {
-    color: var(--color-blue);
-    border-bottom-color: var(--color-blue);
+    @media (min-width: 768px) {
+      padding: 8px 12px;
+      font-size: 14px;
+      border-bottom: none;
+      border-radius: var(--radius-md);
+    }
+
+    &:hover {
+      color: var(--color-gray-700);
+
+      @media (min-width: 768px) {
+        background: var(--color-gray-50);
+      }
+    }
+
+    &--active {
+      color: var(--color-blue);
+      border-bottom-color: var(--color-blue);
+
+      @media (min-width: 768px) {
+        background: var(--color-blue-light);
+        border-bottom-color: transparent;
+      }
+    }
   }
 }
 
@@ -693,5 +730,119 @@
     margin-top: 16px;
     padding-top: 12px;
     border-top: 1px solid var(--color-gray-200);
+  }
+}
+
+// ============================================================
+// Users Tab
+// ============================================================
+
+.users-tab {
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+
+    .settings-section__heading {
+      margin: 0;
+      border: none;
+      padding-bottom: 0;
+    }
+  }
+
+  &__create-form {
+    margin-bottom: 16px;
+  }
+
+  &__table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  &__table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 500px;
+  }
+
+  &__th {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-gray-400);
+    text-align: left;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--color-gray-200);
+
+    &--right {
+      text-align: right;
+    }
+  }
+
+  &__td {
+    padding: 10px 12px;
+    font-size: 14px;
+    color: var(--color-gray-700);
+    border-bottom: 1px solid var(--color-gray-100);
+    vertical-align: middle;
+
+    &--muted {
+      font-size: 12px;
+      color: var(--color-gray-400);
+    }
+
+    &--actions {
+      text-align: right;
+      white-space: nowrap;
+
+      .btn + .btn {
+        margin-left: 6px;
+      }
+    }
+  }
+
+  &__row--disabled {
+    opacity: 0.5;
+  }
+
+  &__name {
+    display: block;
+    font-weight: 500;
+    color: var(--color-gray-800);
+  }
+
+  &__email {
+    display: block;
+    font-size: 12px;
+    color: var(--color-gray-400);
+  }
+
+  &__role-select {
+    font-size: 12px;
+    padding: 3px 8px;
+    border: 1px solid var(--color-gray-200);
+    border-radius: var(--radius-sm);
+    background: var(--color-paper);
+    color: var(--color-gray-700);
+    cursor: pointer;
+  }
+
+  &__status {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 100px;
+    font-weight: 500;
+
+    &--active {
+      background: #ecfdf5;
+      color: #059669;
+    }
+
+    &--disabled {
+      background: #fef2f2;
+      color: #dc2626;
+    }
   }
 }

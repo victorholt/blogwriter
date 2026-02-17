@@ -12,11 +12,7 @@ import { Plus, Save, Trash2, Check, Loader2, AlertCircle, Search } from 'lucide-
 import Toggle from '@/components/ui/Toggle';
 import EnhancedTextArea from '@/components/ui/EnhancedTextArea';
 
-interface ThemesTabProps {
-  token: string;
-}
-
-export default function ThemesTab({ token }: ThemesTabProps): React.ReactElement {
+export default function ThemesTab(): React.ReactElement {
   const [themes, setThemes] = useState<AdminTheme[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -29,14 +25,14 @@ export default function ThemesTab({ token }: ThemesTabProps): React.ReactElement
   const [createStatus, setCreateStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const loadThemes = useCallback(async () => {
     try {
-      const result = await fetchAdminThemes(token);
+      const result = await fetchAdminThemes();
       if (result.success && result.data) {
         setThemes(result.data);
       }
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, []);
 
   useEffect(() => {
     loadThemes();
@@ -57,7 +53,7 @@ export default function ThemesTab({ token }: ThemesTabProps): React.ReactElement
   }
 
   async function handleToggleActive(theme: AdminTheme): Promise<void> {
-    const result = await updateTheme(token, theme.id, { isActive: !theme.isActive });
+    const result = await updateTheme(theme.id, { isActive: !theme.isActive });
     if (result.success && result.data) {
       setThemes((prev) => prev.map((t) => (t.id === theme.id ? result.data! : t)));
     }
@@ -71,7 +67,7 @@ export default function ThemesTab({ token }: ThemesTabProps): React.ReactElement
       return;
     }
 
-    const result = await updateTheme(token, id, {
+    const result = await updateTheme(id, {
       name: edit.name,
       description: edit.description,
     });
@@ -92,7 +88,7 @@ export default function ThemesTab({ token }: ThemesTabProps): React.ReactElement
   }
 
   async function handleDelete(id: number): Promise<void> {
-    const result = await deleteTheme(token, id);
+    const result = await deleteTheme(id);
     if (result.success) {
       setThemes((prev) => prev.filter((t) => t.id !== id));
       setDeleteConfirm(null);
@@ -102,7 +98,7 @@ export default function ThemesTab({ token }: ThemesTabProps): React.ReactElement
   async function handleCreate(): Promise<void> {
     if (!newName.trim()) return;
     setCreateStatus('saving');
-    const result = await createTheme(token, {
+    const result = await createTheme({
       name: newName.trim(),
       description: newDescription.trim(),
     });
@@ -186,7 +182,6 @@ export default function ThemesTab({ token }: ThemesTabProps): React.ReactElement
                 onChange={setNewDescription}
                 placeholder="Describe the theme's focus, tone, and key topics for the AI agents..."
                 rows={3}
-                token={token}
                 enhanceEnabled
                 enhanceContext={ENHANCE_CONTEXT}
               />
@@ -253,7 +248,6 @@ export default function ThemesTab({ token }: ThemesTabProps): React.ReactElement
                   value={getThemeValue(theme.id, 'description')}
                   onChange={(text) => setThemeValue(theme.id, 'description', text)}
                   rows={3}
-                  token={token}
                   enhanceEnabled
                   enhanceContext={ENHANCE_CONTEXT}
                 />

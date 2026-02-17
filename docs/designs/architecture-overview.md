@@ -52,7 +52,7 @@ graph TB
 - **Single page application**: One page (`/`) with a 4-step wizard
 - **Client-side rendering**: Wizard state managed in browser via Zustand
 - **API communication**: All data fetched from Express API via `fetch()`
-- **Admin page**: Hidden route at `/settings/[token]`
+- **Admin page**: Route at `/settings` (JWT cookie auth, admin role required)
 - **No server-side data fetching**: All API calls happen client-side
 
 ### Express API

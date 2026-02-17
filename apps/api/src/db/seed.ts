@@ -1,6 +1,7 @@
 import { db } from './index';
-import { agentModelConfigs, appSettings, brandLabels } from './schema';
-import { sql } from 'drizzle-orm';
+import { agentModelConfigs, appSettings, brandLabels, users, spaces, spaceMembers } from './schema';
+import { sql, eq } from 'drizzle-orm';
+import { hashPassword } from '../services/auth';
 
 const DEFAULT_MODEL = 'openrouter/anthropic/claude-sonnet-4.5';
 
@@ -17,6 +18,7 @@ const DEFAULT_AGENTS = [
 ];
 
 const DEFAULT_SETTINGS = [
+  { key: 'app_name', value: 'BlogWriter' },
   { key: 'openrouter_api_key', value: '' },
   { key: 'product_api_base_url', value: 'https://product.dev.essensedesigns.info' },
   { key: 'product_api_timeout', value: '30000' },
@@ -30,6 +32,14 @@ const DEFAULT_SETTINGS = [
   { key: 'blog_generate_images', value: 'true' },
   { key: 'blog_generate_links', value: 'true' },
   { key: 'blog_sharing_enabled', value: 'false' },
+  { key: 'guest_mode_enabled', value: 'true' },
+  { key: 'smtp_host', value: '' },
+  { key: 'smtp_port', value: '587' },
+  { key: 'smtp_user', value: '' },
+  { key: 'smtp_password', value: '' },
+  { key: 'smtp_from_email', value: '' },
+  { key: 'smtp_from_name', value: 'BlogWriter' },
+  { key: 'smtp_secure', value: 'true' },
 ];
 
 export async function seedDatabase(): Promise<void> {
@@ -66,4 +76,40 @@ export async function seedDatabase(): Promise<void> {
       .onConflictDoNothing({ target: brandLabels.slug });
   }
   console.log(`[Seed] Brand labels: ${DEFAULT_BRAND_LABELS.length} defaults ensured`);
+
+  // Ensure admin user exists with admin role (idempotent)
+  const adminEmail = (process.env.ADMIN_EMAIL || 'admin@blogwriter.local').toLowerCase().trim();
+  const [existingAdmin] = await db.select({ id: users.id, role: users.role }).from(users).where(eq(users.email, adminEmail)).limit(1);
+
+  if (!existingAdmin) {
+    const adminPassword = process.env.ADMIN_PASSWORD || crypto.randomUUID().slice(0, 16);
+    const adminName = 'Admin';
+
+    const passwordHash = await hashPassword(adminPassword);
+    const [adminUser] = await db.insert(users).values({
+      email: adminEmail,
+      passwordHash,
+      displayName: adminName,
+      role: 'admin',
+    }).returning();
+
+    const [adminSpace] = await db.insert(spaces).values({
+      name: `${adminName}'s workspace`,
+      ownerId: adminUser.id,
+    }).returning();
+
+    await db.insert(spaceMembers).values({
+      spaceId: adminSpace.id,
+      userId: adminUser.id,
+      role: 'owner',
+    });
+
+    console.log(`[Seed] Admin user created: ${adminEmail}`);
+    if (!process.env.ADMIN_PASSWORD) {
+      console.log(`[Seed] Admin password (auto-generated): ${adminPassword}`);
+    }
+  } else if (existingAdmin.role !== 'admin') {
+    await db.update(users).set({ role: 'admin', updatedAt: new Date() }).where(eq(users.id, existingAdmin.id));
+    console.log(`[Seed] Promoted ${adminEmail} to admin role`);
+  }
 }

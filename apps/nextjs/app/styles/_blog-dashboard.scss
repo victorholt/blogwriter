@@ -1,0 +1,416 @@
+// ============================================================
+// Blog Dashboard — header, empty state, loading, pagination
+// ============================================================
+
+.blog-dashboard {
+  &__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 24px;
+
+    @media (min-width: 640px) {
+      margin-bottom: 32px;
+    }
+  }
+
+  &__title {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--color-gray-800);
+    margin: 0;
+
+    @media (min-width: 640px) {
+      font-size: 1.5rem;
+    }
+  }
+
+  &__count {
+    font-size: 13px;
+    color: var(--color-gray-400);
+    margin-top: 2px;
+  }
+
+  // ---- Loading state ----
+
+  &__loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 64px 0;
+    color: var(--color-gray-400);
+    gap: 16px;
+
+    p {
+      font-size: 14px;
+    }
+  }
+
+  &__spinner {
+    width: 28px;
+    height: 28px;
+    border: 2.5px solid var(--color-gray-200);
+    border-top-color: var(--color-blue);
+    border-radius: 50%;
+    animation: blog-spin 0.8s linear infinite;
+  }
+
+  // ---- Empty state ----
+
+  &__empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 60px 24px;
+  }
+
+  &__empty-icon {
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-blue-light);
+    border-radius: 50%;
+    color: var(--color-blue);
+    margin-bottom: 20px;
+  }
+
+  &__empty-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--color-gray-800);
+    margin: 0 0 8px;
+  }
+
+  &__empty-text {
+    font-size: 14px;
+    color: var(--color-gray-500);
+    max-width: 320px;
+    line-height: 1.5;
+    margin: 0 0 24px;
+  }
+
+  // ---- Pagination ----
+
+  &__pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--color-gray-100);
+    font-size: 14px;
+    color: var(--color-gray-500);
+
+    button {
+      padding: 6px 14px;
+      border: 1px solid var(--color-gray-200);
+      border-radius: var(--radius-md);
+      background: var(--color-paper);
+      font-size: 13px;
+      cursor: pointer;
+      transition: background 0.15s ease;
+
+      &:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+
+      &:hover:not(:disabled) {
+        background: var(--color-gray-50);
+      }
+    }
+  }
+}
+
+@keyframes blog-spin {
+  to { transform: rotate(360deg); }
+}
+
+// ============================================================
+// Blog Table
+// ============================================================
+
+.blog-table {
+  &__wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  width: 100%;
+  border-collapse: collapse;
+
+  &__th {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-gray-400);
+    text-align: left;
+    padding: 0 16px 12px;
+    border-bottom: 1px solid var(--color-gray-200);
+    white-space: nowrap;
+
+    &--actions {
+      width: 100px;
+    }
+  }
+
+  &__row {
+    transition: background 0.1s;
+
+    &:hover {
+      background: var(--color-gray-50);
+    }
+
+    &:not(:last-child) .blog-table__td {
+      border-bottom: 1px solid var(--color-gray-100);
+    }
+  }
+
+  &__td {
+    padding: 14px 16px;
+    font-size: 14px;
+    color: var(--color-gray-600);
+    vertical-align: middle;
+    white-space: nowrap;
+
+    &--title {
+      font-weight: 500;
+      color: var(--color-gray-800);
+      white-space: normal;
+      min-width: 200px;
+    }
+
+    &--brand {
+      text-transform: capitalize;
+      font-size: 13px;
+    }
+
+    &--date {
+      font-size: 13px;
+      color: var(--color-gray-400);
+    }
+
+    &--actions {
+      text-align: right;
+      white-space: nowrap;
+    }
+  }
+
+  &__title {
+    line-height: 1.3;
+  }
+
+  // ---- Status badges ----
+
+  &__status {
+    display: inline-block;
+    font-size: 11px;
+    padding: 2px 10px;
+    border-radius: 100px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+
+    &--completed {
+      background: #ecfdf5;
+      color: #059669;
+    }
+
+    &--error {
+      background: #fef2f2;
+      color: #dc2626;
+    }
+
+    &--generating {
+      background: #eff6ff;
+      color: #2563eb;
+    }
+  }
+
+  // ---- Inline edit ----
+
+  &__edit-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  &__edit-input {
+    flex: 1;
+    min-width: 160px;
+    padding: 5px 10px;
+    border: 1px solid var(--color-blue);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-gray-800);
+    outline: none;
+    background: var(--color-paper);
+  }
+
+  // ---- Icon buttons ----
+
+  &__icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--color-gray-400);
+    cursor: pointer;
+    transition: all 0.15s;
+    font-size: 12px;
+    font-weight: 600;
+
+    &:hover {
+      background: var(--color-gray-100);
+      color: var(--color-gray-600);
+    }
+
+    &--view {
+      color: var(--color-blue);
+
+      &:hover {
+        background: var(--color-blue-light);
+      }
+    }
+
+    &--delete {
+      &:hover {
+        background: #fef2f2;
+        color: var(--color-red);
+      }
+    }
+
+    &--confirm {
+      color: #059669;
+      &:hover { background: #ecfdf5; }
+    }
+
+    &--cancel {
+      color: var(--color-gray-400);
+      &:hover { background: var(--color-gray-100); }
+    }
+
+    &--confirm-del {
+      width: auto;
+      padding: 0 8px;
+      color: var(--color-red);
+      &:hover { background: #fef2f2; }
+    }
+  }
+
+  // ---- Delete confirmation ----
+
+  &__confirm-delete {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+  }
+
+  &__confirm-text {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-red);
+    margin-right: 2px;
+  }
+}
+
+// ============================================================
+// Blog Detail — Formatted preview (mirrors shared blog view)
+// ============================================================
+
+.blog-detail {
+  // Override action-bar negative margins (we're inside user-area, not paper)
+  .result__action-bar {
+    margin: 0 0 20px;
+    border-radius: var(--radius-md);
+  }
+
+  &__title-section {
+    margin-bottom: 8px;
+  }
+
+  &__title {
+    font-family: var(--font-heading, Georgia, serif);
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-gray-800);
+    margin: 0 0 4px;
+    line-height: 1.3;
+
+    @media (min-width: 640px) {
+      font-size: 2rem;
+    }
+  }
+
+  &__date {
+    display: block;
+    font-size: 14px;
+    color: var(--color-gray-400);
+  }
+
+  &__loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 64px 0;
+    color: var(--color-gray-400);
+    gap: 16px;
+
+    p {
+      font-size: 14px;
+    }
+  }
+
+  &__not-found {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--color-gray-500);
+
+    h2 {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--color-gray-700);
+      margin: 0 0 8px;
+    }
+
+    p {
+      font-size: 15px;
+      margin: 0 0 24px;
+    }
+  }
+
+  &__empty {
+    text-align: center;
+    color: var(--color-gray-400);
+    padding: 40px 0;
+    font-family: var(--font-sans);
+  }
+
+  &__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 0 0;
+    margin-top: 24px;
+    border-top: 1px solid var(--color-gray-100);
+    font-size: 13px;
+    color: var(--color-gray-400);
+  }
+
+  &__footer-label {
+    font-weight: 500;
+    text-transform: capitalize;
+  }
+}

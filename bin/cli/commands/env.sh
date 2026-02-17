@@ -94,13 +94,6 @@ fi
 echo ""
 info "API keys"
 
-# Auto-generate admin token for non-local environments
-if [[ "${APP_ENV}" != "local" && "${ADMIN_TOKEN:-dev-admin-token}" == "dev-admin-token" ]]; then
-    ADMIN_TOKEN="$(generate_token)"
-    info "Generated random ADMIN_TOKEN for ${APP_ENV}"
-fi
-prompt ADMIN_TOKEN "Admin token" "${ADMIN_TOKEN:-dev-admin-token}" true
-
 prompt OPENROUTER_API_KEY "OpenRouter API key" "${OPENROUTER_API_KEY:-}" true
 
 # ── Next.js ──────────────────────────────────────────────────────
@@ -174,7 +167,6 @@ fi
 cat >> "${ENV_FILE}" << ENVEOF
 
 # ── API Keys ─────────────────────────────────────
-ADMIN_TOKEN=${ADMIN_TOKEN}
 OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
 
 # ── Next.js (build-time) ────────────────────────

@@ -5,6 +5,7 @@ import { Copy, Check, Trash2, ImageOff } from 'lucide-react';
 import Markdown from 'react-markdown';
 import { fetchSharedBlog, deleteSharedBlog } from '@/lib/api';
 import { copyRichText } from '@/lib/copy-utils';
+import { useAuthStore } from '@/stores/auth-store';
 import type { SharedBlog } from '@/types';
 
 const IMAGE_EXTENSIONS = /\.(jpe?g|png|webp|gif|avif|svg)(\?[^\s)]*)?$/i;
@@ -51,15 +52,13 @@ export default function SharedBlogView({ hash }: SharedBlogViewProps): React.Rea
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const [adminToken, setAdminToken] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deleted, setDeleted] = useState(false);
   const [brokenImages, setBrokenImages] = useState<Set<string>>(new Set());
+  const { isAuthenticated, user } = useAuthStore();
+  const isAdmin = isAuthenticated && user?.role === 'admin';
 
   useEffect(() => {
-    const token = localStorage.getItem('blogwriter:adminToken');
-    if (token) setAdminToken(token);
-
     fetchSharedBlog(hash).then((result) => {
       if (result.success && result.data) {
         setBlog(result.data);
@@ -93,11 +92,11 @@ export default function SharedBlogView({ hash }: SharedBlogViewProps): React.Rea
   }
 
   async function handleDelete(): Promise<void> {
-    if (!adminToken || deleting) return;
+    if (!isAdmin || deleting) return;
     if (!confirm('Delete this shared blog? This cannot be undone.')) return;
     setDeleting(true);
     try {
-      const result = await deleteSharedBlog(hash, adminToken);
+      const result = await deleteSharedBlog(hash);
       if (result.success) {
         setDeleted(true);
       }
@@ -155,7 +154,7 @@ export default function SharedBlogView({ hash }: SharedBlogViewProps): React.Rea
             {copied ? <Check size={14} /> : <Copy size={14} />}
             <span>{copied ? 'Copied!' : 'Copy to Clipboard'}</span>
           </button>
-          {adminToken && (
+          {isAdmin && (
             <>
               <div className="result__action-divider" />
               <button

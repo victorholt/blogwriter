@@ -485,7 +485,6 @@ The `agent_log` column in `blog_sessions` stores each agent's output. In the fut
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `OPENROUTER_API_KEY` | No (fallback) | OpenRouter API key — used only if `app_settings` table has no key set |
-| `ADMIN_TOKEN` | Yes | UUID token for admin panel access |
 
 ### API Key Resolution
 

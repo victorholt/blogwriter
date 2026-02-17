@@ -2,9 +2,9 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { readFileSync } from 'fs';
 import { db } from '../db';
-import { agentModelConfigs, agentAdditionalInstructions, appSettings, brandVoiceCache, themes, brandLabels, voicePresets } from '../db/schema';
-import { eq, asc, and } from 'drizzle-orm';
-import { validateAdminToken } from '../middleware/admin-auth';
+import { agentModelConfigs, agentAdditionalInstructions, appSettings, brandVoiceCache, themes, brandLabels, voicePresets, auditLogs, users, blogSessions } from '../db/schema';
+import { eq, asc, and, desc, sql } from 'drizzle-orm';
+import { requireAdmin } from '../middleware/auth';
 import { invalidateCache } from '../mastra/lib/model-resolver';
 import { enhanceText as agentEnhanceText } from '../mastra/agents/text-enhancer';
 import { clearDressCache, syncDressesFromApi, getCacheStats } from '../services/dress-cache';
@@ -12,6 +12,9 @@ import { AGENT_DEFAULTS } from '../mastra/lib/agent-defaults';
 import { loadProductApiConfig } from '../services/product-api-client';
 import { invalidateInsightsCache } from '../services/agent-trace';
 import { formatBrandVoiceText } from '../mastra/agents/brand-voice-formatter';
+import { testSmtpConnection } from '../services/email';
+import { invalidateGuestModeCache } from '../services/guest-mode';
+import adminUsersRoutes from './admin-users';
 
 // Read app version once at startup
 let appVersion = '0.0.0';
@@ -78,11 +81,11 @@ async function fetchOpenRouterModels(): Promise<CachedModels['data']> {
 }
 
 // All admin routes require token validation
-router.use('/:token', validateAdminToken);
+router.use(requireAdmin);
 
 // --- Available Models ---
 
-router.get('/:token/models', async (_req, res) => {
+router.get('/models', async (_req, res) => {
   try {
     const models = await fetchOpenRouterModels();
     return res.json({ success: true, data: models });
@@ -94,7 +97,7 @@ router.get('/:token/models', async (_req, res) => {
 
 // --- Agent Configs ---
 
-router.get('/:token/agents', async (req, res) => {
+router.get('/agents', async (req, res) => {
   try {
     const agents = await db.select().from(agentModelConfigs).orderBy(agentModelConfigs.id);
     return res.json({ success: true, data: agents });
@@ -106,7 +109,7 @@ router.get('/:token/agents', async (req, res) => {
 
 // --- Agent Default Instructions (read-only, from code) ---
 
-router.get('/:token/agents/defaults', async (_req, res) => {
+router.get('/agents/defaults', async (_req, res) => {
   return res.json({ success: true, data: AGENT_DEFAULTS });
 });
 
@@ -117,7 +120,7 @@ const additionalInstructionSchema = z.object({
   content: z.string().min(1).max(5000),
 });
 
-router.get('/:token/agents/:agentId/instructions', async (req, res) => {
+router.get('/agents/:agentId/instructions', async (req, res) => {
   try {
     const rows = await db
       .select()
@@ -131,7 +134,7 @@ router.get('/:token/agents/:agentId/instructions', async (req, res) => {
   }
 });
 
-router.post('/:token/agents/:agentId/instructions', async (req, res) => {
+router.post('/agents/:agentId/instructions', async (req, res) => {
   const parsed = additionalInstructionSchema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({ success: false, error: parsed.error.issues[0]?.message || 'Invalid request' });
@@ -149,7 +152,7 @@ router.post('/:token/agents/:agentId/instructions', async (req, res) => {
   }
 });
 
-router.put('/:token/agents/:agentId/instructions/:id', async (req, res) => {
+router.put('/agents/:agentId/instructions/:id', async (req, res) => {
   const parsed = additionalInstructionSchema.partial().safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({ success: false, error: parsed.error.issues[0]?.message || 'Invalid request' });
@@ -173,7 +176,7 @@ router.put('/:token/agents/:agentId/instructions/:id', async (req, res) => {
   }
 });
 
-router.delete('/:token/agents/:agentId/instructions/:id', async (req, res) => {
+router.delete('/agents/:agentId/instructions/:id', async (req, res) => {
   const id = parseInt(req.params.id);
   if (isNaN(id)) return res.status(400).json({ success: false, error: 'Invalid ID' });
 
@@ -201,7 +204,7 @@ const updateAgentSchema = z.object({
   maxRetries: z.number().int().min(0).max(10).optional(),
 });
 
-router.put('/:token/agents/:agentId', async (req, res) => {
+router.put('/agents/:agentId', async (req, res) => {
   const parsed = updateAgentSchema.safeParse(req.body);
   if (!parsed.success) {
     const message = parsed.error.issues[0]?.message || 'Invalid request';
@@ -248,12 +251,12 @@ function maskApiKey(value: string): string {
   return value.slice(0, 8) + '****' + value.slice(-4);
 }
 
-router.get('/:token/settings', async (req, res) => {
+router.get('/settings', async (req, res) => {
   try {
     const settings = await db.select().from(appSettings);
     const masked: Record<string, string> = {};
     for (const s of settings) {
-      masked[s.key] = s.key.includes('key') ? maskApiKey(s.value) : s.value;
+      masked[s.key] = (s.key.includes('key') || s.key === 'smtp_password') ? maskApiKey(s.value) : s.value;
     }
     return res.json({ success: true, data: masked });
   } catch (err) {
@@ -263,6 +266,7 @@ router.get('/:token/settings', async (req, res) => {
 });
 
 const updateSettingsSchema = z.object({
+  app_name: z.string().min(1).max(100).optional(),
   openrouter_api_key: z.string().optional(),
   product_api_base_url: z.string().optional(),
   product_api_timeout: z.string().optional(),
@@ -276,9 +280,17 @@ const updateSettingsSchema = z.object({
   blog_generate_images: z.enum(['true', 'false']).optional(),
   blog_generate_links: z.enum(['true', 'false']).optional(),
   blog_sharing_enabled: z.enum(['true', 'false']).optional(),
+  guest_mode_enabled: z.enum(['true', 'false']).optional(),
+  smtp_host: z.string().optional(),
+  smtp_port: z.string().optional(),
+  smtp_user: z.string().optional(),
+  smtp_password: z.string().optional(),
+  smtp_from_email: z.string().optional(),
+  smtp_from_name: z.string().optional(),
+  smtp_secure: z.enum(['true', 'false']).optional(),
 });
 
-router.put('/:token/settings', async (req, res) => {
+router.put('/settings', async (req, res) => {
   const parsed = updateSettingsSchema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({ success: false, error: 'Invalid request' });
@@ -305,12 +317,16 @@ router.put('/:token/settings', async (req, res) => {
     if (updates.insights_enabled !== undefined) {
       invalidateInsightsCache();
     }
+    // Invalidate guest mode cache if guest_mode_enabled was changed
+    if (updates.guest_mode_enabled !== undefined) {
+      invalidateGuestModeCache();
+    }
 
     // Return masked values
     const settings = await db.select().from(appSettings);
     const masked: Record<string, string> = {};
     for (const s of settings) {
-      masked[s.key] = s.key.includes('key') ? maskApiKey(s.value) : s.value;
+      masked[s.key] = (s.key.includes('key') || s.key === 'smtp_password') ? maskApiKey(s.value) : s.value;
     }
 
     return res.json({ success: true, data: masked });
@@ -322,7 +338,7 @@ router.put('/:token/settings', async (req, res) => {
 
 // --- Cache Management ---
 
-router.delete('/:token/cache', async (_req, res) => {
+router.delete('/cache', async (_req, res) => {
   try {
     const result = await db.delete(brandVoiceCache).returning({ id: brandVoiceCache.id });
     console.log(`[Admin] Cleared ${result.length} cached brand voice entries`);
@@ -335,7 +351,7 @@ router.delete('/:token/cache', async (_req, res) => {
 
 // --- Dress Cache Management ---
 
-router.get('/:token/dress-cache', async (_req, res) => {
+router.get('/dress-cache', async (_req, res) => {
   try {
     const stats = await getCacheStats();
     return res.json({ success: true, data: stats });
@@ -345,7 +361,7 @@ router.get('/:token/dress-cache', async (_req, res) => {
   }
 });
 
-router.delete('/:token/dress-cache', async (_req, res) => {
+router.delete('/dress-cache', async (_req, res) => {
   try {
     const cleared = await clearDressCache();
     console.log(`[Admin] Cleared ${cleared} cached dresses`);
@@ -356,7 +372,7 @@ router.delete('/:token/dress-cache', async (_req, res) => {
   }
 });
 
-router.post('/:token/dress-cache/sync', async (_req, res) => {
+router.post('/dress-cache/sync', async (_req, res) => {
   try {
     const config = await loadProductApiConfig();
     const result = await syncDressesFromApi(config);
@@ -370,7 +386,7 @@ router.post('/:token/dress-cache/sync', async (_req, res) => {
 
 // --- Themes CRUD ---
 
-router.get('/:token/themes', async (_req, res) => {
+router.get('/themes', async (_req, res) => {
   try {
     const rows = await db.select().from(themes).orderBy(themes.sortOrder);
     return res.json({ success: true, data: rows });
@@ -385,7 +401,7 @@ const createThemeSchema = z.object({
   description: z.string().min(1, 'Description is required'),
 });
 
-router.post('/:token/themes', async (req, res) => {
+router.post('/themes', async (req, res) => {
   const parsed = createThemeSchema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({ success: false, error: parsed.error.issues[0]?.message || 'Invalid request' });
@@ -407,7 +423,7 @@ const updateThemeSchema = z.object({
   sortOrder: z.number().optional(),
 });
 
-router.put('/:token/themes/:id', async (req, res) => {
+router.put('/themes/:id', async (req, res) => {
   const parsed = updateThemeSchema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({ success: false, error: parsed.error.issues[0]?.message || 'Invalid request' });
@@ -431,7 +447,7 @@ router.put('/:token/themes/:id', async (req, res) => {
   }
 });
 
-router.delete('/:token/themes/:id', async (req, res) => {
+router.delete('/themes/:id', async (req, res) => {
   const id = parseInt(req.params.id);
   if (isNaN(id)) return res.status(400).json({ success: false, error: 'Invalid ID' });
 
@@ -447,7 +463,7 @@ router.delete('/:token/themes/:id', async (req, res) => {
 
 // --- Brand Labels CRUD ---
 
-router.get('/:token/brand-labels', async (_req, res) => {
+router.get('/brand-labels', async (_req, res) => {
   try {
     const rows = await db.select().from(brandLabels).orderBy(brandLabels.sortOrder);
     return res.json({ success: true, data: rows });
@@ -462,7 +478,7 @@ const createBrandLabelSchema = z.object({
   displayName: z.string().min(1, 'Display name is required'),
 });
 
-router.post('/:token/brand-labels', async (req, res) => {
+router.post('/brand-labels', async (req, res) => {
   const parsed = createBrandLabelSchema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({ success: false, error: parsed.error.issues[0]?.message || 'Invalid request' });
@@ -484,7 +500,7 @@ const updateBrandLabelSchema = z.object({
   sortOrder: z.number().optional(),
 });
 
-router.put('/:token/brand-labels/:id', async (req, res) => {
+router.put('/brand-labels/:id', async (req, res) => {
   const parsed = updateBrandLabelSchema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({ success: false, error: parsed.error.issues[0]?.message || 'Invalid request' });
@@ -508,7 +524,7 @@ router.put('/:token/brand-labels/:id', async (req, res) => {
   }
 });
 
-router.delete('/:token/brand-labels/:id', async (req, res) => {
+router.delete('/brand-labels/:id', async (req, res) => {
   const id = parseInt(req.params.id);
   if (isNaN(id)) return res.status(400).json({ success: false, error: 'Invalid ID' });
 
@@ -524,7 +540,7 @@ router.delete('/:token/brand-labels/:id', async (req, res) => {
 
 // --- Voice Presets CRUD ---
 
-router.get('/:token/voice-presets', async (_req, res) => {
+router.get('/voice-presets', async (_req, res) => {
   try {
     const rows = await db.select().from(voicePresets).orderBy(voicePresets.sortOrder);
     return res.json({ success: true, data: rows });
@@ -542,7 +558,7 @@ const createVoicePresetSchema = z.object({
   additionalInstructions: z.string().optional(),
 });
 
-router.post('/:token/voice-presets', async (req, res) => {
+router.post('/voice-presets', async (req, res) => {
   const parsed = createVoicePresetSchema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({ success: false, error: parsed.error.issues[0]?.message || 'Invalid request' });
@@ -567,7 +583,7 @@ const updateVoicePresetSchema = z.object({
   sortOrder: z.number().optional(),
 });
 
-router.put('/:token/voice-presets/:id', async (req, res) => {
+router.put('/voice-presets/:id', async (req, res) => {
   const parsed = updateVoicePresetSchema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({ success: false, error: parsed.error.issues[0]?.message || 'Invalid request' });
@@ -591,7 +607,7 @@ router.put('/:token/voice-presets/:id', async (req, res) => {
   }
 });
 
-router.delete('/:token/voice-presets/:id', async (req, res) => {
+router.delete('/voice-presets/:id', async (req, res) => {
   const id = parseInt(req.params.id);
   if (isNaN(id)) return res.status(400).json({ success: false, error: 'Invalid ID' });
 
@@ -612,7 +628,7 @@ const formatVoiceSchema = z.object({
   additionalInstructions: z.string().optional(),
 });
 
-router.post('/:token/voice-presets/format-stream', async (req, res) => {
+router.post('/voice-presets/format-stream', async (req, res) => {
   const parsed = formatVoiceSchema.safeParse(req.body);
   if (!parsed.success) {
     const message = parsed.error.issues[0]?.message || 'Invalid request';
@@ -662,7 +678,7 @@ const enhanceSchema = z.object({
   context: z.string().optional(), // e.g. "theme description for a blog writing AI agent"
 });
 
-router.post('/:token/enhance', validateAdminToken, async (req, res) => {
+router.post('/enhance', async (req, res) => {
   try {
     const { text, context } = enhanceSchema.parse(req.body);
     const enhanced = await agentEnhanceText(text, context);
@@ -679,8 +695,80 @@ router.post('/:token/enhance', validateAdminToken, async (req, res) => {
 
 // --- App Version ---
 
-router.get('/:token/version', async (_req, res) => {
+router.get('/version', async (_req, res) => {
   return res.json({ success: true, data: { version: appVersion } });
+});
+
+// --- User Management ---
+
+router.use('/users', adminUsersRoutes);
+
+// --- Audit Logs ---
+
+router.get('/audit', async (req, res) => {
+  try {
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 50));
+    const offset = (page - 1) * limit;
+
+    const rows = await db
+      .select()
+      .from(auditLogs)
+      .orderBy(desc(auditLogs.createdAt))
+      .limit(limit)
+      .offset(offset);
+
+    const countResult = await db.select({ count: sql<number>`count(*)` }).from(auditLogs);
+    const total = Number(countResult[0]?.count || 0);
+
+    return res.json({ success: true, data: { logs: rows, total, page, totalPages: Math.ceil(total / limit) } });
+  } catch (err) {
+    console.error('[Admin] Audit logs error:', err);
+    return res.status(500).json({ success: false, error: 'Failed to fetch audit logs' });
+  }
+});
+
+router.get('/stats', async (_req, res) => {
+  try {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    const [totalUsers, blogsToday, blogsWeek, blogsMonth, activeUsers30d] = await Promise.all([
+      db.select({ count: sql<number>`count(*)` }).from(users),
+      db.select({ count: sql<number>`count(*)` }).from(blogSessions).where(sql`${blogSessions.createdAt} >= ${today}`),
+      db.select({ count: sql<number>`count(*)` }).from(blogSessions).where(sql`${blogSessions.createdAt} >= ${weekAgo}`),
+      db.select({ count: sql<number>`count(*)` }).from(blogSessions).where(sql`${blogSessions.createdAt} >= ${monthAgo}`),
+      db.select({ count: sql<number>`count(distinct ${auditLogs.userId})` }).from(auditLogs).where(sql`${auditLogs.createdAt} >= ${monthAgo} AND ${auditLogs.userId} IS NOT NULL`),
+    ]);
+
+    return res.json({
+      success: true,
+      data: {
+        totalUsers: Number(totalUsers[0]?.count || 0),
+        blogsToday: Number(blogsToday[0]?.count || 0),
+        blogsThisWeek: Number(blogsWeek[0]?.count || 0),
+        blogsThisMonth: Number(blogsMonth[0]?.count || 0),
+        activeUsers30d: Number(activeUsers30d[0]?.count || 0),
+      },
+    });
+  } catch (err) {
+    console.error('[Admin] Stats error:', err);
+    return res.status(500).json({ success: false, error: 'Failed to fetch stats' });
+  }
+});
+
+// --- SMTP Test ---
+
+router.post('/smtp/test', async (_req, res) => {
+  try {
+    const result = await testSmtpConnection();
+    return res.json({ success: result.success, error: result.error });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'SMTP test failed';
+    return res.status(500).json({ success: false, error: message });
+  }
 });
 
 export default router;

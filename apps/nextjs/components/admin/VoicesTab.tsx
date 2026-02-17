@@ -26,11 +26,7 @@ import {
 import Toggle from '@/components/ui/Toggle';
 import BrandVoicePreview from '@/components/ui/BrandVoicePreview';
 
-interface VoicesTabProps {
-  token: string;
-}
-
-export default function VoicesTab({ token }: VoicesTabProps): React.ReactElement {
+export default function VoicesTab(): React.ReactElement {
   const [presets, setPresets] = useState<AdminVoicePreset[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -58,14 +54,14 @@ export default function VoicesTab({ token }: VoicesTabProps): React.ReactElement
 
   const loadPresets = useCallback(async () => {
     try {
-      const result = await fetchVoicePresets(token);
+      const result = await fetchVoicePresets();
       if (result.success && result.data) {
         setPresets(result.data);
       }
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, []);
 
   useEffect(() => {
     loadPresets();
@@ -95,7 +91,7 @@ export default function VoicesTab({ token }: VoicesTabProps): React.ReactElement
   // --- CRUD ---
 
   async function handleToggleActive(preset: AdminVoicePreset): Promise<void> {
-    const result = await updateVoicePreset(token, preset.id, { isActive: !preset.isActive });
+    const result = await updateVoicePreset(preset.id, { isActive: !preset.isActive });
     if (result.success && result.data) {
       setPresets((prev) => prev.map((p) => (p.id === preset.id ? result.data! : p)));
     }
@@ -109,7 +105,7 @@ export default function VoicesTab({ token }: VoicesTabProps): React.ReactElement
       return;
     }
 
-    const result = await updateVoicePreset(token, id, {
+    const result = await updateVoicePreset(id, {
       name: edit.name ?? undefined,
       description: edit.description ?? undefined,
       rawSourceText: edit.rawSourceText ?? undefined,
@@ -132,7 +128,7 @@ export default function VoicesTab({ token }: VoicesTabProps): React.ReactElement
   }
 
   async function handleDelete(id: number): Promise<void> {
-    const result = await deleteVoicePreset(token, id);
+    const result = await deleteVoicePreset(id);
     if (result.success) {
       setPresets((prev) => prev.filter((p) => p.id !== id));
       setDeleteConfirm(null);
@@ -152,7 +148,6 @@ export default function VoicesTab({ token }: VoicesTabProps): React.ReactElement
     setShowPreview((prev) => ({ ...prev, [id]: true }));
 
     const result = await formatVoicePresetStream(
-      token,
       rawText,
       (msg) => setFormatMessages((prev) => ({ ...prev, [id]: [...(prev[id] || []), msg] })),
       additionalInstructions,
@@ -164,7 +159,7 @@ export default function VoicesTab({ token }: VoicesTabProps): React.ReactElement
       setPreviewVoice((prev) => ({ ...prev, [id]: result.data! }));
 
       // Save the formatted voice to the preset
-      const saveResult = await updateVoicePreset(token, id, {
+      const saveResult = await updateVoicePreset(id, {
         formattedVoice: JSON.stringify(result.data),
       });
       if (saveResult.success && saveResult.data) {
@@ -195,7 +190,6 @@ export default function VoicesTab({ token }: VoicesTabProps): React.ReactElement
 
     // First format the raw text
     const formatResult = await formatVoicePresetStream(
-      token,
       newRawText,
       (msg) => setCreateStatusMessages((prev) => [...prev, msg]),
       newAdditionalInstructions || undefined,
@@ -216,7 +210,7 @@ export default function VoicesTab({ token }: VoicesTabProps): React.ReactElement
     if (!createPreview || !newName.trim()) return;
 
     setCreateStatus('saving');
-    const result = await createVoicePreset(token, {
+    const result = await createVoicePreset({
       name: newName.trim(),
       description: newDescription.trim() || undefined,
       rawSourceText: newRawText.trim(),

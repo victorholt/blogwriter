@@ -11,6 +11,7 @@ import CompareDropdown from '@/components/CompareDropdown';
 import type { CompareMode } from '@/components/CompareDropdown';
 import { copyRichText } from '@/lib/copy-utils';
 import { fetchDebugMode, createShareLink, deleteSharedBlog } from '@/lib/api';
+import { useAuthStore } from '@/stores/auth-store';
 import Modal from '@/components/ui/Modal';
 
 /**
@@ -228,11 +229,9 @@ export default function ResultView(): React.ReactElement {
 
   async function handleDeleteShare(): Promise<void> {
     if (!shareHash || shareDeleting) return;
-    const adminToken = localStorage.getItem('blogwriter:adminToken');
-    if (!adminToken) return;
     setShareDeleting(true);
     try {
-      const result = await deleteSharedBlog(shareHash, adminToken);
+      const result = await deleteSharedBlog(shareHash);
       if (result.success) {
         setShareModalOpen(false);
         setShareStatus('confirm');
@@ -245,7 +244,8 @@ export default function ResultView(): React.ReactElement {
     setShareDeleting(false);
   }
 
-  const hasAdminToken = typeof window !== 'undefined' && !!localStorage.getItem('blogwriter:adminToken');
+  const { isAuthenticated, user } = useAuthStore();
+  const isAdmin = isAuthenticated && user?.role === 'admin';
 
   function getScoreColor(score: number): string {
     if (score >= 8) return 'var(--color-green)';
@@ -578,7 +578,7 @@ export default function ResultView(): React.ReactElement {
               </button>
             </div>
             <div className="share-modal__footer">
-              {hasAdminToken && (
+              {isAdmin && (
                 <button
                   className="share-modal__delete"
                   onClick={handleDeleteShare}

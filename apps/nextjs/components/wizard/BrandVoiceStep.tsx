@@ -4,7 +4,7 @@ import { useState, useRef } from 'react';
 import { useWizardStore } from '@/stores/wizard-store';
 import {
   Check, CheckSquare, Users, Sparkles,
-  MessageSquareQuote, RefreshCw, Plus, X, Theater, BookOpen, Ban,
+  MessageSquareQuote, Plus, X, Theater, BookOpen, Ban,
   FileText, FileDown, Mic,
 } from 'lucide-react';
 import EditableSection from '@/components/ui/EditableSection';
@@ -464,28 +464,6 @@ export default function BrandVoiceStep(): React.ReactElement {
         can select from our curated personas below, instead.
       </p>
 
-      {/* Top actions */}
-      <div className="step-actions step-actions--top">
-        <DownloadButton
-          formats={[
-            {
-              label: 'Text Document (.txt)',
-              icon: <FileText size={14} />,
-              onClick: () => downloadBrandVoiceAsText(brandVoice!),
-            },
-            {
-              label: 'PDF Document (.pdf)',
-              icon: <FileDown size={14} />,
-              onClick: handleSnapshotPdf,
-            },
-          ]}
-        />
-        <button className="btn btn--accent" onClick={() => setShowPresetPicker(true)}>
-          <Mic size={14} />
-          Load Preset Voice
-        </button>
-      </div>
-
       {/* Brand voice content — captured for PDF snapshot */}
       <div ref={contentRef}>
 
@@ -751,16 +729,6 @@ export default function BrandVoiceStep(): React.ReactElement {
       {/* Actions */}
       <div className="step-actions">
         <div className="step-actions__left">
-          <button className="btn btn--outline" onClick={handleTryAgain}>
-            <RefreshCw size={14} />
-            Try Again
-          </button>
-          <button className="btn btn--accent" onClick={() => setShowPresetPicker(true)}>
-            <Mic size={14} />
-            Load Preset Voice
-          </button>
-        </div>
-        <div className="step-actions__right">
           <DownloadButton
             formats={[
               {
@@ -775,6 +743,12 @@ export default function BrandVoiceStep(): React.ReactElement {
               },
             ]}
           />
+        </div>
+        <div className="step-actions__right">
+          <button className="btn btn--accent-blue" onClick={() => setShowPresetPicker(true)}>
+            <Mic size={14} />
+            Load Preset Voice
+          </button>
           <button className="btn btn--primary" onClick={handleConfirm}>
             <CheckSquare size={16} />
             Yes

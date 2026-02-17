@@ -180,7 +180,7 @@ Each phase is fully documented in the design docs linked above. Here's a summary
 
 **Phase 2 — Backend Foundation**: Install Drizzle ORM + pg driver. Create 4 database tables (`agent_model_configs`, `cached_dresses`, `blog_sessions`, `brand_voice_cache`). Set up API route structure. Connect Valkey. See [Database Schema](designs/database-schema.md), [API Endpoints](designs/api-endpoints.md).
 
-**Phase 3 — Admin + Model Config**: Build hidden admin page at `/settings/{ADMIN_TOKEN}`. CRUD for agent model configs. Seed default configs on startup. See [Admin Panel](designs/admin-panel.md).
+**Phase 3 — Admin + Model Config**: Build admin page at `/settings` (JWT cookie auth). CRUD for agent model configs. Seed default configs on startup. See [Admin Panel](designs/admin-panel.md).
 
 **Phase 4 — Mastra + Brand Voice**: Install `@mastra/core`. Build `scrapeWebpage` tool. Build Brand Voice Analyzer agent. Wire Step 1 end-to-end. See [Agent Pipeline](designs/agent-pipeline.md).
 
@@ -326,7 +326,6 @@ COMPOSE_PROFILES=auto-renew ./cli up certbot-renew
 | `POSTGRES_PASSWORD` | `blogwriter_pass` | Database password |
 | `POSTGRES_DB` | `blogwriter_db` | Database name |
 | `DATABASE_URL` | *(auto-composed)* | Override for external database |
-| `ADMIN_TOKEN` | `dev-admin-token` | Admin API token (change in prod!) |
 | `OPENROUTER_API_KEY` | — | OpenRouter API key for AI agents |
 | `NEXT_PUBLIC_API_URL` | `http://blogwriter.test:4444` | Browser API URL (build-time) |
 | `CORS_ORIGIN` | — | Restrict CORS in production |

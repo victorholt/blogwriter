@@ -9,6 +9,7 @@ export async function analyzeBrandVoice(url: string): Promise<ApiResponse<BrandV
   const res = await fetch(`${API_BASE}/api/brand-voice/analyze`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
     body: JSON.stringify({ url }),
   });
   return res.json();
@@ -26,6 +27,7 @@ export async function analyzeBrandVoiceStream(
   const res = await fetch(`${API_BASE}/api/brand-voice/analyze-stream`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
     body: JSON.stringify(body),
   });
 
@@ -124,13 +126,14 @@ export async function startBlogGeneration(data: {
   const res = await fetch(`${API_BASE}/api/blog/generate`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
     body: JSON.stringify(data),
   });
   return res.json();
 }
 
 export function createBlogStream(sessionId: string): EventSource {
-  return new EventSource(`${API_BASE}/api/blog/${sessionId}/stream`);
+  return new EventSource(`${API_BASE}/api/blog/${sessionId}/stream`, { withCredentials: true });
 }
 
 export async function fetchSessionStatus(sessionId: string): Promise<{
@@ -192,6 +195,7 @@ export async function createShareLink(data: {
   const res = await fetch(`${API_BASE}/api/share`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
     body: JSON.stringify(data),
   });
   return res.json();
@@ -202,10 +206,10 @@ export async function fetchSharedBlog(hash: string): Promise<ApiResponse<SharedB
   return res.json();
 }
 
-export async function deleteSharedBlog(hash: string, token: string): Promise<ApiResponse<void>> {
+export async function deleteSharedBlog(hash: string): Promise<ApiResponse<void>> {
   const res = await fetch(`${API_BASE}/api/share/${hash}`, {
     method: 'DELETE',
-    headers: { 'x-admin-token': token },
+    credentials: 'include',
   });
   return res.json();
 }

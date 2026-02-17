@@ -258,9 +258,9 @@ Retrieves a completed blog session.
 
 ## Admin (Protected)
 
-All admin routes require a valid token in the URL path. The token is validated against the `ADMIN_TOKEN` environment variable.
+All admin routes require JWT cookie authentication with `role === 'admin'`. The `requireAdmin` middleware validates the JWT from the `blogwriter_access` cookie.
 
-### GET /api/admin/:token/agents
+### GET /api/admin/agents
 
 Returns all agent model configurations.
 
@@ -300,7 +300,7 @@ Returns all agent model configurations.
 
 ---
 
-### PUT /api/admin/:token/agents/:agentId
+### PUT /api/admin/agents/:agentId
 
 Updates a specific agent's model configuration.
 
@@ -346,7 +346,7 @@ Updates a specific agent's model configuration.
 
 ---
 
-### GET /api/admin/:token/settings
+### GET /api/admin/settings
 
 Returns application settings (API keys masked for display).
 
@@ -374,7 +374,7 @@ Returns application settings (API keys masked for display).
 
 ---
 
-### PUT /api/admin/:token/settings
+### PUT /api/admin/settings
 
 Updates application settings.
 

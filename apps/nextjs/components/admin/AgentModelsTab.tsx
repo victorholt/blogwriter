@@ -26,11 +26,7 @@ import EnhancedTextArea from '@/components/ui/EnhancedTextArea';
 import Slider from '@/components/ui/Slider';
 import type { SearchSelectGroup } from '@/components/ui/SearchSelect';
 
-interface AgentModelsTabProps {
-  token: string;
-}
-
-export default function AgentModelsTab({ token }: AgentModelsTabProps): React.ReactElement {
+export default function AgentModelsTab(): React.ReactElement {
   const [agents, setAgents] = useState<AgentConfig[]>([]);
   const [models, setModels] = useState<ModelOption[]>([]);
   const [defaults, setDefaults] = useState<Record<string, AgentDefaultInstructions>>({});
@@ -73,9 +69,9 @@ export default function AgentModelsTab({ token }: AgentModelsTabProps): React.Re
   const loadData = useCallback(async (): Promise<void> => {
     try {
       const [agentsResult, modelsResult, defaultsResult] = await Promise.all([
-        fetchAgentConfigs(token),
-        fetchModels(token),
-        fetchAgentDefaults(token),
+        fetchAgentConfigs(),
+        fetchModels(),
+        fetchAgentDefaults(),
       ]);
       setAgents(agentsResult.data ?? []);
       setModels(modelsResult.data ?? []);
@@ -83,7 +79,7 @@ export default function AgentModelsTab({ token }: AgentModelsTabProps): React.Re
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, []);
 
   useEffect(() => {
     loadData();
@@ -94,12 +90,12 @@ export default function AgentModelsTab({ token }: AgentModelsTabProps): React.Re
     if (!expandedAgentId) return;
     if (additionalInstructions[expandedAgentId]) return; // already loaded
     (async () => {
-      const result = await fetchAdditionalInstructions(token, expandedAgentId);
+      const result = await fetchAdditionalInstructions(expandedAgentId);
       if (result.success && result.data) {
         setAdditionalInstructions((prev) => ({ ...prev, [expandedAgentId]: result.data! }));
       }
     })();
-  }, [expandedAgentId, token, additionalInstructions]);
+  }, [expandedAgentId, additionalInstructions]);
 
   // --- Agent helpers ---
 
@@ -120,7 +116,7 @@ export default function AgentModelsTab({ token }: AgentModelsTabProps): React.Re
   async function handleToggleAgent(agentId: string): Promise<void> {
     const agent = agents.find((a) => a.agentId === agentId);
     if (!agent) return;
-    const result = await updateAgentConfig(token, agentId, {
+    const result = await updateAgentConfig(agentId, {
       modelId: agent.modelId,
       enabled: !agent.enabled,
     });
@@ -132,7 +128,7 @@ export default function AgentModelsTab({ token }: AgentModelsTabProps): React.Re
   async function handleTogglePreview(agentId: string): Promise<void> {
     const agent = agents.find((a) => a.agentId === agentId);
     if (!agent) return;
-    const result = await updateAgentConfig(token, agentId, {
+    const result = await updateAgentConfig(agentId, {
       modelId: agent.modelId,
       showPreview: !agent.showPreview,
     });
@@ -156,7 +152,7 @@ export default function AgentModelsTab({ token }: AgentModelsTabProps): React.Re
   async function handleSaveAgent(agentId: string): Promise<void> {
     setAgentSaveStatus((prev) => ({ ...prev, [agentId]: 'saving' }));
     const instructions = getAgentValue(agentId, 'instructions');
-    const result = await updateAgentConfig(token, agentId, {
+    const result = await updateAgentConfig(agentId, {
       modelId: getAgentValue(agentId, 'modelId'),
       temperature: getAgentValue(agentId, 'temperature'),
       maxTokens: getAgentValue(agentId, 'maxTokens'),
@@ -228,7 +224,7 @@ export default function AgentModelsTab({ token }: AgentModelsTabProps): React.Re
     const edit = snippetEdits[id];
     if (!edit) return;
     setSnippetSaveStatus((prev) => ({ ...prev, [id]: 'saving' }));
-    const result = await updateAdditionalInstruction(token, agentId, id, edit);
+    const result = await updateAdditionalInstruction(agentId, id, edit);
     if (result.success && result.data) {
       setSnippetSaveStatus((prev) => ({ ...prev, [id]: 'saved' }));
       setAdditionalInstructions((prev) => ({
@@ -248,7 +244,7 @@ export default function AgentModelsTab({ token }: AgentModelsTabProps): React.Re
   }
 
   async function handleDeleteSnippet(agentId: string, id: number): Promise<void> {
-    const result = await deleteAdditionalInstruction(token, agentId, id);
+    const result = await deleteAdditionalInstruction(agentId, id);
     if (result.success) {
       setAdditionalInstructions((prev) => ({
         ...prev,
@@ -265,7 +261,7 @@ export default function AgentModelsTab({ token }: AgentModelsTabProps): React.Re
   async function handleCreateSnippet(): Promise<void> {
     if (!newSnippet || !newSnippet.content.trim()) return;
     setNewSnippetStatus('saving');
-    const result = await createAdditionalInstruction(token, newSnippet.agentId, {
+    const result = await createAdditionalInstruction(newSnippet.agentId, {
       title: 'Instruction',
       content: newSnippet.content.trim(),
     });
@@ -478,7 +474,6 @@ export default function AgentModelsTab({ token }: AgentModelsTabProps): React.Re
                         onChange={(val) => setAgentValue(agent.agentId, 'instructions', val)}
                         placeholder="Leave empty to use default agent instructions..."
                         rows={4}
-                        token={token}
                         enhanceEnabled
                         enhanceContext={`instructions for an AI agent named "${agent.agentLabel}" — should be clear, specific, and actionable`}
                       />
@@ -530,7 +525,6 @@ export default function AgentModelsTab({ token }: AgentModelsTabProps): React.Re
                               value={contentValue}
                               onChange={(val) => setSnippetContent(snippet.id, val)}
                               rows={3}
-                              token={token}
                               enhanceEnabled
                               enhanceContext={`additional instructions for an AI agent named "${agent.agentLabel}"`}
                             />
@@ -572,7 +566,6 @@ export default function AgentModelsTab({ token }: AgentModelsTabProps): React.Re
                           onChange={(val) => setNewSnippet({ ...newSnippet, content: val })}
                           placeholder="Instructions to append to the agent's prompt..."
                           rows={3}
-                          token={token}
                           enhanceEnabled
                           enhanceContext={`additional instructions for an AI agent named "${agent.agentLabel}"`}
                         />

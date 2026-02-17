@@ -54,7 +54,7 @@
 
   &--sm {
     font-size: 12px;
-    padding: 4px 10px;
+    padding: 6px 12px;
   }
 
   &--danger {
@@ -74,6 +74,17 @@
     &:hover:not(:disabled) {
       background: #dcfce7;
       border-color: #4ade80;
+    }
+  }
+
+  &--accent-blue {
+    background: var(--color-blue-light);
+    color: var(--color-blue);
+    border: 1px solid #b8d4fb;
+
+    &:hover:not(:disabled) {
+      background: #dde8ff;
+      border-color: var(--color-blue);
     }
   }
 }

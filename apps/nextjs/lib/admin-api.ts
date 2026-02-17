@@ -29,70 +29,74 @@ export interface ModelOption {
   provider: string;
 }
 
-export async function fetchModels(token: string): Promise<ApiResponse<ModelOption[]>> {
-  const res = await fetch(`${API_BASE}/api/admin/${token}/models`);
+export async function fetchModels(): Promise<ApiResponse<ModelOption[]>> {
+  const res = await fetch(`${API_BASE}/api/admin/models`, { credentials: 'include' });
   return res.json();
 }
 
-export async function fetchAgentConfigs(token: string): Promise<ApiResponse<AgentConfig[]>> {
-  const res = await fetch(`${API_BASE}/api/admin/${token}/agents`);
+export async function fetchAgentConfigs(): Promise<ApiResponse<AgentConfig[]>> {
+  const res = await fetch(`${API_BASE}/api/admin/agents`, { credentials: 'include' });
   return res.json();
 }
 
 export async function updateAgentConfig(
-  token: string,
   agentId: string,
   data: { modelId: string; temperature?: string; maxTokens?: string; instructions?: string; enabled?: boolean; showPreview?: boolean; maxRetries?: number },
 ): Promise<ApiResponse<AgentConfig>> {
-  const res = await fetch(`${API_BASE}/api/admin/${token}/agents/${agentId}`, {
+  const res = await fetch(`${API_BASE}/api/admin/agents/${agentId}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
     body: JSON.stringify(data),
   });
   return res.json();
 }
 
-export async function fetchSettings(token: string): Promise<ApiResponse<Record<string, string>>> {
-  const res = await fetch(`${API_BASE}/api/admin/${token}/settings`);
-  return res.json();
+export async function fetchSettings(): Promise<ApiResponse<Record<string, string>> & { status?: number }> {
+  const res = await fetch(`${API_BASE}/api/admin/settings`, { credentials: 'include' });
+  const json = await res.json();
+  return { ...json, status: res.status };
 }
 
 export async function updateSettings(
-  token: string,
   data: Record<string, string>,
 ): Promise<ApiResponse<Record<string, string>>> {
-  const res = await fetch(`${API_BASE}/api/admin/${token}/settings`, {
+  const res = await fetch(`${API_BASE}/api/admin/settings`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
     body: JSON.stringify(data),
   });
   return res.json();
 }
 
-export async function clearCache(token: string): Promise<ApiResponse<{ cleared: number }>> {
-  const res = await fetch(`${API_BASE}/api/admin/${token}/cache`, {
+export async function clearCache(): Promise<ApiResponse<{ cleared: number }>> {
+  const res = await fetch(`${API_BASE}/api/admin/cache`, {
     method: 'DELETE',
+    credentials: 'include',
   });
   return res.json();
 }
 
 // --- Dress Cache ---
 
-export async function fetchDressCacheStats(token: string): Promise<ApiResponse<{ total: number }>> {
-  const res = await fetch(`${API_BASE}/api/admin/${token}/dress-cache`);
+export async function fetchDressCacheStats(): Promise<ApiResponse<{ total: number }>> {
+  const res = await fetch(`${API_BASE}/api/admin/dress-cache`, { credentials: 'include' });
   return res.json();
 }
 
-export async function clearDressCache(token: string): Promise<ApiResponse<{ cleared: number }>> {
-  const res = await fetch(`${API_BASE}/api/admin/${token}/dress-cache`, {
+export async function clearDressCache(): Promise<ApiResponse<{ cleared: number }>> {
+  const res = await fetch(`${API_BASE}/api/admin/dress-cache`, {
     method: 'DELETE',
+    credentials: 'include',
   });
   return res.json();
 }
 
-export async function syncDresses(token: string): Promise<ApiResponse<{ synced: number; total: number; byType: Record<string, number> }>> {
-  const res = await fetch(`${API_BASE}/api/admin/${token}/dress-cache/sync`, {
+export async function syncDresses(): Promise<ApiResponse<{ synced: number; total: number; byType: Record<string, number> }>> {
+  const res = await fetch(`${API_BASE}/api/admin/dress-cache/sync`, {
     method: 'POST',
+    credentials: 'include',
   });
   return res.json();
 }
@@ -109,39 +113,40 @@ export interface AdminTheme {
   updatedAt: string;
 }
 
-export async function fetchAdminThemes(token: string): Promise<ApiResponse<AdminTheme[]>> {
-  const res = await fetch(`${API_BASE}/api/admin/${token}/themes`);
+export async function fetchAdminThemes(): Promise<ApiResponse<AdminTheme[]>> {
+  const res = await fetch(`${API_BASE}/api/admin/themes`, { credentials: 'include' });
   return res.json();
 }
 
 export async function createTheme(
-  token: string,
   data: { name: string; description: string },
 ): Promise<ApiResponse<AdminTheme>> {
-  const res = await fetch(`${API_BASE}/api/admin/${token}/themes`, {
+  const res = await fetch(`${API_BASE}/api/admin/themes`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
     body: JSON.stringify(data),
   });
   return res.json();
 }
 
 export async function updateTheme(
-  token: string,
   id: number,
   data: { name?: string; description?: string; isActive?: boolean; sortOrder?: number },
 ): Promise<ApiResponse<AdminTheme>> {
-  const res = await fetch(`${API_BASE}/api/admin/${token}/themes/${id}`, {
+  const res = await fetch(`${API_BASE}/api/admin/themes/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
     body: JSON.stringify(data),
   });
   return res.json();
 }
 
-export async function deleteTheme(token: string, id: number): Promise<ApiResponse<{ deleted: boolean }>> {
-  const res = await fetch(`${API_BASE}/api/admin/${token}/themes/${id}`, {
+export async function deleteTheme(id: number): Promise<ApiResponse<{ deleted: boolean }>> {
+  const res = await fetch(`${API_BASE}/api/admin/themes/${id}`, {
     method: 'DELETE',
+    credentials: 'include',
   });
   return res.json();
 }
@@ -158,39 +163,40 @@ export interface AdminBrandLabel {
   updatedAt: string;
 }
 
-export async function fetchAdminBrandLabels(token: string): Promise<ApiResponse<AdminBrandLabel[]>> {
-  const res = await fetch(`${API_BASE}/api/admin/${token}/brand-labels`);
+export async function fetchAdminBrandLabels(): Promise<ApiResponse<AdminBrandLabel[]>> {
+  const res = await fetch(`${API_BASE}/api/admin/brand-labels`, { credentials: 'include' });
   return res.json();
 }
 
 export async function createBrandLabel(
-  token: string,
   data: { slug: string; displayName: string },
 ): Promise<ApiResponse<AdminBrandLabel>> {
-  const res = await fetch(`${API_BASE}/api/admin/${token}/brand-labels`, {
+  const res = await fetch(`${API_BASE}/api/admin/brand-labels`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
     body: JSON.stringify(data),
   });
   return res.json();
 }
 
 export async function updateBrandLabel(
-  token: string,
   id: number,
   data: { slug?: string; displayName?: string; isActive?: boolean; sortOrder?: number },
 ): Promise<ApiResponse<AdminBrandLabel>> {
-  const res = await fetch(`${API_BASE}/api/admin/${token}/brand-labels/${id}`, {
+  const res = await fetch(`${API_BASE}/api/admin/brand-labels/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
     body: JSON.stringify(data),
   });
   return res.json();
 }
 
-export async function deleteBrandLabel(token: string, id: number): Promise<ApiResponse<{ deleted: boolean }>> {
-  const res = await fetch(`${API_BASE}/api/admin/${token}/brand-labels/${id}`, {
+export async function deleteBrandLabel(id: number): Promise<ApiResponse<{ deleted: boolean }>> {
+  const res = await fetch(`${API_BASE}/api/admin/brand-labels/${id}`, {
     method: 'DELETE',
+    credentials: 'include',
   });
   return res.json();
 }
@@ -202,8 +208,8 @@ export interface AgentDefaultInstructions {
   isDynamic: boolean;
 }
 
-export async function fetchAgentDefaults(token: string): Promise<ApiResponse<Record<string, AgentDefaultInstructions>>> {
-  const res = await fetch(`${API_BASE}/api/admin/${token}/agents/defaults`);
+export async function fetchAgentDefaults(): Promise<ApiResponse<Record<string, AgentDefaultInstructions>>> {
+  const res = await fetch(`${API_BASE}/api/admin/agents/defaults`, { credentials: 'include' });
   return res.json();
 }
 
@@ -220,69 +226,78 @@ export interface AdditionalInstruction {
 }
 
 export async function fetchAdditionalInstructions(
-  token: string,
   agentId: string,
 ): Promise<ApiResponse<AdditionalInstruction[]>> {
-  const res = await fetch(`${API_BASE}/api/admin/${token}/agents/${agentId}/instructions`);
+  const res = await fetch(`${API_BASE}/api/admin/agents/${agentId}/instructions`, { credentials: 'include' });
   return res.json();
 }
 
 export async function createAdditionalInstruction(
-  token: string,
   agentId: string,
   data: { title: string; content: string },
 ): Promise<ApiResponse<AdditionalInstruction>> {
-  const res = await fetch(`${API_BASE}/api/admin/${token}/agents/${agentId}/instructions`, {
+  const res = await fetch(`${API_BASE}/api/admin/agents/${agentId}/instructions`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
     body: JSON.stringify(data),
   });
   return res.json();
 }
 
 export async function updateAdditionalInstruction(
-  token: string,
   agentId: string,
   id: number,
   data: { title?: string; content?: string },
 ): Promise<ApiResponse<AdditionalInstruction>> {
-  const res = await fetch(`${API_BASE}/api/admin/${token}/agents/${agentId}/instructions/${id}`, {
+  const res = await fetch(`${API_BASE}/api/admin/agents/${agentId}/instructions/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
     body: JSON.stringify(data),
   });
   return res.json();
 }
 
 export async function deleteAdditionalInstruction(
-  token: string,
   agentId: string,
   id: number,
 ): Promise<ApiResponse<{ deleted: boolean }>> {
-  const res = await fetch(`${API_BASE}/api/admin/${token}/agents/${agentId}/instructions/${id}`, {
+  const res = await fetch(`${API_BASE}/api/admin/agents/${agentId}/instructions/${id}`, {
     method: 'DELETE',
+    credentials: 'include',
   });
   return res.json();
 }
 
 // --- App Version ---
 
-export async function fetchAppVersion(token: string): Promise<ApiResponse<{ version: string }>> {
-  const res = await fetch(`${API_BASE}/api/admin/${token}/version`);
+export async function fetchAppVersion(): Promise<ApiResponse<{ version: string }>> {
+  const res = await fetch(`${API_BASE}/api/admin/version`, { credentials: 'include' });
   return res.json();
 }
 
 // --- Enhance Text ---
 
 export async function enhanceText(
-  token: string,
   text: string,
   context?: string,
 ): Promise<ApiResponse<{ text: string }>> {
-  const res = await fetch(`${API_BASE}/api/admin/${token}/enhance`, {
+  const res = await fetch(`${API_BASE}/api/admin/enhance`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
     body: JSON.stringify({ text, context }),
+  });
+  return res.json();
+}
+
+// --- SMTP ---
+
+export async function testSmtp(): Promise<ApiResponse<{ message: string }>> {
+  const res = await fetch(`${API_BASE}/api/admin/smtp/test`, {
+    method: 'POST',
+    credentials: 'include',
   });
   return res.json();
 }
@@ -302,45 +317,45 @@ export interface AdminVoicePreset {
   updatedAt: string;
 }
 
-export async function fetchVoicePresets(token: string): Promise<ApiResponse<AdminVoicePreset[]>> {
-  const res = await fetch(`${API_BASE}/api/admin/${token}/voice-presets`);
+export async function fetchVoicePresets(): Promise<ApiResponse<AdminVoicePreset[]>> {
+  const res = await fetch(`${API_BASE}/api/admin/voice-presets`, { credentials: 'include' });
   return res.json();
 }
 
 export async function createVoicePreset(
-  token: string,
   data: { name: string; description?: string; rawSourceText?: string; formattedVoice?: string; additionalInstructions?: string },
 ): Promise<ApiResponse<AdminVoicePreset>> {
-  const res = await fetch(`${API_BASE}/api/admin/${token}/voice-presets`, {
+  const res = await fetch(`${API_BASE}/api/admin/voice-presets`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
     body: JSON.stringify(data),
   });
   return res.json();
 }
 
 export async function updateVoicePreset(
-  token: string,
   id: number,
   data: { name?: string; description?: string; rawSourceText?: string; formattedVoice?: string; additionalInstructions?: string; isActive?: boolean; sortOrder?: number },
 ): Promise<ApiResponse<AdminVoicePreset>> {
-  const res = await fetch(`${API_BASE}/api/admin/${token}/voice-presets/${id}`, {
+  const res = await fetch(`${API_BASE}/api/admin/voice-presets/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
     body: JSON.stringify(data),
   });
   return res.json();
 }
 
-export async function deleteVoicePreset(token: string, id: number): Promise<ApiResponse<{ deleted: boolean }>> {
-  const res = await fetch(`${API_BASE}/api/admin/${token}/voice-presets/${id}`, {
+export async function deleteVoicePreset(id: number): Promise<ApiResponse<{ deleted: boolean }>> {
+  const res = await fetch(`${API_BASE}/api/admin/voice-presets/${id}`, {
     method: 'DELETE',
+    credentials: 'include',
   });
   return res.json();
 }
 
 export async function formatVoicePresetStream(
-  token: string,
   rawText: string,
   onStatus: (message: string) => void,
   additionalInstructions?: string,
@@ -348,9 +363,10 @@ export async function formatVoicePresetStream(
   const body: Record<string, string> = { rawText };
   if (additionalInstructions) body.additionalInstructions = additionalInstructions;
 
-  const res = await fetch(`${API_BASE}/api/admin/${token}/voice-presets/format-stream`, {
+  const res = await fetch(`${API_BASE}/api/admin/voice-presets/format-stream`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
     body: JSON.stringify(body),
   });
 

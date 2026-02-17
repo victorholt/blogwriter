@@ -9,7 +9,6 @@ All secrets are stored as environment variables, never in code or config files.
 | Variable | Where Used | Sensitivity |
 |----------|-----------|-------------|
 | `OPENROUTER_API_KEY` | API server | High — LLM API access |
-| `ADMIN_TOKEN` | API server | High — admin panel access |
 | `DATABASE_URL` | API server | High — database credentials |
 | `DRESS_API_KEY` | API server | Medium — external API access |
 | `NEXT_PUBLIC_API_URL` | Next.js client | Low — public URL |
@@ -22,7 +21,6 @@ All secrets are stored as environment variables, never in code or config files.
 - Create `.env.example` with placeholder values for documentation:
   ```
   OPENROUTER_API_KEY=sk-or-your-key-here
-  ADMIN_TOKEN=generate-a-uuid
   DATABASE_URL=postgresql://user:pass@localhost:5432/dbname
   ```
 - In Docker, secrets are injected via `docker-compose.yml` environment section or `.env` file
@@ -31,16 +29,13 @@ All secrets are stored as environment variables, never in code or config files.
 
 ## Admin Panel Access
 
-The admin panel at `/settings/{token}` is protected by a URL token pattern:
+The admin panel at `/settings` is protected by JWT cookie authentication:
 
-- The token is a UUID stored in `ADMIN_TOKEN` environment variable
-- The Next.js page at `app/settings/[token]/page.tsx` passes the token to API calls
-- The API middleware validates `req.params.token === process.env.ADMIN_TOKEN`
-- Wrong token returns `403` — the frontend shows a generic "Not Found" page (no hint that admin exists)
-- The admin URL is never linked from the main UI
-- The admin bookmarks or manually types the URL
-
-**Why not session auth?** For MVP simplicity. There is no user authentication system. The token approach is sufficient for a single-admin scenario. If multi-user admin is needed later, add proper auth (see ADR).
+- Users must log in to receive a JWT access token (stored in `blogwriter_access` httpOnly cookie)
+- The `requireAdmin` middleware verifies the JWT and checks `role === 'admin'`
+- Unauthorized users are redirected to `/login`
+- Non-admin users receive a 403 response
+- Frontend API calls use `credentials: 'include'` to send cookies automatically
 
 ---
 

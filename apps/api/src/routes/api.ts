@@ -6,9 +6,13 @@ import blogRoutes from './blog'
 import themeRoutes from './themes'
 import shareRoutes from './share'
 import voicePresetRoutes from './voice-presets'
+import authRoutes from './auth'
+import userBlogRoutes from './user-blogs'
+import blogSharingRoutes from './blog-sharing'
 import { db } from '../db'
 import { appSettings, agentModelConfigs } from '../db/schema'
 import { eq, inArray } from 'drizzle-orm'
+import { isGuestModeEnabled } from '../services/guest-mode'
 
 const router = Router()
 
@@ -29,6 +33,15 @@ router.use('/share', shareRoutes)
 
 // Voice Presets
 router.use('/voice-presets', voicePresetRoutes)
+
+// Auth
+router.use('/auth', authRoutes)
+
+// User Blogs (requires auth)
+router.use('/blogs', userBlogRoutes)
+
+// Blog Sharing (requires auth)
+router.use('/blogs', blogSharingRoutes)
 
 // Admin
 router.use('/admin', adminRoutes)
@@ -70,6 +83,30 @@ router.get('/settings/blog', async (_req, res) => {
     });
   } catch {
     return res.json({ timelineStyle: 'preview-bar', generateImages: true, generateLinks: true, sharingEnabled: false, previewAgents: 'none' });
+  }
+})
+
+// Public app settings endpoint (no auth required)
+router.get('/settings/app', async (_req, res) => {
+  try {
+    const setting = await db
+      .select()
+      .from(appSettings)
+      .where(eq(appSettings.key, 'app_name'))
+      .limit(1);
+    return res.json({ appName: setting[0]?.value || 'BlogWriter' });
+  } catch {
+    return res.json({ appName: 'BlogWriter' });
+  }
+})
+
+// Public auth settings endpoint (no auth required)
+router.get('/settings/auth', async (_req, res) => {
+  try {
+    const guestModeEnabled = await isGuestModeEnabled();
+    return res.json({ guestModeEnabled });
+  } catch {
+    return res.json({ guestModeEnabled: true });
   }
 })
 

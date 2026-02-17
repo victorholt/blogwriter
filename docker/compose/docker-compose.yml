@@ -36,7 +36,9 @@ services:
     environment:
       PORT: "4000"
       DATABASE_URL: postgresql://${POSTGRES_USER:-blogwriter_user}:${POSTGRES_PASSWORD:-blogwriter_pass}@postgres:5432/${POSTGRES_DB:-blogwriter_db}
-      ADMIN_TOKEN: ${ADMIN_TOKEN:-dev-admin-token}
+      JWT_SECRET: ${JWT_SECRET:-blogwriter-dev-jwt-secret-change-in-production}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@blogwriter.local}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
     networks:
       - app-network

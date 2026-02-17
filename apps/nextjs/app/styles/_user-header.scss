@@ -1,0 +1,85 @@
+// ============================================================
+// User Header Bar
+// ============================================================
+
+.user-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--color-bg);
+  padding: 0 12px;
+
+  @media (min-width: 640px) {
+    padding: 0 24px;
+  }
+
+  &__inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--color-gray-200);
+  }
+
+  &__brand {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--color-gray-800);
+    letter-spacing: -0.01em;
+  }
+
+  &__nav {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  &__name {
+    font-size: 13px;
+    color: var(--color-gray-500);
+    font-weight: 500;
+  }
+
+  &__link {
+    font-size: 13px;
+    color: var(--color-gray-500);
+    padding: 6px 10px;
+    border-radius: var(--radius-sm);
+    transition: background 0.15s ease, color 0.15s ease;
+
+    &:hover {
+      background: var(--color-gray-100);
+      color: var(--color-gray-700);
+    }
+  }
+
+  &__btn {
+    font-size: 13px;
+    padding: 6px 14px;
+    border-radius: var(--radius-md);
+    font-weight: 500;
+    transition: all 0.15s ease;
+
+    &--login {
+      color: var(--color-blue);
+      border: 1px solid var(--color-blue);
+
+      &:hover {
+        background: var(--color-blue);
+        color: #fff;
+      }
+    }
+
+    &--logout {
+      color: var(--color-gray-500);
+      border: 1px solid var(--color-gray-200);
+
+      &:hover {
+        color: var(--color-gray-700);
+        border-color: var(--color-gray-300);
+      }
+    }
+  }
+}

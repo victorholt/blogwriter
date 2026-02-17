@@ -11,21 +11,18 @@ Define the hidden admin page for configuring which LLM model each AI agent uses.
 ### URL
 
 ```
-/settings/{ADMIN_TOKEN}
+/settings
 ```
 
-Example: `http://blogwriter.test:8081/settings/a1b2c3d4-e5f6-7890-abcd-ef1234567890`
+Example: `http://blogwriter.test:8081/settings`
 
 ### Security
 
-- `ADMIN_TOKEN` is a UUID set as an environment variable on the API server
-- The Next.js page at `app/settings/[token]/page.tsx` is a dynamic route
-- The token from the URL is passed to API calls as a path parameter
-- The API validates `req.params.token === process.env.ADMIN_TOKEN`
-- Wrong token → API returns 403 → page shows generic "Page not found" (no hint that admin exists)
-- The admin URL is **never** linked from the main SPA
-- The admin bookmarks the URL or types it manually
-- No `NEXT_PUBLIC_ADMIN_TOKEN` variable — the token is never in client-side build output
+- Admin panel requires JWT cookie authentication with `role === 'admin'`
+- The `requireAdmin` Express middleware verifies the JWT from `blogwriter_access` cookie
+- Unauthenticated users → redirected to `/login`
+- Non-admin users → API returns 403
+- Frontend API calls use `credentials: 'include'` to send cookies automatically
 
 ---
 
@@ -33,8 +30,11 @@ Example: `http://blogwriter.test:8081/settings/a1b2c3d4-e5f6-7890-abcd-ef1234567
 
 | File | Purpose |
 |------|---------|
-| `app/settings/[token]/page.tsx` | Admin page (client component) |
-| `components/admin/AgentConfigPanel.tsx` | Agent configuration UI |
+| `app/settings/layout.tsx` | Admin layout (auth check + sidebar) |
+| `app/settings/page.tsx` | Redirects to `/settings/api` |
+| `app/settings/*/page.tsx` | Individual settings sections |
+| `components/admin/SettingsLayout.tsx` | Shared layout with sidebar |
+| `components/admin/AgentModelsTab.tsx` | Agent configuration UI |
 
 ---
 
@@ -97,19 +97,12 @@ Example: `http://blogwriter.test:8081/settings/a1b2c3d4-e5f6-7890-abcd-ef1234567
 
 ## Component: AgentConfigPanel
 
-**Props:**
-```typescript
-interface AgentConfigPanelProps {
-  token: string;
-}
-```
-
 **Behavior:**
-1. On mount, fetch `GET /api/admin/{token}/agents`
-2. If 403 → show "Page not found"
+1. On mount, fetch `GET /api/admin/agents` (with cookies)
+2. If 401/403 → redirect to `/login`
 3. If 200 → render list of agent config cards
 4. Each card is independently saveable
-5. On save → PUT `/api/admin/{token}/agents/{agentId}` with updated config
+5. On save → PUT `/api/admin/agents/{agentId}` with updated config
 6. Show success/error feedback per card
 
 ---
@@ -118,12 +111,15 @@ interface AgentConfigPanelProps {
 
 ```typescript
 // Fetch all agent configs
-const response = await fetch(`${API_BASE}/api/admin/${token}/agents`);
+const response = await fetch(`${API_BASE}/api/admin/agents`, {
+  credentials: 'include',
+});
 
 // Update one agent's config
-const response = await fetch(`${API_BASE}/api/admin/${token}/agents/${agentId}`, {
+const response = await fetch(`${API_BASE}/api/admin/agents/${agentId}`, {
   method: 'PUT',
   headers: { 'Content-Type': 'application/json' },
+  credentials: 'include',
   body: JSON.stringify({ modelId, temperature, maxTokens }),
 });
 ```

@@ -1,0 +1,96 @@
+// ============================================================
+// App Shell — Global navigation bar
+// ============================================================
+
+.app-shell {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--color-bg);
+  padding: 0 12px;
+
+  @media (min-width: 640px) {
+    padding: 0 24px;
+  }
+
+  &__inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--color-gray-200);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  }
+
+  &__brand {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--color-gray-800);
+    letter-spacing: -0.01em;
+    text-decoration: none;
+  }
+
+  &__nav {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  &__name {
+    font-size: 12px;
+    font-weight: 600;
+    color: #6d5acd;
+    background: #eeebfa;
+    padding: 3px 10px;
+    border-radius: 100px;
+    letter-spacing: 0.01em;
+  }
+
+  &__link {
+    font-size: 13px;
+    color: var(--color-gray-500);
+    padding: 6px 10px;
+    border-radius: var(--radius-sm);
+    text-decoration: none;
+    transition: background 0.15s ease, color 0.15s ease;
+
+    &:hover {
+      background: var(--color-gray-100);
+      color: var(--color-gray-700);
+    }
+  }
+
+  &__btn {
+    font-size: 13px;
+    padding: 6px 14px;
+    border-radius: var(--radius-md);
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s ease;
+
+    &--login {
+      color: var(--color-blue);
+      border: 1px solid var(--color-blue);
+      background: transparent;
+
+      &:hover {
+        background: var(--color-blue);
+        color: #fff;
+      }
+    }
+
+    &--logout {
+      color: var(--color-gray-500);
+      border: 1px solid var(--color-gray-200);
+      background: transparent;
+
+      &:hover {
+        color: var(--color-gray-700);
+        border-color: var(--color-gray-300);
+      }
+    }
+  }
+}

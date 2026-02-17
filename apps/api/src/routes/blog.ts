@@ -11,6 +11,8 @@ import { createBlogReviewerAgent } from '../mastra/agents/blog-reviewer';
 import { isInsightsEnabled, startTrace, log as traceLog, getSessionTraces } from '../services/agent-trace';
 import { isAgentEnabled } from '../mastra/lib/model-resolver';
 import { getMaxRetries, streamAgentWithRetry } from '../mastra/lib/agent-factory';
+import { optionalAuth } from '../middleware/auth';
+import { logAudit } from '../services/audit';
 
 const router = Router();
 
@@ -29,7 +31,7 @@ const generateSchema = z.object({
 });
 
 // POST /api/blog/generate - Create session
-router.post('/generate', async (req, res) => {
+router.post('/generate', optionalAuth, async (req, res) => {
   const parsed = generateSchema.safeParse(req.body);
   if (!parsed.success) {
     const message = parsed.error.issues[0]?.message || 'Invalid request';
@@ -39,6 +41,11 @@ router.post('/generate', async (req, res) => {
   try {
     const { storeUrl, brandVoice, selectedDressIds, additionalInstructions, themeId, brandLabelSlug } = parsed.data;
 
+    // Auto-generate title from brand name + date
+    const brandName = (brandVoice as Record<string, unknown>).brandName as string || 'Blog';
+    const month = new Date().toLocaleString('en-US', { month: 'short', year: 'numeric' });
+    const autoTitle = `${brandName} — ${month}`;
+
     const [session] = await db.insert(blogSessions).values({
       storeUrl,
       brandVoice: JSON.stringify(brandVoice),
@@ -46,8 +53,19 @@ router.post('/generate', async (req, res) => {
       additionalInstructions: additionalInstructions || '',
       themeId: themeId ? String(themeId) : null,
       brandLabelSlug: brandLabelSlug || null,
+      spaceId: req.user?.spaceId ?? null,
+      title: autoTitle,
       status: 'generating',
     }).returning();
+
+    logAudit({
+      userId: req.user?.id,
+      spaceId: req.user?.spaceId,
+      action: 'blog.create',
+      resourceType: 'blog',
+      resourceId: session.id,
+      req,
+    });
 
     return res.json({
       success: true,

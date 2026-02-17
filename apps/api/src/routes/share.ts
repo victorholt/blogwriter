@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { db } from '../db';
 import { sharedBlogs, appSettings } from '../db/schema';
 import { eq } from 'drizzle-orm';
+import { requireAdmin } from '../middleware/auth';
 
 const router = Router();
 
@@ -82,15 +83,8 @@ router.get('/:hash', async (req, res) => {
   }
 });
 
-// DELETE /api/share/:hash - Delete a shared blog (requires admin token)
-router.delete('/:hash', async (req, res) => {
-  const token = req.headers['x-admin-token'] as string;
-  const adminToken = process.env.ADMIN_TOKEN;
-
-  if (!adminToken || token !== adminToken) {
-    return res.status(403).json({ success: false, error: 'Unauthorized' });
-  }
-
+// DELETE /api/share/:hash - Delete a shared blog (requires admin)
+router.delete('/:hash', requireAdmin, async (req, res) => {
   try {
     const deleted = await db.delete(sharedBlogs)
       .where(eq(sharedBlogs.hash, req.params.hash))

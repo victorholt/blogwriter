@@ -9,7 +9,6 @@ interface EnhancedTextAreaProps {
   onChange: (value: string) => void;
   placeholder?: string;
   rows?: number;
-  token?: string;
   enhanceEnabled?: boolean;
   enhanceContext?: string;
   readOnly?: boolean;
@@ -21,7 +20,6 @@ export default function EnhancedTextArea({
   onChange,
   placeholder,
   rows = 3,
-  token,
   enhanceEnabled = false,
   enhanceContext,
   readOnly = false,
@@ -32,10 +30,10 @@ export default function EnhancedTextArea({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   async function handleEnhance(): Promise<void> {
-    if (!token || !value.trim() || enhancing) return;
+    if (!value.trim() || enhancing) return;
     setEnhancing(true);
     try {
-      const result = await enhanceText(token, value, enhanceContext);
+      const result = await enhanceText(value, enhanceContext);
       if (result.success && result.data) {
         onChange(result.data.text);
       }
@@ -44,7 +42,7 @@ export default function EnhancedTextArea({
     }
   }
 
-  const showToolbar = enhanceEnabled && token && !readOnly && !disabled;
+  const showToolbar = enhanceEnabled && !readOnly && !disabled;
   const canEnhance = value.trim().length > 0;
 
   return (
