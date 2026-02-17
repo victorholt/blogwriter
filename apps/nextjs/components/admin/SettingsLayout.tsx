@@ -18,56 +18,46 @@ function SettingsShell({ children }: { children: React.ReactNode }): React.React
 
   if (authState === 'loading' || authState === 'not-authenticated') {
     return (
-      <div className="page-shell">
-        <div className="paper">
-          <div className="settings-loading">
-            <Loader2 size={24} className="spin" />
-          </div>
-        </div>
+      <div className="settings-loading">
+        <Loader2 size={24} className="spin" />
       </div>
     );
   }
 
   if (authState === 'forbidden') {
     return (
-      <div className="page-shell">
-        <div className="paper">
-          <div className="status-page">
-            <div className="status-page__icon status-page__icon--denied">
-              <ShieldX size={36} strokeWidth={1.5} />
-            </div>
-            <h1 className="status-page__title">Access Denied</h1>
-            <p className="status-page__text">
-              You need an admin account to access settings. Contact your administrator if you believe this is a mistake.
-            </p>
-            <div className="status-page__actions">
-              <button className="btn btn--ghost" onClick={() => router.push('/')}>
-                Go Home
-              </button>
-            </div>
-          </div>
+      <div className="status-page">
+        <div className="status-page__icon status-page__icon--denied">
+          <ShieldX size={36} strokeWidth={1.5} />
+        </div>
+        <h1 className="status-page__title">Access Denied</h1>
+        <p className="status-page__text">
+          You need an admin account to access settings. Contact your administrator if you believe this is a mistake.
+        </p>
+        <div className="status-page__actions">
+          <button className="btn btn--ghost" onClick={() => router.push('/')}>
+            Go Home
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="page-shell">
-      <div className="paper">
-        <div className="settings-header">
-          <h1 className="settings-title">Settings</h1>
-          {appVersion && <span className="settings-version">v{appVersion}</span>}
-        </div>
-        <p className="settings-subtitle">Manage API keys, agent models, and product API configuration</p>
+    <>
+      <div className="settings-header">
+        <h1 className="settings-title">Settings</h1>
+        {appVersion && <span className="settings-version">v{appVersion}</span>}
+      </div>
+      <p className="settings-subtitle">Manage API keys, agent models, and product API configuration</p>
 
-        <div className="settings-layout">
-          <SettingsSidebar basePath="/settings" />
-          <div className="settings-layout__content">
-            {children}
-          </div>
+      <div className="settings-layout">
+        <SettingsSidebar basePath="/settings" />
+        <div className="settings-layout__content">
+          {children}
         </div>
       </div>
-    </div>
+    </>
   );
 }
 

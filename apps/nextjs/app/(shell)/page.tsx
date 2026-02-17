@@ -196,11 +196,9 @@ export default function Home(): React.ReactElement {
   }
 
   return (
-    <div className="page-shell">
-      <div className="paper">
-        <StepIndicator />
-        {view === 'generating' ? <GeneratingWithSSE /> : <WizardStep />}
-      </div>
-    </div>
+    <>
+      <StepIndicator />
+      {view === 'generating' ? <GeneratingWithSSE /> : <WizardStep />}
+    </>
   );
 }

@@ -289,6 +289,9 @@ const updateSettingsSchema = z.object({
   smtp_from_email: z.string().optional(),
   smtp_from_name: z.string().optional(),
   smtp_secure: z.enum(['true', 'false']).optional(),
+  smtp_encryption: z.enum(['none', 'ssl', 'tls']).optional(),
+  smtp_auto_tls: z.enum(['true', 'false']).optional(),
+  smtp_auth: z.enum(['true', 'false']).optional(),
 });
 
 router.put('/settings', async (req, res) => {

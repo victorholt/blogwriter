@@ -258,6 +258,28 @@
     font-weight: 400;
     color: var(--color-gray-400);
     font-style: italic;
+    font-size: 12px;
+    margin-top: 6px;
+  }
+
+  &__radios {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+  }
+
+  &__radio {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    color: var(--color-gray-600);
+    cursor: pointer;
+
+    input[type="radio"] {
+      accent-color: var(--color-primary);
+      cursor: pointer;
+    }
   }
 
   &__textarea {

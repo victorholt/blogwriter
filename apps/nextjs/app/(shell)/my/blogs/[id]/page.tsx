@@ -22,6 +22,20 @@ function isImageUrl(url: string): boolean {
   return IMAGE_EXTENSIONS.test(url) || IMAGE_CDNS.test(url);
 }
 
+/** Strip leading H1 from markdown (the page already shows the title separately) */
+function stripLeadingH1(markdown: string): string {
+  return markdown.replace(/^\s*#\s+.+\n*/m, '');
+}
+
+/** Convert bracket placeholders into markdown links the custom `a` renderer can style */
+function preprocessLinks(markdown: string): string {
+  return markdown.replace(
+    /\[([A-Z][A-Z_]+):\s*([^\]]+)\](?!\()/g,
+    (_match, label: string, text: string) =>
+      `[${text.trim()}](placeholder:${label.toLowerCase()})`,
+  );
+}
+
 function preprocessImages(markdown: string): string {
   const placeholders: string[] = [];
   let result = markdown.replace(/!\[[^\]]*\]\([^)]+\)/g, (match) => {
@@ -339,9 +353,18 @@ export default function BlogDetailPage(): React.ReactElement {
                   </span>
                 );
               },
+              a: ({ href, children }) => {
+                const isPlaceholder = href?.startsWith('placeholder:');
+                return (
+                  <span className={`result__link ${isPlaceholder ? 'result__link--placeholder' : ''}`}>
+                    {children}
+                    <span className="result__link-badge">{isPlaceholder ? 'needs link' : 'ai generated'}</span>
+                  </span>
+                );
+              },
             }}
           >
-            {preprocessImages(blog.generatedBlog)}
+            {preprocessLinks(stripLeadingH1(preprocessImages(blog.generatedBlog)))}
           </Markdown>
         ) : (
           <div className="blog-detail__empty">

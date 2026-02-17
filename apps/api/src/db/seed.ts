@@ -40,6 +40,9 @@ const DEFAULT_SETTINGS = [
   { key: 'smtp_from_email', value: '' },
   { key: 'smtp_from_name', value: 'BlogWriter' },
   { key: 'smtp_secure', value: 'true' },
+  { key: 'smtp_encryption', value: 'none' },
+  { key: 'smtp_auto_tls', value: 'true' },
+  { key: 'smtp_auth', value: 'true' },
 ];
 
 export async function seedDatabase(): Promise<void> {

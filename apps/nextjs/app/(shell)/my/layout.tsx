@@ -24,14 +24,10 @@ export default function MyLayout({ children }: { children: React.ReactNode }): R
   }
 
   return (
-    <div className="page-shell">
-      <div className="paper">
-        <div className="user-area">
-          <UserSidebar />
-          <div className="user-area__content">
-            {children}
-          </div>
-        </div>
+    <div className="user-area">
+      <UserSidebar />
+      <div className="user-area__content">
+        {children}
       </div>
     </div>
   );

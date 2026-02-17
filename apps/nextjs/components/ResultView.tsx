@@ -275,8 +275,8 @@ export default function ResultView(): React.ReactElement {
   }, []);
 
   return (
-    <div className="page-shell">
-      <div className="paper result">
+    <>
+      <div className="result">
         {/* Top action bar */}
         <div className="result__action-bar">
           <button
@@ -309,7 +309,7 @@ export default function ResultView(): React.ReactElement {
               />
             </>
           )}
-          {sharingEnabled && (
+          {(sharingEnabled || isAuthenticated) && (
             <>
               <div className="result__action-divider" />
               <button className="result__action-btn" onClick={openShareModal}>
@@ -606,6 +606,6 @@ export default function ResultView(): React.ReactElement {
           </div>
         )}
       </Modal>
-    </div>
+    </>
   );
 }

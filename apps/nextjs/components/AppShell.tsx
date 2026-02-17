@@ -6,6 +6,7 @@ import { Plus } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth-store';
 import { useAppSettingsStore } from '@/stores/app-settings-store';
 import { useWizardStore } from '@/stores/wizard-store';
+import SiteFooter from '@/components/SiteFooter';
 
 export default function AppShell({ children }: { children: React.ReactNode }): React.ReactElement {
   const { user, isAuthenticated, isLoading, guestModeEnabled } = useAuthStore();
@@ -62,7 +63,12 @@ export default function AppShell({ children }: { children: React.ReactNode }): R
           </nav>
         </div>
       </header>
-      {children}
+      <div className="page-shell">
+        <div className="paper">
+          {children}
+          <SiteFooter />
+        </div>
+      </div>
     </>
   );
 }

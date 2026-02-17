@@ -77,6 +77,15 @@ export default function GeneralSettingsSection(): React.ReactElement {
           description="When disabled, new users cannot create accounts. Only existing users can log in."
         />
       </div>
+
+      <div className="settings-card">
+        <Toggle
+          checked={allSettings.blog_sharing_enabled === 'true'}
+          onChange={() => handleToggle('blog_sharing_enabled', allSettings.blog_sharing_enabled === 'true')}
+          label="Blog Sharing"
+          description="When enabled, a Share button appears on the blog preview, allowing users to create public read-only links to their generated posts."
+        />
+      </div>
     </section>
   );
 }
