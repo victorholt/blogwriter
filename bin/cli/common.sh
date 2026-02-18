@@ -90,8 +90,12 @@ set_env_var() {
     fi
 
     if grep -q "^${key}=" "$env_file" 2>/dev/null; then
-        # Update existing key (macOS-compatible sed)
-        sed -i '' "s|^${key}=.*|${key}=${value}|" "$env_file"
+        # Update existing key (cross-platform sed)
+        if [[ "$OSTYPE" == darwin* ]]; then
+            sed -i '' "s|^${key}=.*|${key}=${value}|" "$env_file"
+        else
+            sed -i "s|^${key}=.*|${key}=${value}|" "$env_file"
+        fi
     else
         # Append new key
         echo "${key}=${value}" >> "$env_file"

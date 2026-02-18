@@ -127,8 +127,11 @@ update_file() {
     fi
 
     if grep -q "${OLD_DOMAIN}" "$file" 2>/dev/null; then
-        # macOS-compatible sed
-        sed -i '' "s|${OLD_DOMAIN}|${NEW_DOMAIN}|g" "$file"
+        if [[ "$OSTYPE" == darwin* ]]; then
+            sed -i '' "s|${OLD_DOMAIN}|${NEW_DOMAIN}|g" "$file"
+        else
+            sed -i "s|${OLD_DOMAIN}|${NEW_DOMAIN}|g" "$file"
+        fi
         success "  ${filename} updated"
     fi
 }
