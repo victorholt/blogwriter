@@ -9,6 +9,8 @@ import voicePresetRoutes from './voice-presets'
 import authRoutes from './auth'
 import userBlogRoutes from './user-blogs'
 import blogSharingRoutes from './blog-sharing'
+import savedVoiceRoutes from './saved-voices'
+import voiceMergeRoutes from './voice-merge'
 import { db } from '../db'
 import { appSettings, agentModelConfigs } from '../db/schema'
 import { eq, inArray } from 'drizzle-orm'
@@ -42,6 +44,12 @@ router.use('/blogs', userBlogRoutes)
 
 // Blog Sharing (requires auth)
 router.use('/blogs', blogSharingRoutes)
+
+// Saved Brand Voices (requires auth)
+router.use('/saved-voices', savedVoiceRoutes)
+
+// Voice Merge (requires auth)
+router.use('/voice-merge', voiceMergeRoutes)
 
 // Admin
 router.use('/admin', adminRoutes)

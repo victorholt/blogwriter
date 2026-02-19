@@ -21,6 +21,7 @@ interface WizardState {
   brandVoiceAttemptCount: number;
   loadedPresetId: number | null;
   loadedPresetName: string | null;
+  savedVoiceId: string | null;
 
   // Step 3: Theme & Brand
   selectedThemeId: number | null;
@@ -113,6 +114,8 @@ interface WizardState {
   setSelectedTheme: (id: number | null) => void;
   setSelectedBrand: (slug: string | null) => void;
   loadPresetVoice: (presetId: number, presetName: string, voice: BrandVoice) => void;
+  loadSavedVoice: (savedId: string, voice: BrandVoice, sourceUrl: string | null) => void;
+  setSavedVoiceId: (id: string | null) => void;
   rejectBrandVoice: () => void;
   resetGenerationForRetry: () => void;
   invalidateUrlDependentState: () => void;
@@ -134,6 +137,7 @@ const initialState = {
   brandVoiceAttemptCount: 0,
   loadedPresetId: null as number | null,
   loadedPresetName: null as string | null,
+  savedVoiceId: null as string | null,
   availableDresses: [] as Dress[],
   selectedDressIds: new Set<string>(),
   isDressesLoading: false,
@@ -254,6 +258,7 @@ export const useWizardStore = create<WizardState>()(
         brandVoice: voice,
         loadedPresetId: presetId,
         loadedPresetName: presetName,
+        savedVoiceId: null,
         analysisComplete: true,
         brandVoiceConfirmed: false,
         isAnalyzing: false,
@@ -261,6 +266,23 @@ export const useWizardStore = create<WizardState>()(
         analysisDebugData: [],
         brandVoiceTraceId: null,
       }),
+
+    loadSavedVoice: (savedId, voice, sourceUrl) =>
+      set({
+        brandVoice: voice,
+        savedVoiceId: savedId,
+        storeUrl: sourceUrl || '',
+        loadedPresetId: null,
+        loadedPresetName: null,
+        analysisComplete: true,
+        brandVoiceConfirmed: false,
+        isAnalyzing: false,
+        analysisStatusLog: [],
+        analysisDebugData: [],
+        brandVoiceTraceId: null,
+      }),
+
+    setSavedVoiceId: (id) => set({ savedVoiceId: id }),
 
     rejectBrandVoice: () =>
       set((state) => ({
@@ -274,6 +296,7 @@ export const useWizardStore = create<WizardState>()(
         brandVoiceAttemptCount: state.brandVoiceAttemptCount + 1,
         loadedPresetId: null,
         loadedPresetName: null,
+        savedVoiceId: null,
         currentStep: 1 as WizardStep,
       })),
 
@@ -307,6 +330,7 @@ export const useWizardStore = create<WizardState>()(
         brandVoiceAttemptCount: 0,
         loadedPresetId: null,
         loadedPresetName: null,
+        savedVoiceId: null,
         sessionId: null,
         generatedBlog: null,
         seoMetadata: null,

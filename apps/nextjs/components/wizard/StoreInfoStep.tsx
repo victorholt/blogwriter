@@ -24,6 +24,7 @@ export default function StoreInfoStep(): React.ReactElement {
   const invalidateUrlDependentState = useWizardStore((s) => s.invalidateUrlDependentState);
   const previousBrandVoice = useWizardStore((s) => s.previousBrandVoice);
   const brandVoiceAttemptCount = useWizardStore((s) => s.brandVoiceAttemptCount);
+  const brandVoice = useWizardStore((s) => s.brandVoice);
 
   const [error, setError] = useState<string | null>(null);
   const [elapsed, setElapsed] = useState(0);

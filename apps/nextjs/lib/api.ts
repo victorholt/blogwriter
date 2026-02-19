@@ -257,3 +257,97 @@ export async function fetchVoicePresets(): Promise<ApiResponse<VoicePreset[]>> {
   const res = await fetch(`${API_BASE}/api/voice-presets`);
   return res.json();
 }
+
+// --- Saved Brand Voices ---
+
+export interface SavedVoice {
+  id: string;
+  name: string;
+  sourceUrl: string | null;
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SavedVoiceDetail extends SavedVoice {
+  voiceData: BrandVoice;
+}
+
+export async function saveBrandVoice(data: {
+  name: string;
+  sourceUrl?: string;
+  voiceData: BrandVoice;
+}): Promise<ApiResponse<SavedVoice>> {
+  const res = await fetch(`${API_BASE}/api/saved-voices`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(data),
+  });
+  return res.json();
+}
+
+export async function fetchSavedVoices(): Promise<ApiResponse<SavedVoice[]>> {
+  const res = await fetch(`${API_BASE}/api/saved-voices`, {
+    credentials: 'include',
+  });
+  return res.json();
+}
+
+export async function fetchDefaultSavedVoice(): Promise<ApiResponse<SavedVoiceDetail | null>> {
+  const res = await fetch(`${API_BASE}/api/saved-voices/default`, {
+    credentials: 'include',
+  });
+  return res.json();
+}
+
+export async function fetchSavedVoice(id: string): Promise<ApiResponse<SavedVoiceDetail>> {
+  const res = await fetch(`${API_BASE}/api/saved-voices/${encodeURIComponent(id)}`, {
+    credentials: 'include',
+  });
+  return res.json();
+}
+
+export async function updateSavedVoice(
+  id: string,
+  data: { name?: string; sourceUrl?: string; voiceData?: BrandVoice },
+): Promise<ApiResponse<SavedVoiceDetail>> {
+  const res = await fetch(`${API_BASE}/api/saved-voices/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(data),
+  });
+  return res.json();
+}
+
+export async function setDefaultSavedVoice(id: string): Promise<ApiResponse<void>> {
+  const res = await fetch(`${API_BASE}/api/saved-voices/${encodeURIComponent(id)}/default`, {
+    method: 'POST',
+    credentials: 'include',
+  });
+  return res.json();
+}
+
+export async function deleteSavedVoice(id: string): Promise<ApiResponse<void>> {
+  const res = await fetch(`${API_BASE}/api/saved-voices/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    credentials: 'include',
+  });
+  return res.json();
+}
+
+// --- Voice Merge ---
+
+export async function mergeVoices(data: {
+  userVoice: BrandVoice;
+  presetVoice: BrandVoice;
+}): Promise<ApiResponse<{ mergedVoice: BrandVoice }>> {
+  const res = await fetch(`${API_BASE}/api/voice-merge`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(data),
+  });
+  return res.json();
+}

@@ -3,10 +3,11 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuthStore } from '@/stores/auth-store';
-import { FileText, UserCog, Settings } from 'lucide-react';
+import { FileText, Mic, UserCog, Settings } from 'lucide-react';
 
 const NAV_ITEMS = [
   { slug: 'blogs', label: 'Blogs', icon: FileText },
+  { slug: 'voices', label: 'Voices', icon: Mic },
   { slug: 'account', label: 'Account', icon: UserCog },
 ] as const;
 

@@ -283,3 +283,51 @@
     }
   }
 }
+
+// ============================================================
+// AI Disclaimer Modal — shown before blog generation
+// ============================================================
+
+.ai-disclaimer-modal {
+  max-width: 460px;
+
+  &__banner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    font-weight: 600;
+    color: #c2410c;
+    margin-bottom: 16px;
+
+    svg {
+      flex-shrink: 0;
+      color: #ea580c;
+    }
+  }
+
+  &__text {
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--color-gray-600);
+    margin: 0 0 10px;
+
+    &--strong {
+      font-weight: 600;
+      color: var(--color-gray-800);
+    }
+  }
+
+  &__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--color-gray-100);
+  }
+}

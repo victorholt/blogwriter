@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useWizardStore } from '@/stores/wizard-store';
 import { startBlogGeneration, fetchThemes, fetchBrandLabels } from '@/lib/api';
-import { ArrowLeft, Sparkles, Globe, Image, Link2, Tag, Palette, Megaphone } from 'lucide-react';
+import { ArrowLeft, Sparkles, Globe, Image, Link2, Tag, Palette, Megaphone, X, AlertTriangle } from 'lucide-react';
 import EnhancedTextArea from '@/components/ui/EnhancedTextArea';
 import type { Dress, Theme, BrandLabel } from '@/types';
 
@@ -27,6 +27,7 @@ export default function AdditionalInstructionsStep(): React.ReactElement {
 
   const [themes, setThemes] = useState<Theme[]>([]);
   const [brands, setBrands] = useState<BrandLabel[]>([]);
+  const [showDisclaimer, setShowDisclaimer] = useState(false);
 
   useEffect(() => {
     fetchThemes().then((r) => { if (r.success && r.data) setThemes(r.data); });
@@ -212,11 +213,63 @@ export default function AdditionalInstructionsStep(): React.ReactElement {
           <ArrowLeft size={16} />
           Back
         </button>
-        <button className="btn btn--primary btn--lg" onClick={handleGenerate}>
+        <button className="btn btn--primary btn--lg" onClick={() => setShowDisclaimer(true)}>
           <Sparkles size={18} />
           Generate Blog
         </button>
       </div>
+
+      {/* AI Disclaimer Modal */}
+      {showDisclaimer && (
+        <div className="modal-overlay" onClick={() => setShowDisclaimer(false)}>
+          <div className="modal ai-disclaimer-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal__header">
+              <h2 className="modal__title">Before we generate&hellip;</h2>
+              <button
+                type="button"
+                className="modal__close"
+                onClick={() => setShowDisclaimer(false)}
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <div className="modal__body">
+              <div className="ai-disclaimer-modal__banner">
+                <AlertTriangle size={18} />
+                <span>AI-Generated Content Disclaimer</span>
+              </div>
+              <p className="ai-disclaimer-modal__text">
+                All blog content produced by this Service is generated entirely by artificial
+                intelligence. This content does not represent the views, opinions, or endorsements
+                of the platform, its operators, or any affiliated parties.
+              </p>
+              <p className="ai-disclaimer-modal__text">
+                AI-generated content may contain factual inaccuracies, outdated information,
+                inappropriate suggestions, fabricated details, or errors of any kind.
+              </p>
+              <p className="ai-disclaimer-modal__text ai-disclaimer-modal__text--strong">
+                You are solely responsible for reviewing, editing, and verifying all AI-generated
+                content before publishing, distributing, or using it in any capacity.
+              </p>
+              <div className="ai-disclaimer-modal__actions">
+                <button
+                  className="btn btn--ghost"
+                  onClick={() => setShowDisclaimer(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="btn btn--primary"
+                  onClick={() => { setShowDisclaimer(false); handleGenerate(); }}
+                >
+                  <Sparkles size={16} />
+                  I understand, generate
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

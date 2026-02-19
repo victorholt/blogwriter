@@ -435,3 +435,90 @@
     text-transform: capitalize;
   }
 }
+
+// ============================================================
+// Voice Table — extends blog-table for saved voices page
+// ============================================================
+
+.voice-table {
+  &__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    margin-left: 8px;
+    padding: 1px 7px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #059669;
+    background: #ecfdf5;
+    border-radius: 100px;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    vertical-align: middle;
+  }
+
+  &__default-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    margin-left: 8px;
+    padding: 2px 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--color-gray-300);
+    background: none;
+    border: none;
+    border-radius: 100px;
+    cursor: pointer;
+    vertical-align: middle;
+    transition: color 0.15s;
+
+    &:hover {
+      color: #eab308;
+    }
+
+    &--active {
+      color: #eab308;
+      background: #fefce8;
+      padding: 1px 7px;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+
+      &:hover {
+        color: #ca8a04;
+        background: #fef9c3;
+      }
+    }
+  }
+
+  &__url {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    color: var(--color-gray-500);
+    text-decoration: none;
+    transition: color 0.15s;
+
+    &:hover {
+      color: var(--color-blue);
+    }
+  }
+
+  &__no-url {
+    font-size: 13px;
+    color: var(--color-gray-300);
+  }
+}
+
+// ============================================================
+// Voice Detail — Brand voice view/edit page
+// ============================================================
+
+.voice-detail {
+  .result__action-bar {
+    margin: 0 0 20px;
+    border-radius: var(--radius-md);
+  }
+}

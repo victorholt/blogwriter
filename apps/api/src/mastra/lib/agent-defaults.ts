@@ -6,6 +6,7 @@ import { DEFAULT_INSTRUCTIONS as blogReviewer } from '../agents/blog-reviewer';
 import { DEFAULT_INSTRUCTIONS as textEnhancer } from '../agents/text-enhancer';
 import { DEFAULT_INSTRUCTIONS as brandVoiceFast } from '../agents/brand-voice-fast';
 import { DEFAULT_INSTRUCTIONS as brandVoiceFormatter } from '../agents/brand-voice-formatter';
+import { DEFAULT_INSTRUCTIONS as voiceMerger } from '../agents/voice-merger';
 import { BLOG_WRITER_TEMPLATE as blogWriter } from '../agents/blog-writer';
 
 export interface AgentDefault {
@@ -23,4 +24,5 @@ export const AGENT_DEFAULTS: Record<string, AgentDefault> = {
   'text-enhancer': { instructions: textEnhancer, isDynamic: false },
   'brand-voice-fast': { instructions: brandVoiceFast, isDynamic: false },
   'brand-voice-formatter': { instructions: brandVoiceFormatter, isDynamic: false },
+  'voice-merger': { instructions: voiceMerger, isDynamic: false },
 };

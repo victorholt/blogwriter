@@ -138,6 +138,23 @@ export const sharedBlogs = pgTable('shared_blogs', {
 });
 
 // ============================================================
+// User Saved Brand Voices
+// ============================================================
+
+export const savedBrandVoices = pgTable('saved_brand_voices', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  spaceId: text('space_id').notNull().references(() => spaces.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  sourceUrl: text('source_url'),
+  voiceData: text('voice_data').notNull(),
+  isDefault: boolean('is_default').default(true).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => [
+  index('idx_saved_brand_voices_space').on(table.spaceId),
+]);
+
+// ============================================================
 // Caching
 // ============================================================
 

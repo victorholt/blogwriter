@@ -61,7 +61,7 @@ export default function StepIndicator(): React.ReactElement {
           </div>
           <button type="button" onClick={reset} className="step-indicator__reset">
             <RotateCcw size={12} />
-            <span className="step-indicator__reset__text">Start Over</span>
+            <span className="step-indicator__reset__text">New Voice</span>
           </button>
         </div>
       </div>
@@ -93,7 +93,7 @@ export default function StepIndicator(): React.ReactElement {
         })}
         <button type="button" onClick={reset} className="step-indicator__reset">
           <RotateCcw size={12} />
-          <span className="step-indicator__reset__text">Start Over</span>
+          <span className="step-indicator__reset__text">New Voice</span>
         </button>
       </nav>
     </>

@@ -215,4 +215,207 @@
     flex: 1;
     min-width: 0;
   }
+
+  &__badge {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 1px 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--color-green, #16a34a);
+    background: var(--color-green-light, #dcfce7);
+    border-radius: var(--radius-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+
+  &__date {
+    flex-shrink: 0;
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--color-gray-400);
+  }
+
+  &__delete {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    color: var(--color-gray-400);
+    background: none;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: color 0.15s, background 0.15s;
+
+    &:hover {
+      color: var(--color-red, #dc2626);
+      background: var(--color-red-light, #fef2f2);
+    }
+
+    &:disabled {
+      cursor: default;
+      opacity: 0.5;
+    }
+  }
+
+  &__merge-choice {
+    padding: 14px 16px;
+  }
+
+  &__merge-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-gray-700);
+    margin-bottom: 12px;
+    line-height: 1.4;
+  }
+
+  &__merge-error {
+    font-size: 12px;
+    color: var(--color-red, #dc2626);
+    margin-bottom: 10px;
+  }
+
+  &__merge-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  &__merging {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px;
+    font-size: 13px;
+    color: var(--color-gray-500);
+  }
+}
+
+// ============================================================
+// Voice Picker Modal (No button → choose saved or preset voice)
+// ============================================================
+
+.voice-picker-modal {
+  max-width: 440px;
+
+  &__intro {
+    font-size: 13px;
+    color: var(--color-gray-500);
+    line-height: 1.5;
+    margin-bottom: 20px;
+  }
+
+  &__error {
+    font-size: 13px;
+    color: var(--color-red, #dc2626);
+    background: #fef2f2;
+    padding: 8px 12px;
+    border-radius: var(--radius-md);
+    margin-bottom: 16px;
+  }
+
+  &__loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    color: var(--color-gray-400);
+  }
+
+  &__section {
+    &:not(:last-child) {
+      margin-bottom: 20px;
+    }
+  }
+
+  &__section-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--color-gray-400);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 8px;
+  }
+
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-gray-700);
+    background: var(--color-gray-50);
+    border: 1px solid var(--color-gray-200);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.15s, border-color 0.15s;
+
+    &:hover:not(:disabled) {
+      background: var(--color-blue-light, #eef4ff);
+      border-color: var(--color-blue);
+      color: var(--color-blue);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+  }
+
+  &__icon {
+    flex-shrink: 0;
+    color: var(--color-gray-400);
+
+    .voice-picker-modal__item:hover:not(:disabled) & {
+      color: var(--color-blue);
+    }
+  }
+
+  &__name {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    margin-left: 6px;
+    padding: 1px 6px;
+    font-size: 10px;
+    font-weight: 600;
+    color: #eab308;
+    background: #fefce8;
+    border-radius: 100px;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    vertical-align: middle;
+  }
+
+  &__status {
+    flex-shrink: 0;
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--color-gray-400);
+    font-style: italic;
+  }
+
+  &__empty {
+    text-align: center;
+    padding: 24px;
+    font-size: 14px;
+    color: var(--color-gray-500);
+  }
 }

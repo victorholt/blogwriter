@@ -66,6 +66,17 @@
     }
   }
 
+  &--danger-filled {
+    background: #dc2626;
+    color: #fff;
+    border-color: #dc2626;
+
+    &:hover:not(:disabled) {
+      background: #b91c1c;
+      border-color: #b91c1c;
+    }
+  }
+
   &--accent {
     background: #f0fdf4;
     color: #15803d;

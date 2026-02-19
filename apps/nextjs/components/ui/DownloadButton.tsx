@@ -12,13 +12,17 @@ export interface DownloadFormat {
 interface DownloadButtonProps {
   formats: DownloadFormat[];
   label?: string;
+  icon?: React.ReactNode;
   className?: string;
+  buttonClassName?: string;
 }
 
 export default function DownloadButton({
   formats,
   label = 'Download',
+  icon,
   className = '',
+  buttonClassName = 'btn btn--outline',
 }: DownloadButtonProps): React.ReactElement {
   const [open, setOpen] = useState(false);
   const [dropUp, setDropUp] = useState(false);
@@ -60,10 +64,10 @@ export default function DownloadButton({
     <div ref={containerRef} className={`download-btn ${className}`}>
       <button
         type="button"
-        className="btn btn--outline"
+        className={buttonClassName}
         onClick={handleToggle}
       >
-        <Download size={14} />
+        {icon ?? <Download size={14} />}
         {label}
       </button>
 
