@@ -91,7 +91,7 @@ export default function PresetVoicePicker(): React.ReactElement | null {
       const presetVoice = JSON.parse(preset.formattedVoice) as BrandVoice;
       const result = await mergeVoices({ userVoice: brandVoice, presetVoice });
       if (result.success && result.data) {
-        const normalized = normalizeBrandVoice(result.data.mergedVoice as Record<string, unknown>);
+        const normalized = normalizeBrandVoice(result.data.mergedVoice as unknown as Record<string, unknown>);
         loadPresetVoice(preset.id, preset.name, normalized);
         setPendingPreset(null);
         setOpen(false);
