@@ -3,11 +3,13 @@
 import { useState } from 'react';
 import { Settings } from 'lucide-react';
 import { updateSettings } from '@/lib/admin-api';
+import { useAppSettingsStore } from '@/stores/app-settings-store';
 import Toggle from '@/components/ui/Toggle';
 import { useSettings } from './SettingsContext';
 
 export default function GeneralSettingsSection(): React.ReactElement {
   const { allSettings, setAllSettings } = useSettings();
+  const setGlobalAppName = useAppSettingsStore((s) => s.setAppName);
   const [appName, setAppName] = useState(allSettings.app_name || 'BlogWriter');
   const [savingAppName, setSavingAppName] = useState(false);
 
@@ -25,6 +27,7 @@ export default function GeneralSettingsSection(): React.ReactElement {
     const result = await updateSettings({ app_name: appName.trim() });
     if (result.success && result.data) {
       setAllSettings((prev) => ({ ...prev, ...result.data }));
+      setGlobalAppName(appName.trim());
     }
     setSavingAppName(false);
   }

@@ -320,6 +320,20 @@
       font-weight: 600;
       color: var(--color-gray-800);
     }
+
+    &--links {
+      font-size: 12px;
+      color: var(--color-gray-400);
+
+      a {
+        color: var(--color-blue);
+        text-decoration: none;
+
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+    }
   }
 
   &__actions {

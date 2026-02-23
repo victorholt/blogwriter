@@ -21,14 +21,11 @@
 // ---- Sidebar (mirrors settings-sidebar pattern) ----
 
 .user-sidebar {
-  display: flex;
-  gap: 0;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  border-bottom: 1px solid var(--color-gray-200);
-  margin-bottom: 20px;
+  // Hidden on mobile — drawer handles navigation
+  display: none;
 
   @media (min-width: 768px) {
+    display: flex;
     flex-direction: column;
     flex-shrink: 0;
     width: 180px;

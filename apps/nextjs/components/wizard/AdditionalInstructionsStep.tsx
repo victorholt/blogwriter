@@ -251,6 +251,12 @@ export default function AdditionalInstructionsStep(): React.ReactElement {
                 You are solely responsible for reviewing, editing, and verifying all AI-generated
                 content before publishing, distributing, or using it in any capacity.
               </p>
+              <p className="ai-disclaimer-modal__text ai-disclaimer-modal__text--links">
+                By proceeding, you agree to our{' '}
+                <a href="/terms" target="_blank" rel="noopener noreferrer">Terms of Service</a>
+                {' '}and{' '}
+                <a href="/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>.
+              </p>
               <div className="ai-disclaimer-modal__actions">
                 <button
                   className="btn btn--ghost"
