@@ -71,7 +71,7 @@ export default function VoicePickerModal({ onClose }: VoicePickerModalProps): Re
         setMergingId(preset.id);
         const result = await mergeVoices({ userVoice: brandVoice, presetVoice });
         if (result.success && result.data) {
-          const normalized = normalizeBrandVoice(result.data.mergedVoice as Record<string, unknown>);
+          const normalized = normalizeBrandVoice(result.data.mergedVoice as unknown as Record<string, unknown>);
           loadPresetVoice(preset.id, preset.name, normalized);
           onClose();
         } else {
