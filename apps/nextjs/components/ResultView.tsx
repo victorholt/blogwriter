@@ -271,9 +271,8 @@ export default function ResultView(): React.ReactElement {
       } catch {
         // Fall through
       }
-      // Authenticated but no default voice — go to Step 2 (voice picker)
+      // Authenticated but no default voice — go to Step 1 for URL analysis
       reset();
-      setStep(2);
       return;
     }
     reset();

@@ -196,10 +196,8 @@ export default function NewBlogPage(): React.ReactElement {
       .then((result) => {
         if (result.success && result.data) {
           startWithDefaultVoice(result.data.id, result.data.voiceData, result.data.sourceUrl);
-        } else {
-          // No default voice — go to Step 2 so voice picker opens
-          setStep(2);
         }
+        // No default voice — stay on Step 1 for URL analysis
       })
       .catch(() => {
         // Network error — stay on Step 1
