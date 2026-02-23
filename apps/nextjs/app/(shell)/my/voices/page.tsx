@@ -77,13 +77,22 @@ function VoiceRow({ voice, onDelete, onSetDefault }: {
             </button>
           </div>
         ) : (
-          <button
-            className="blog-table__icon-btn blog-table__icon-btn--delete"
-            onClick={() => setConfirmDelete(true)}
-            title="Delete"
-          >
-            <Trash2 size={14} />
-          </button>
+          <div className="voice-table__action-row">
+            <button
+              className={`voice-table__make-default-btn ${voice.isDefault ? 'voice-table__make-default-btn--active' : ''}`}
+              onClick={() => onSetDefault(voice.id)}
+            >
+              <Star size={12} />
+              {voice.isDefault ? 'Default' : 'Make Default'}
+            </button>
+            <button
+              className="blog-table__icon-btn blog-table__icon-btn--delete"
+              onClick={() => setConfirmDelete(true)}
+              title="Delete"
+            >
+              <Trash2 size={14} />
+            </button>
+          </div>
         )}
       </td>
     </tr>
@@ -163,7 +172,7 @@ export default function VoicesPage(): React.ReactElement {
           </p>
           <button
             className="btn btn--primary btn--lg"
-            onClick={() => router.push('/')}
+            onClick={() => router.push('/new')}
           >
             <Plus size={16} />
             Create a Brand Voice

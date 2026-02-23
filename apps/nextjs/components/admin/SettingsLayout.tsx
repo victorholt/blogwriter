@@ -35,7 +35,7 @@ function SettingsShell({ children }: { children: React.ReactNode }): React.React
           You need an admin account to access settings. Contact your administrator if you believe this is a mistake.
         </p>
         <div className="status-page__actions">
-          <button className="btn btn--ghost" onClick={() => router.push('/')}>
+          <button className="btn btn--ghost" onClick={() => router.push('/my/blogs')}>
             Go Home
           </button>
         </div>

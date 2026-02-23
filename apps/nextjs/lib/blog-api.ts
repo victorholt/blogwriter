@@ -1,6 +1,6 @@
 import type { ApiResponse } from '@/types';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://writer.essensedesigns.com:4444';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
 
 export interface BlogListItem {
   id: string;

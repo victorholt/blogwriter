@@ -4,7 +4,7 @@ import { useWizardStore } from '@/stores/wizard-store';
 import DressMultiSelect from '@/components/ui/DressMultiSelect';
 import BrandSelector from './BrandSelector';
 import ThemeSelector from './ThemeSelector';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Mic } from 'lucide-react';
 
 export default function DressSelectionStep(): React.ReactElement {
   const selectedDressIds = useWizardStore((s) => s.selectedDressIds);
@@ -14,6 +14,9 @@ export default function DressSelectionStep(): React.ReactElement {
   const addDressesToMap = useWizardStore((s) => s.addDressesToMap);
   const selectedBrandSlug = useWizardStore((s) => s.selectedBrandSlug);
   const setStep = useWizardStore((s) => s.setStep);
+  const brandVoice = useWizardStore((s) => s.brandVoice);
+
+  const voiceName = brandVoice?.brandName || brandVoice?.summary?.slice(0, 40) || 'Your voice';
 
   return (
     <div>
@@ -21,6 +24,16 @@ export default function DressSelectionStep(): React.ReactElement {
       <p className="step-subtitle">
         Let&rsquo;s define the focus of this post/content request.
       </p>
+
+      {brandVoice && (
+        <div className="voice-indicator">
+          <Mic size={13} />
+          <span className="voice-indicator__name">{voiceName}</span>
+          <button className="voice-indicator__change" onClick={() => setStep(2)}>
+            Change
+          </button>
+        </div>
+      )}
 
       <BrandSelector />
       <ThemeSelector />

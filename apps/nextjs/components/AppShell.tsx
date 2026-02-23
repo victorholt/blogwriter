@@ -6,6 +6,7 @@ import { Plus } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth-store';
 import { useAppSettingsStore } from '@/stores/app-settings-store';
 import { useWizardStore } from '@/stores/wizard-store';
+import { fetchDefaultSavedVoice } from '@/lib/api';
 import SiteFooter from '@/components/SiteFooter';
 
 export default function AppShell({ children }: { children: React.ReactNode }): React.ReactElement {
@@ -13,23 +14,33 @@ export default function AppShell({ children }: { children: React.ReactNode }): R
   const logout = useAuthStore((s) => s.logout);
   const appName = useAppSettingsStore((s) => s.appName);
   const reset = useWizardStore((s) => s.reset);
+  const startWithDefaultVoice = useWizardStore((s) => s.startWithDefaultVoice);
   const router = useRouter();
   const pathname = usePathname();
 
-  function handleNewBlog(): void {
-    reset();
-    if (pathname === '/') {
-      // Already on wizard page — reset is enough, force re-render by setting step
-      return;
+  async function handleNewBlog(): Promise<void> {
+    if (isAuthenticated) {
+      try {
+        const result = await fetchDefaultSavedVoice();
+        if (result.success && result.data) {
+          startWithDefaultVoice(result.data.id, result.data.voiceData, result.data.sourceUrl);
+          if (pathname !== '/new') router.push('/new');
+          return;
+        }
+      } catch {
+        // Fall through to normal reset
+      }
     }
-    router.push('/');
+    reset();
+    if (pathname === '/new') return;
+    router.push('/new');
   }
 
   return (
     <>
       <header className="app-shell">
         <div className="app-shell__inner">
-          <Link href="/" className="app-shell__brand">{appName}</Link>
+          <Link href={isAuthenticated ? '/my/blogs' : '/'} className="app-shell__brand">{appName}</Link>
           <nav className="app-shell__nav">
             {!isLoading && isAuthenticated && user ? (
               <>

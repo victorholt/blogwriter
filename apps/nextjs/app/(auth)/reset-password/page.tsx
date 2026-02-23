@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { useAuthStore } from '@/stores/auth-store';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://blogwriter.test:4444';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
 
 function ResetPasswordForm(): React.ReactElement {
   const searchParams = useSearchParams();
@@ -19,7 +19,7 @@ function ResetPasswordForm(): React.ReactElement {
   const router = useRouter();
 
   useEffect(() => {
-    if (isAuthenticated && !authLoading) router.replace('/');
+    if (isAuthenticated && !authLoading) router.replace('/my/blogs');
   }, [isAuthenticated, authLoading, router]);
 
   if (isAuthenticated && !authLoading) {

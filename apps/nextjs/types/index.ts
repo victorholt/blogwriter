@@ -113,7 +113,21 @@ export interface DebugRawResponse {
   charCount: number;
 }
 
-export type DebugEvent = DebugToolCall | DebugToolResult | DebugRawResponse;
+export interface DebugFastScrapeSummary {
+  kind: 'fast-scrape-summary';
+  pagesAttempted: number;
+  pagesScraped: number;
+  urls: string[];
+  totalChars: number;
+}
+
+export interface DebugFastTiming {
+  kind: 'fast-timing';
+  phases: { discover: number; scrape: number; agentSetup: number; llmGenerate: number; jsonParse: number };
+  totalMs: number;
+}
+
+export type DebugEvent = DebugToolCall | DebugToolResult | DebugRawResponse | DebugFastScrapeSummary | DebugFastTiming;
 
 // Agent tracing types
 export interface AgentLogEntry {

@@ -16,7 +16,7 @@ export default function LoginPage(): React.ReactElement {
   const router = useRouter();
 
   useEffect(() => {
-    if (isAuthenticated && !authLoading) router.replace('/');
+    if (isAuthenticated && !authLoading) router.replace('/my/blogs');
   }, [isAuthenticated, authLoading, router]);
 
   if (isAuthenticated && !authLoading) {
@@ -34,7 +34,7 @@ export default function LoginPage(): React.ReactElement {
     if (result.error) {
       setError(result.error);
     } else {
-      router.push('/');
+      router.push('/my/blogs');
     }
   }
 
@@ -86,7 +86,7 @@ export default function LoginPage(): React.ReactElement {
         )}
         {guestModeEnabled && (
           <div className="auth-card__footer">
-            <button className="auth-card__link" onClick={() => router.push('/')}>
+            <button className="auth-card__link" onClick={() => router.push('/new')}>
               Continue as guest
             </button>
           </div>

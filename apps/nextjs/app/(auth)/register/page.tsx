@@ -16,7 +16,7 @@ export default function RegisterPage(): React.ReactElement {
   const router = useRouter();
 
   useEffect(() => {
-    if (isAuthenticated && !authLoading) router.replace('/');
+    if (isAuthenticated && !authLoading) router.replace('/my/blogs');
   }, [isAuthenticated, authLoading, router]);
 
   if (isAuthenticated && !authLoading) {
@@ -53,7 +53,7 @@ export default function RegisterPage(): React.ReactElement {
     if (result.error) {
       setError(result.error);
     } else {
-      router.push('/');
+      router.push('/my/blogs');
     }
   }
 

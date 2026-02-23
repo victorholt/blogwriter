@@ -3,7 +3,7 @@
 import { useRef, useState } from 'react';
 import { useWizardStore } from '@/stores/wizard-store';
 import { useAuthStore } from '@/stores/auth-store';
-import { CheckSquare, RefreshCw, FileText, FileDown } from 'lucide-react';
+import { CheckSquare, RefreshCw, FileText, FileDown, Globe, Mic } from 'lucide-react';
 import DownloadButton from '@/components/ui/DownloadButton';
 import VoicePickerModal from './VoicePickerModal';
 import BrandVoiceReview from '@/components/brand-voice/BrandVoiceReview';
@@ -23,7 +23,38 @@ export default function BrandVoiceStep(): React.ReactElement {
   const contentRef = useRef<HTMLDivElement>(null);
   const [showPicker, setShowPicker] = useState(false);
 
-  if (!brandVoice) return <></>;
+  // No voice loaded — show voice selection for authenticated users, otherwise go back to Step 1
+  if (!brandVoice) {
+    if (isAuthenticated) {
+      return (
+        <>
+          <h1 className="step-heading step-heading--serif">Choose your voice</h1>
+          <p className="step-subtitle">
+            Pick a saved voice to get started quickly, or analyze a new website to create a fresh voice profile.
+          </p>
+          <div className="step-actions" style={{ justifyContent: 'center', gap: '1rem', marginTop: '2rem' }}>
+            <button className="btn btn--primary" onClick={() => setShowPicker(true)}>
+              <Mic size={14} />
+              Use a saved voice
+            </button>
+            <button className="btn btn--outline" onClick={() => setStep(1)}>
+              <Globe size={14} />
+              Analyze a new URL
+            </button>
+          </div>
+          {showPicker && (
+            <VoicePickerModal
+              onClose={() => {
+                setShowPicker(false);
+                // If voice was loaded by the picker, stay on Step 2 for review
+              }}
+            />
+          )}
+        </>
+      );
+    }
+    return <></>;
+  }
 
   function updateBrandVoice(partial: Partial<BrandVoice>): void {
     setBrandVoice({ ...brandVoice!, ...partial });

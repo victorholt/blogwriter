@@ -62,6 +62,7 @@ interface WizardState {
 
   // Debug
   debugMode: boolean;
+  insightsEnabled: boolean;
 
   // Blog settings
   timelineStyle: 'preview-bar' | 'timeline' | 'stepper';
@@ -110,12 +111,13 @@ interface WizardState {
   setGenerateLinks: (enabled: boolean) => void;
   setSharingEnabled: (enabled: boolean) => void;
   setPreviewAgents: (value: string) => void;
-  applyInitSettings: (s: { debugMode: boolean; timelineStyle: 'preview-bar' | 'timeline' | 'stepper'; generateImages: boolean; generateLinks: boolean; sharingEnabled: boolean; previewAgents: string }) => void;
+  applyInitSettings: (s: { debugMode: boolean; insightsEnabled: boolean; timelineStyle: 'preview-bar' | 'timeline' | 'stepper'; generateImages: boolean; generateLinks: boolean; sharingEnabled: boolean; previewAgents: string }) => void;
   setSelectedTheme: (id: number | null) => void;
   setSelectedBrand: (slug: string | null) => void;
   loadPresetVoice: (presetId: number, presetName: string, voice: BrandVoice) => void;
   loadSavedVoice: (savedId: string, voice: BrandVoice, sourceUrl: string | null) => void;
   setSavedVoiceId: (id: string | null) => void;
+  startWithDefaultVoice: (savedId: string, voice: BrandVoice, sourceUrl: string | null) => void;
   rejectBrandVoice: () => void;
   resetGenerationForRetry: () => void;
   invalidateUrlDependentState: () => void;
@@ -166,6 +168,7 @@ const initialState = {
   blogTraceIds: {} as Record<string, string>,
   agentOutputs: {} as Record<string, string>,
   debugMode: false,
+  insightsEnabled: true,
   timelineStyle: 'preview-bar' as const,
   generateImages: true,
   generateLinks: true,
@@ -244,6 +247,7 @@ export const useWizardStore = create<WizardState>()(
     setPreviewAgents: (value) => set({ previewAgents: value }),
     applyInitSettings: (s) => set({
       debugMode: s.debugMode,
+      insightsEnabled: s.insightsEnabled,
       timelineStyle: s.timelineStyle,
       generateImages: s.generateImages,
       generateLinks: s.generateLinks,
@@ -283,6 +287,23 @@ export const useWizardStore = create<WizardState>()(
       }),
 
     setSavedVoiceId: (id) => set({ savedVoiceId: id }),
+
+    startWithDefaultVoice: (savedId, voice, sourceUrl) =>
+      set({
+        ...initialState,
+        selectedDressIds: new Set<string>(),
+        dressesMap: new Map<string, Dress>(),
+        analysisStatusLog: [],
+        analysisDebugData: [],
+        blogTraceIds: {},
+        agentOutputs: {},
+        brandVoice: voice,
+        savedVoiceId: savedId,
+        storeUrl: sourceUrl || '',
+        analysisComplete: true,
+        brandVoiceConfirmed: true,
+        currentStep: 3 as WizardStep,
+      }),
 
     rejectBrandVoice: () =>
       set((state) => ({

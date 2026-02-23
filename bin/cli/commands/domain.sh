@@ -12,8 +12,8 @@ show_domain_help() {
     echo ""
     echo "What it updates:"
     echo "  1. .env — DOMAIN, NEXT_PUBLIC_API_URL, CORS_ORIGIN, CERT_EMAIL"
-    echo "  2. Apache proxy configs, docker-compose defaults"
-    echo "  3. Frontend API fallback URLs, CLI script defaults, .env.example"
+    echo "  2. Apache proxy configs"
+    echo "  3. CLI script defaults, .env.example"
     echo ""
     echo "After changing the domain you'll need to:"
     echo "  ./cli certs            # Generate SSL certs for the new domain"
@@ -142,16 +142,6 @@ info "Updating project files..."
 update_file "${PROXY_DIR}/httpd.conf"
 update_file "${PROXY_DIR}/httpd-vhosts.conf"
 update_file "${PROXY_DIR}/httpd-vhosts-dev.conf"
-
-# Docker compose defaults
-update_file "${PROJECT_ROOT}/docker/compose/docker-compose.yml"
-
-# Frontend API fallback URLs
-update_file "${PROJECT_ROOT}/apps/nextjs/lib/api.ts"
-update_file "${PROJECT_ROOT}/apps/nextjs/lib/admin-api.ts"
-update_file "${PROJECT_ROOT}/apps/nextjs/lib/auth-api.ts"
-update_file "${PROJECT_ROOT}/apps/nextjs/lib/blog-api.ts"
-update_file "${PROJECT_ROOT}/apps/nextjs/stores/app-settings-store.ts"
 
 # CLI script defaults
 update_file "${PROJECT_ROOT}/bin/cli/commands/env.sh"

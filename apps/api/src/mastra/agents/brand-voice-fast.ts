@@ -86,10 +86,10 @@ interface StatusCallback {
 // Constants
 // ---------------------------------------------------------------------------
 
-const MAX_PAGES = 8;
-const FETCH_TIMEOUT = 15_000;
-const HTML_LIMIT = 200_000;
-const TEXT_LIMIT = 15_000;
+const MAX_PAGES = 5;
+const FETCH_TIMEOUT = 10_000;
+const HTML_LIMIT = 150_000;
+const TEXT_LIMIT = 8_000;
 
 // URL patterns scored by priority for brand voice analysis
 const HIGH_PRIORITY = /\/(about|our-story|who-we-are|team|testimonials?|reviews?|blog|journal|stories|mission|values|contact|visit|location|directions)/i;
@@ -213,7 +213,6 @@ async function discoverPages(startUrl: string, onStatus: StatusCallback): Promis
   const topLinks = scored.slice(0, MAX_PAGES - 1).map((l) => l.url);
   const urls = [startUrl, ...topLinks];
 
-  onStatus({ type: 'status', data: `Found ${homepage.links.length} links, selected ${urls.length} pages to analyze` });
   return urls;
 }
 
@@ -239,7 +238,6 @@ async function scrapePages(urls: string[], onStatus: StatusCallback): Promise<Sc
     }
   }
 
-  onStatus({ type: 'status', data: `Successfully scraped ${pages.length} of ${urls.length} pages` });
   return pages;
 }
 
@@ -253,12 +251,19 @@ export async function streamBrandVoiceFastAnalysis(
   options?: { debugMode?: boolean; previousAttempt?: Record<string, unknown> },
 ): Promise<Record<string, unknown>> {
   onEvent({ type: 'status', data: 'Connecting to analysis service...' });
+  const t0 = performance.now();
 
   // 1. Discover pages
+  const tDiscover = performance.now();
   const urls = await discoverPages(url, onEvent);
+  const discoverMs = performance.now() - tDiscover;
+  onEvent({ type: 'status', data: `Found ${urls.length} pages to analyze (${(discoverMs / 1000).toFixed(1)}s)` });
 
   // 2. Scrape in parallel
+  const tScrape = performance.now();
   const pages = await scrapePages(urls, onEvent);
+  const scrapeMs = performance.now() - tScrape;
+  onEvent({ type: 'status', data: `Scraped ${pages.length} of ${urls.length} pages (${(scrapeMs / 1000).toFixed(1)}s)` });
 
   if (pages.length === 0) {
     throw new Error('Could not scrape any pages from the website');
@@ -290,12 +295,15 @@ export async function streamBrandVoiceFastAnalysis(
   }
 
   // 4. Create agent (NO tools — pure analysis)
+  const tAgent = performance.now();
   const agent = await createConfiguredAgent('brand-voice-fast', INSTRUCTIONS, {});
   const maxRetries = await getMaxRetries('brand-voice-fast');
+  const agentSetupMs = performance.now() - tAgent;
 
   onEvent({ type: 'status', data: `Analyzing brand voice from ${pages.length} pages...` });
 
   // 5. Generate with retry (analysis only — no re-scraping)
+  const tLlm = performance.now();
   let fullText = '';
   const totalAttempts = maxRetries + 1;
 
@@ -319,6 +327,7 @@ export async function streamBrandVoiceFastAnalysis(
       onEvent({ type: 'status', data: `Retrying analysis (attempt ${attempt + 1}/${totalAttempts})...` });
     }
   }
+  const llmMs = performance.now() - tLlm;
 
   if (!fullText.trim()) {
     throw new Error('No response from model after ' + totalAttempts + ' attempts');
@@ -333,5 +342,37 @@ export async function streamBrandVoiceFastAnalysis(
     });
   }
 
-  return extractJson(fullText);
+  // 6. Parse JSON
+  const tParse = performance.now();
+  const parsed = extractJson(fullText);
+  const parseMs = performance.now() - tParse;
+
+  const totalMs = performance.now() - t0;
+  onEvent({ type: 'status', data: `Brand voice analysis complete (${(llmMs / 1000).toFixed(1)}s generation)` });
+
+  // Emit timing debug event
+  if (options?.debugMode) {
+    onEvent({
+      type: 'debug',
+      data: {
+        kind: 'fast-timing',
+        phases: {
+          discover: Math.round(discoverMs),
+          scrape: Math.round(scrapeMs),
+          agentSetup: Math.round(agentSetupMs),
+          llmGenerate: Math.round(llmMs),
+          jsonParse: Math.round(parseMs),
+        },
+        totalMs: Math.round(totalMs),
+      },
+    });
+  }
+
+  console.log(
+    `[BrandVoiceFast] Timing: discover=${Math.round(discoverMs)}ms scrape=${Math.round(scrapeMs)}ms ` +
+    `agent=${Math.round(agentSetupMs)}ms llm=${Math.round(llmMs)}ms parse=${Math.round(parseMs)}ms ` +
+    `total=${Math.round(totalMs)}ms`,
+  );
+
+  return parsed;
 }

@@ -4,7 +4,7 @@ import { useState, useEffect, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/auth-store';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://blogwriter.test:4444';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
 
 export default function ForgotPasswordPage(): React.ReactElement {
   const [email, setEmail] = useState('');
@@ -15,7 +15,7 @@ export default function ForgotPasswordPage(): React.ReactElement {
   const router = useRouter();
 
   useEffect(() => {
-    if (isAuthenticated && !authLoading) router.replace('/');
+    if (isAuthenticated && !authLoading) router.replace('/my/blogs');
   }, [isAuthenticated, authLoading, router]);
 
   if (isAuthenticated && !authLoading) {

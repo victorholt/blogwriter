@@ -190,7 +190,7 @@ export default function BlogsPage(): React.ReactElement {
           </p>
           <button
             className="btn btn--primary btn--lg"
-            onClick={() => router.push('/')}
+            onClick={() => router.push('/new')}
           >
             <Plus size={16} />
             Create Your First Blog

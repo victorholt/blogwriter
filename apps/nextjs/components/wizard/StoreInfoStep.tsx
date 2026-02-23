@@ -25,6 +25,8 @@ export default function StoreInfoStep(): React.ReactElement {
   const previousBrandVoice = useWizardStore((s) => s.previousBrandVoice);
   const brandVoiceAttemptCount = useWizardStore((s) => s.brandVoiceAttemptCount);
   const brandVoice = useWizardStore((s) => s.brandVoice);
+  const debugMode = useWizardStore((s) => s.debugMode);
+  const insightsEnabled = useWizardStore((s) => s.insightsEnabled);
 
   const [error, setError] = useState<string | null>(null);
   const [elapsed, setElapsed] = useState(0);
@@ -55,6 +57,15 @@ export default function StoreInfoStep(): React.ReactElement {
     }
     if (msg.startsWith('Building brand voice')) {
       return debugData.find(e => e.kind === 'raw-response') ?? null;
+    }
+    // Fast analyzer patterns
+    if (msg.startsWith('Scraped ') && msg.includes(' pages')) {
+      return debugData.find(e => e.kind === 'fast-scrape-summary') ?? null;
+    }
+    if (msg.startsWith('Brand voice analysis complete')) {
+      return debugData.find(e => e.kind === 'raw-response')
+        ?? debugData.find(e => e.kind === 'fast-timing')
+        ?? null;
     }
     return null;
   }
@@ -188,7 +199,7 @@ export default function StoreInfoStep(): React.ReactElement {
                   <Loader2 size={12} className="spin" />
                 )}
                 <span>{msg}</span>
-                {debugEvent && <InsightPopup event={debugEvent} />}
+                {debugMode && insightsEnabled && debugEvent && <InsightPopup event={debugEvent} />}
               </div>
             );
           })}
@@ -209,7 +220,7 @@ export default function StoreInfoStep(): React.ReactElement {
               <div key={i} className="analysis-log__item analysis-log__item--done">
                 <span className="analysis-log__check">&#10003;</span>
                 <span>{msg}</span>
-                {debugEvent && <InsightPopup event={debugEvent} />}
+                {debugMode && insightsEnabled && debugEvent && <InsightPopup event={debugEvent} />}
               </div>
             );
           })}

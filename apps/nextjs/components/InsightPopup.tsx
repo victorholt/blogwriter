@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { MessageCircle, X, Globe, FileText, Sparkles } from 'lucide-react';
+import { MessageCircle, X, Globe, FileText, Sparkles, Zap } from 'lucide-react';
 import type { DebugEvent } from '@/types';
 
 interface InsightPopupProps {
@@ -140,6 +140,57 @@ function formatRawResponse(event: DebugEvent & { kind: 'raw-response' }): { icon
   };
 }
 
+function formatFastScrapeSummary(event: DebugEvent & { kind: 'fast-scrape-summary' }): { icon: typeof Globe; title: string; body: React.ReactNode } {
+  return {
+    icon: Globe,
+    title: `Scraped ${event.pagesScraped} Pages`,
+    body: (
+      <div className="insight-popup__body">
+        <p>
+          Fetched <strong>{event.pagesScraped}</strong> of {event.pagesAttempted} pages
+          in parallel, extracting {event.totalChars.toLocaleString()} characters of content.
+        </p>
+        <div className="insight-popup__field insight-popup__field--block">
+          <span className="insight-popup__field-label">Pages analyzed</span>
+          <ul className="insight-popup__list">
+            {event.urls.map((url, i) => {
+              let display = url;
+              try {
+                const parsed = new URL(url);
+                display = parsed.hostname + (parsed.pathname === '/' ? '' : parsed.pathname);
+              } catch { /* use raw url */ }
+              return <li key={i}>{display}</li>;
+            })}
+          </ul>
+        </div>
+      </div>
+    ),
+  };
+}
+
+function formatFastTiming(event: DebugEvent & { kind: 'fast-timing' }): { icon: typeof Zap; title: string; body: React.ReactNode } {
+  const { phases, totalMs } = event;
+  return {
+    icon: Zap,
+    title: 'Performance Breakdown',
+    body: (
+      <div className="insight-popup__body">
+        <p>Total analysis time: <strong>{(totalMs / 1000).toFixed(1)}s</strong></p>
+        <div className="insight-popup__field insight-popup__field--block">
+          <span className="insight-popup__field-label">Phase timing</span>
+          <ul className="insight-popup__list">
+            <li>Page discovery: {(phases.discover / 1000).toFixed(1)}s</li>
+            <li>Parallel scraping: {(phases.scrape / 1000).toFixed(1)}s</li>
+            <li>Agent setup: {(phases.agentSetup / 1000).toFixed(1)}s</li>
+            <li>LLM generation: {(phases.llmGenerate / 1000).toFixed(1)}s</li>
+            <li>JSON parsing: {(phases.jsonParse / 1000).toFixed(1)}s</li>
+          </ul>
+        </div>
+      </div>
+    ),
+  };
+}
+
 function getInsightContent(event: DebugEvent): { icon: typeof Globe; title: string; body: React.ReactNode } {
   switch (event.kind) {
     case 'tool-call':
@@ -148,6 +199,10 @@ function getInsightContent(event: DebugEvent): { icon: typeof Globe; title: stri
       return formatToolResult(event);
     case 'raw-response':
       return formatRawResponse(event);
+    case 'fast-scrape-summary':
+      return formatFastScrapeSummary(event);
+    case 'fast-timing':
+      return formatFastTiming(event);
     default:
       return { icon: FileText, title: 'Event', body: <p>Processing step completed.</p> };
   }
