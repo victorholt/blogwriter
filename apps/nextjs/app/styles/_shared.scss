@@ -238,15 +238,19 @@
 
 .step-actions {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  gap: 12px;
   margin-top: 24px;
 
   @media (min-width: 640px) {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
     margin-top: 40px;
   }
 
   &--top {
+    flex-direction: row;
     justify-content: flex-end;
     gap: 8px;
     margin-top: 0;
@@ -266,8 +270,23 @@
 
 .step-actions__right {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  flex-direction: column;
+  gap: 8px;
+
+  @media (min-width: 640px) {
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .btn {
+    width: 100%;
+    justify-content: center;
+
+    @media (min-width: 640px) {
+      width: auto;
+    }
+  }
 }
 
 .error-text {
