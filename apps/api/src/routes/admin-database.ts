@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { Pool } from 'pg';
 import { pool as sourcePool } from '../db';
 import { db } from '../db';
+import { sanitizeConnectionString } from '../lib/sanitize-url';
 import { appSettings } from '../db/schema';
 import { eq } from 'drizzle-orm';
 import {
@@ -459,7 +460,8 @@ router.post('/migrate', async (req, res) => {
 
   try {
     const password = req.body?.password;
-    const connectionString = await resolveTargetConnectionString(config, password);
+    const rawConnectionString = await resolveTargetConnectionString(config, password);
+    const connectionString = sanitizeConnectionString(rawConnectionString);
     const isLocal = connectionString.includes('@localhost') || connectionString.includes('@postgres:');
     targetPool = new Pool({
       connectionString,

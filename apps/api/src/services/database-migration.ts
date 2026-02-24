@@ -2,6 +2,7 @@ import { Pool } from 'pg';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { SecretsManagerClient, GetSecretValueCommand } from '@aws-sdk/client-secrets-manager';
+import { sanitizeConnectionString } from '../lib/sanitize-url';
 
 // ============================================================
 // Types
@@ -110,7 +111,8 @@ export function buildConnectionString(params: DirectConnectionParams): string {
 }
 
 /** Build pool options with SSL for non-local connections */
-function poolOptions(connectionString: string, timeoutMs = 5000) {
+function poolOptions(rawConnectionString: string, timeoutMs = 5000) {
+  const connectionString = sanitizeConnectionString(rawConnectionString);
   const isLocal = connectionString.includes('@localhost') || connectionString.includes('@postgres:');
   return {
     connectionString,
