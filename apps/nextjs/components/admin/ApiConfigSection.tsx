@@ -85,14 +85,15 @@ export default function ApiConfigSection(): React.ReactElement {
     }
   }
 
-  const hasLimit = credits && credits.limit !== null && credits.limit > 0;
-  const percent = hasLimit
-    ? Math.min(((credits.limit! - (credits.limit_remaining ?? 0)) / credits.limit!) * 100, 100)
+  const hasBalance = credits && credits.total_credits !== null && credits.total_credits !== undefined;
+  const remaining = hasBalance ? credits.total_credits! - credits.usage : null;
+  const percent = hasBalance && credits.total_credits! > 0
+    ? Math.min((credits.usage / credits.total_credits!) * 100, 100)
     : 0;
 
   let barClass = 'credits__bar-fill';
-  if (hasLimit && credits.limit_remaining !== null) {
-    const pct = (credits.limit_remaining / credits.limit!) * 100;
+  if (hasBalance && remaining !== null && credits.total_credits! > 0) {
+    const pct = (remaining / credits.total_credits!) * 100;
     if (pct < 10) barClass += ' credits__bar-fill--low';
     else if (pct < 25) barClass += ' credits__bar-fill--warn';
   }
@@ -152,6 +153,7 @@ export default function ApiConfigSection(): React.ReactElement {
               {credits && !creditsOpen && (
                 <span className="credits__inline-value">
                   {formatCredits(credits.usage)} used
+                  {hasBalance && ` / ${formatCredits(credits.total_credits!)}`}
                 </span>
               )}
             </button>
@@ -172,29 +174,25 @@ export default function ApiConfigSection(): React.ReactElement {
                   <>
                     <div className="credits__rows">
                       <div className="credits__row">
-                        <span className="credits__label">Total used</span>
+                        <span className="credits__label">Total credits</span>
+                        <span className="credits__value">
+                          {hasBalance ? formatCredits(credits.total_credits!) : <span className="credits__value--muted">Unknown</span>}
+                        </span>
+                      </div>
+                      <div className="credits__row">
+                        <span className="credits__label">Used</span>
                         <span className="credits__value">{formatCredits(credits.usage)}</span>
                       </div>
-                      {hasLimit && (
+                      {hasBalance && (
                         <>
                           <div className="credits__row">
                             <span className="credits__label">Remaining</span>
-                            <span className="credits__value">{formatCredits(credits.limit_remaining ?? 0)}</span>
-                          </div>
-                          <div className="credits__row">
-                            <span className="credits__label">Limit</span>
-                            <span className="credits__value">{formatCredits(credits.limit!)}</span>
+                            <span className="credits__value">{formatCredits(remaining!)}</span>
                           </div>
                           <div className="credits__bar">
                             <div className={barClass} style={{ width: `${percent}%` }} />
                           </div>
                         </>
-                      )}
-                      {!hasLimit && (
-                        <div className="credits__row">
-                          <span className="credits__label">Limit</span>
-                          <span className="credits__value credits__value--muted">None set</span>
-                        </div>
                       )}
                       {credits.is_free_tier && (
                         <div className="credits__row">

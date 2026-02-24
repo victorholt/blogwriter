@@ -78,6 +78,7 @@ export interface OpenRouterCredits {
   limit_remaining: number | null;
   usage: number;
   is_free_tier: boolean;
+  total_credits: number | null;
 }
 
 export async function fetchOpenRouterCredits(): Promise<ApiResponse<OpenRouterCredits>> {

@@ -105,16 +105,30 @@ router.get('/openrouter/credits', async (_req, res) => {
       return res.json({ success: false, error: 'No OpenRouter API key configured' });
     }
 
-    const response = await fetch('https://openrouter.ai/api/v1/auth/key', {
-      headers: { Authorization: `Bearer ${apiKey}` },
-    });
+    const headers = { Authorization: `Bearer ${apiKey}` };
 
-    if (!response.ok) {
-      return res.json({ success: false, error: `OpenRouter returned ${response.status}` });
+    // Fetch both endpoints in parallel
+    const [authRes, creditsRes] = await Promise.all([
+      fetch('https://openrouter.ai/api/v1/auth/key', { headers }),
+      fetch('https://openrouter.ai/api/v1/credits', { headers }).catch(() => null),
+    ]);
+
+    if (!authRes.ok) {
+      return res.json({ success: false, error: `OpenRouter returned ${authRes.status}` });
     }
 
-    const json: any = await response.json();
-    return res.json({ success: true, data: json.data });
+    const authJson: any = await authRes.json();
+    const data = { ...authJson.data };
+
+    // Merge total_credits from /credits endpoint if available
+    if (creditsRes?.ok) {
+      const creditsJson: any = await creditsRes.json();
+      if (creditsJson.data) {
+        data.total_credits = creditsJson.data.total_credits ?? null;
+      }
+    }
+
+    return res.json({ success: true, data });
   } catch (err) {
     console.error('[Admin] Error fetching OpenRouter credits:', err);
     return res.status(500).json({ success: false, error: 'Failed to fetch credits' });
