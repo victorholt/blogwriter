@@ -40,7 +40,7 @@ services:
       target: migrations
     container_name: ${CONTAINER_PREFIX:-blogwriter}-api-migrations
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-blogwriter_user}:${POSTGRES_PASSWORD:-blogwriter_pass}@postgres:5432/${POSTGRES_DB:-blogwriter_db}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://${POSTGRES_USER:-blogwriter_user}:${POSTGRES_PASSWORD:-blogwriter_pass}@postgres:5432/${POSTGRES_DB:-blogwriter_db}}
     profiles:
       - tools
     networks:

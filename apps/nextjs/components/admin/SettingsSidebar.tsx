@@ -11,7 +11,7 @@ const NAV_ITEMS = [
   { slug: 'products', label: 'Product API', icon: Package },
   { slug: 'themes', label: 'Themes', icon: Palette },
   { slug: 'voices', label: 'Voices', icon: Mic },
-  { slug: 'cache', label: 'Cache', icon: Database },
+  { slug: 'data', label: 'Data', icon: Database },
   { slug: 'blog', label: 'Blog', icon: FileText },
   { slug: 'email', label: 'Email', icon: Mail },
   { slug: 'users', label: 'Users', icon: Users },

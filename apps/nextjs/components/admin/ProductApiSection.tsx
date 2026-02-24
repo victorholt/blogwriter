@@ -9,7 +9,7 @@ import {
   deleteBrandLabel,
 } from '@/lib/admin-api';
 import type { AdminBrandLabel } from '@/lib/admin-api';
-import { Package, Save, Check, Loader2, Trash2, Plus, Tag } from 'lucide-react';
+import { Package, Save, Check, Loader2, Trash2, Plus, Tag, ChevronDown, ChevronRight } from 'lucide-react';
 import Toggle from '@/components/ui/Toggle';
 import TagInput from '@/components/ui/TagInput';
 import DressMultiSelect from '@/components/ui/DressMultiSelect';
@@ -45,6 +45,7 @@ export default function ProductApiSection(): React.ReactElement {
   const [newBrandSlug, setNewBrandSlug] = useState('');
   const [newBrandName, setNewBrandName] = useState('');
   const [brandCreateStatus, setBrandCreateStatus] = useState<'idle' | 'saving' | 'error'>('idle');
+  const [expandedDescriptions, setExpandedDescriptions] = useState<Set<number>>(new Set());
 
   const loadBrandLabels = useCallback(async () => {
     const result = await fetchAdminBrandLabels();
@@ -150,9 +151,9 @@ export default function ProductApiSection(): React.ReactElement {
 
   function getBrandLabelValue(id: number, field: keyof AdminBrandLabel): string {
     const edit = brandLabelEdits[id];
-    if (edit && field in edit) return edit[field] as string;
+    if (edit && field in edit) return (edit[field] as string) ?? '';
     const label = brandLabels.find((b) => b.id === id);
-    return label ? (label[field] as string) : '';
+    return label ? ((label[field] as string) ?? '') : '';
   }
 
   async function handleToggleBrandLabel(label: AdminBrandLabel): Promise<void> {
@@ -188,6 +189,8 @@ export default function ProductApiSection(): React.ReactElement {
     if (edit.displayName !== undefined) payload.displayName = edit.displayName;
     if (edit.seoKeywords !== undefined) payload.seoKeywords = edit.seoKeywords;
     if (edit.avoidTerms !== undefined) payload.avoidTerms = edit.avoidTerms;
+    if (edit.websiteUrl !== undefined) payload.websiteUrl = edit.websiteUrl;
+    if (edit.description !== undefined) payload.description = edit.description;
     const result = await updateBrandLabel(id, payload as any);
     if (result.success && result.data) {
       setBrandLabelSaveStatus((prev) => ({ ...prev, [id]: 'saved' }));
@@ -359,6 +362,50 @@ export default function ProductApiSection(): React.ReactElement {
                 </div>
               </div>
               <div className="brand-labels__card-fields">
+                <div className="brand-labels__tag-field">
+                  <label className="settings-field__label">Website URL</label>
+                  <input
+                    className="input"
+                    type="url"
+                    value={getBrandLabelValue(label.id, 'websiteUrl')}
+                    onChange={(e) =>
+                      setBrandLabelEdits((prev) => ({
+                        ...prev,
+                        [label.id]: { ...prev[label.id], websiteUrl: e.target.value },
+                      }))
+                    }
+                    placeholder="https://www.brand.com"
+                  />
+                </div>
+                <div className="brand-labels__tag-field">
+                  <button
+                    className="brand-labels__desc-toggle"
+                    onClick={() => setExpandedDescriptions((prev) => {
+                      const next = new Set(prev);
+                      if (next.has(label.id)) next.delete(label.id);
+                      else next.add(label.id);
+                      return next;
+                    })}
+                  >
+                    {expandedDescriptions.has(label.id) ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                    Description
+                    {getBrandLabelValue(label.id, 'description') ? ' (set)' : ''}
+                  </button>
+                  {expandedDescriptions.has(label.id) && (
+                    <textarea
+                      className="brand-labels__desc-textarea"
+                      value={getBrandLabelValue(label.id, 'description')}
+                      onChange={(e) =>
+                        setBrandLabelEdits((prev) => ({
+                          ...prev,
+                          [label.id]: { ...prev[label.id], description: e.target.value },
+                        }))
+                      }
+                      placeholder="Describe this brand — identity, values, aesthetic. This influences how the AI writes about their dresses."
+                      rows={3}
+                    />
+                  )}
+                </div>
                 <div className="brand-labels__tag-field">
                   <label className="settings-field__label">SEO Keywords</label>
                   <TagInput

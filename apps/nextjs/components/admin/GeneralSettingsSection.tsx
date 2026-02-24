@@ -10,8 +10,11 @@ import { useSettings } from './SettingsContext';
 export default function GeneralSettingsSection(): React.ReactElement {
   const { allSettings, setAllSettings } = useSettings();
   const setGlobalAppName = useAppSettingsStore((s) => s.setAppName);
+  const setGlobalGtmId = useAppSettingsStore((s) => s.setGtmId);
   const [appName, setAppName] = useState(allSettings.app_name || 'BlogWriter');
   const [savingAppName, setSavingAppName] = useState(false);
+  const [gtmId, setGtmId] = useState(allSettings.gtm_id || '');
+  const [savingGtmId, setSavingGtmId] = useState(false);
 
   async function handleToggle(key: string, currentlyOn: boolean): Promise<void> {
     const newValue = currentlyOn ? 'false' : 'true';
@@ -30,6 +33,17 @@ export default function GeneralSettingsSection(): React.ReactElement {
       setGlobalAppName(appName.trim());
     }
     setSavingAppName(false);
+  }
+
+  async function handleSaveGtmId(): Promise<void> {
+    setSavingGtmId(true);
+    const value = gtmId.trim();
+    const result = await updateSettings({ gtm_id: value });
+    if (result.success && result.data) {
+      setAllSettings((prev) => ({ ...prev, ...result.data }));
+      setGlobalGtmId(value);
+    }
+    setSavingGtmId(false);
   }
 
   return (
@@ -58,6 +72,31 @@ export default function GeneralSettingsSection(): React.ReactElement {
               disabled={savingAppName || !appName.trim() || appName.trim() === (allSettings.app_name || 'BlogWriter')}
             >
               {savingAppName ? 'Saving...' : 'Save'}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="settings-card">
+        <div className="settings-field">
+          <label className="settings-field__label">GTM Container ID</label>
+          <p className="settings-field__current" style={{ fontFamily: 'inherit' }}>
+            Enter your Google Tag Manager container ID (e.g., GTM-XXXXXXX). Leave empty to disable tracking.
+          </p>
+          <div className="settings-field__row">
+            <input
+              className="input"
+              value={gtmId}
+              onChange={(e) => setGtmId(e.target.value)}
+              placeholder="GTM-XXXXXXX"
+              maxLength={20}
+            />
+            <button
+              className="btn btn--primary"
+              onClick={handleSaveGtmId}
+              disabled={savingGtmId || gtmId.trim() === (allSettings.gtm_id || '')}
+            >
+              {savingGtmId ? 'Saving...' : 'Save'}
             </button>
           </div>
         </div>

@@ -36,6 +36,8 @@ export interface BrandRule {
   displayName: string;
   seoKeywords: string[];
   avoidTerms: string[];
+  websiteUrl: string;
+  description: string;
 }
 
 export interface GlobalContext {
@@ -84,12 +86,18 @@ export async function createConfiguredAgent(
 
   if (globalContext?.brandRules?.length) {
     const rulesWithContent = globalContext.brandRules.filter(
-      (r) => r.seoKeywords.length > 0 || r.avoidTerms.length > 0,
+      (r) => r.seoKeywords.length > 0 || r.avoidTerms.length > 0 || r.websiteUrl || r.description,
     );
     if (rulesWithContent.length > 0) {
       let rulesBlock = '[Brand Vocabulary Rules]';
       for (const rule of rulesWithContent) {
         rulesBlock += `\n${rule.displayName}:`;
+        if (rule.websiteUrl) {
+          rulesBlock += `\n  Website: ${rule.websiteUrl}`;
+        }
+        if (rule.description) {
+          rulesBlock += `\n  About: ${rule.description}`;
+        }
         if (rule.seoKeywords.length > 0) {
           rulesBlock += `\n  Keywords to use: ${rule.seoKeywords.join(', ')}`;
         }

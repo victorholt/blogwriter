@@ -212,6 +212,8 @@ export const brandLabels = pgTable('brand_labels', {
   sortOrder: integer('sort_order').default(0).notNull(),
   seoKeywords: text('seo_keywords').default('[]').notNull(),
   avoidTerms: text('avoid_terms').default('[]').notNull(),
+  websiteUrl: text('website_url').default('').notNull(),
+  description: text('description').default('').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });

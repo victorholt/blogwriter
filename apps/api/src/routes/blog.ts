@@ -121,6 +121,8 @@ router.get('/:sessionId/stream', async (req, res) => {
       displayName: brandLabels.displayName,
       seoKeywords: brandLabels.seoKeywords,
       avoidTerms: brandLabels.avoidTerms,
+      websiteUrl: brandLabels.websiteUrl,
+      description: brandLabels.description,
     })
     .from(brandLabels)
     .where(eq(brandLabels.isActive, true));
@@ -132,9 +134,9 @@ router.get('/:sessionId/stream', async (req, res) => {
       let avoid: string[] = [];
       try { keywords = JSON.parse(b.seoKeywords); } catch { /* ignore */ }
       try { avoid = JSON.parse(b.avoidTerms); } catch { /* ignore */ }
-      return { displayName: b.displayName, seoKeywords: keywords, avoidTerms: avoid };
+      return { displayName: b.displayName, seoKeywords: keywords, avoidTerms: avoid, websiteUrl: b.websiteUrl, description: b.description };
     })
-    .filter((r) => r.seoKeywords.length > 0 || r.avoidTerms.length > 0);
+    .filter((r) => r.seoKeywords.length > 0 || r.avoidTerms.length > 0 || r.websiteUrl || r.description);
 
   let themeDescription: string | undefined;
   if (session.themeId) {

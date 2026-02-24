@@ -20,7 +20,7 @@ const SETTINGS_NAV = [
   { slug: 'products', label: 'Product API', icon: Package },
   { slug: 'themes', label: 'Themes', icon: Palette },
   { slug: 'voices', label: 'Voices', icon: Mic },
-  { slug: 'cache', label: 'Cache', icon: Database },
+  { slug: 'data', label: 'Data', icon: Database },
   { slug: 'blog', label: 'Blog', icon: FileText },
   { slug: 'email', label: 'Email', icon: Mail },
   { slug: 'users', label: 'Users', icon: Users },
@@ -99,7 +99,7 @@ export default function AppShell({ children }: { children: React.ReactNode }): R
                 <span className="app-shell__name">{user.displayName}</span>
                 <button
                   className="app-shell__btn app-shell__btn--logout"
-                  onClick={() => logout()}
+                  onClick={() => { logout(); router.push('/login'); }}
                 >
                   Log out
                 </button>
@@ -113,7 +113,7 @@ export default function AppShell({ children }: { children: React.ReactNode }): R
               </button>
             ) : null}
           </nav>
-          {!isLoading && isAuthenticated && user && (
+          {!isLoading && isAuthenticated && user ? (
             <button
               className="app-shell__hamburger"
               onClick={() => setDrawerOpen(true)}
@@ -121,7 +121,14 @@ export default function AppShell({ children }: { children: React.ReactNode }): R
             >
               <Menu size={20} />
             </button>
-          )}
+          ) : !isLoading && guestModeEnabled ? (
+            <button
+              className="app-shell__mobile-login"
+              onClick={() => router.push('/login')}
+            >
+              Log in
+            </button>
+          ) : null}
         </div>
       </header>
 
@@ -215,7 +222,7 @@ export default function AppShell({ children }: { children: React.ReactNode }): R
             <div className="app-shell__drawer-footer">
               <button
                 className="app-shell__drawer-item app-shell__drawer-item--logout"
-                onClick={() => { closeDrawer(); logout(); }}
+                onClick={() => { closeDrawer(); logout(); router.push('/login'); }}
               >
                 <LogOut size={16} />
                 Log out

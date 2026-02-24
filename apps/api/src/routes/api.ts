@@ -133,7 +133,7 @@ router.get('/settings/init', async (_req, res) => {
         .where(inArray(appSettings.key, [
           'debug_mode', 'insights_enabled',
           'blog_timeline_style', 'blog_generate_images', 'blog_generate_links', 'blog_sharing_enabled',
-          'app_name',
+          'app_name', 'gtm_id',
         ])),
       db.select({ agentId: agentModelConfigs.agentId })
         .from(agentModelConfigs)
@@ -154,6 +154,7 @@ router.get('/settings/init', async (_req, res) => {
       sharingEnabled: map.blog_sharing_enabled === 'true',
       previewAgents: previewIds.length > 0 ? previewIds.join(',') : 'none',
       appName: map.app_name || 'BlogWriter',
+      gtmId: map.gtm_id || '',
       guestModeEnabled,
       registrationEnabled,
     });
@@ -161,7 +162,7 @@ router.get('/settings/init', async (_req, res) => {
     return res.json({
       debugMode: false, insightsEnabled: true,
       timelineStyle: 'preview-bar', generateImages: true, generateLinks: true,
-      sharingEnabled: false, previewAgents: 'none', appName: 'BlogWriter',
+      sharingEnabled: false, previewAgents: 'none', appName: 'BlogWriter', gtmId: '',
       guestModeEnabled: true, registrationEnabled: true,
     });
   }

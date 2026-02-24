@@ -186,6 +186,7 @@ export interface InitSettings {
   sharingEnabled: boolean;
   previewAgents: string;
   appName: string;
+  gtmId: string;
   guestModeEnabled: boolean;
   registrationEnabled: boolean;
 }
@@ -193,7 +194,7 @@ export interface InitSettings {
 const INIT_DEFAULTS: InitSettings = {
   debugMode: false, insightsEnabled: true,
   timelineStyle: 'preview-bar', generateImages: true, generateLinks: true,
-  sharingEnabled: false, previewAgents: 'none', appName: 'BlogWriter',
+  sharingEnabled: false, previewAgents: 'none', appName: 'BlogWriter', gtmId: '',
   guestModeEnabled: true, registrationEnabled: true,
 };
 

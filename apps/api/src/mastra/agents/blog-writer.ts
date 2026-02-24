@@ -93,6 +93,9 @@ Requirements:
 - Include a compelling introduction and conclusion
 - If the client provided a Call to Action, make it stand out — use a bold, compelling closing section with the CTA as a clear heading or blockquote. Weave the CTA naturally into the conclusion and make it feel like an exciting invitation, not a generic afterthought.
 - If a location is known, mention it naturally at least once — ideally near the conclusion as an invitation (e.g., "Visit us at [location]" or "Stop by our [city] boutique")
+- Use bold (**text**) for brand names, dress style names, and key terms or phrases that a reader scanning the post should notice. Use bold sparingly — aim for 2-4 bold phrases per section, not every sentence.
+- The first time you mention a brand name that has a website URL provided in the Brand Vocabulary Rules, link it using markdown: [**Brand Name**](url). Only link each brand once (the first mention). Subsequent mentions should just be bold, not linked.
+- If a brand has an "About" description in the Brand Vocabulary Rules, let it influence how you write about that brand's dresses — incorporate the brand's identity, values, and aesthetic naturally into your narrative.
 ${imageRequirements}${linkRequirements}`;
 }
 

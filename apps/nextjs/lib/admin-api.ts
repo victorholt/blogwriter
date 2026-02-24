@@ -70,6 +70,21 @@ export async function updateSettings(
   return res.json();
 }
 
+// --- OpenRouter Credits ---
+
+export interface OpenRouterCredits {
+  label: string;
+  limit: number | null;
+  limit_remaining: number | null;
+  usage: number;
+  is_free_tier: boolean;
+}
+
+export async function fetchOpenRouterCredits(): Promise<ApiResponse<OpenRouterCredits>> {
+  const res = await fetch(`${API_BASE}/api/admin/openrouter/credits`, { credentials: 'include' });
+  return res.json();
+}
+
 export async function clearCache(): Promise<ApiResponse<{ cleared: number }>> {
   const res = await fetch(`${API_BASE}/api/admin/cache`, {
     method: 'DELETE',
@@ -161,6 +176,8 @@ export interface AdminBrandLabel {
   sortOrder: number;
   seoKeywords: string;
   avoidTerms: string;
+  websiteUrl: string;
+  description: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -184,7 +201,7 @@ export async function createBrandLabel(
 
 export async function updateBrandLabel(
   id: number,
-  data: { slug?: string; displayName?: string; isActive?: boolean; sortOrder?: number; seoKeywords?: string; avoidTerms?: string },
+  data: { slug?: string; displayName?: string; isActive?: boolean; sortOrder?: number; seoKeywords?: string; avoidTerms?: string; websiteUrl?: string; description?: string },
 ): Promise<ApiResponse<AdminBrandLabel>> {
   const res = await fetch(`${API_BASE}/api/admin/brand-labels/${id}`, {
     method: 'PUT',

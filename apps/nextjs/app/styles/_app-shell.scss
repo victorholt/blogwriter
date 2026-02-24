@@ -141,6 +141,29 @@
     }
   }
 
+  // ---- Mobile login button (guest mode, hidden on desktop) ----
+
+  &__mobile-login {
+    font-size: 13px;
+    font-weight: 500;
+    padding: 6px 14px;
+    border-radius: var(--radius-md);
+    color: var(--color-blue);
+    border: 1px solid var(--color-blue);
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.15s ease;
+
+    &:hover {
+      background: var(--color-blue);
+      color: #fff;
+    }
+
+    @media (min-width: 768px) {
+      display: none;
+    }
+  }
+
   // ---- Backdrop overlay ----
 
   &__backdrop {

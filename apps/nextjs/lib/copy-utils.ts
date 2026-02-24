@@ -13,6 +13,15 @@ export interface ClipboardDressInfo {
   styleId?: string;
 }
 
+/** Style real links (brand URLs) as bold black underlined for WYSIWYG paste compatibility */
+function styleBrandLinks(html: string): string {
+  return html.replace(
+    /<a\s+href="((?!placeholder:)[^"]*)"[^>]*>/gi,
+    (_match, href: string) =>
+      `<a href="${href}" style="color:#1f2937;text-decoration:underline;font-weight:600;">`,
+  );
+}
+
 /** Fallback: convert slugs like "sorella-dress" to "Sorella Dress" */
 function formatBrandSlug(raw: string): string {
   return raw
@@ -89,7 +98,7 @@ export function markdownToClipboardHtml(
     // Clean up empty <p></p> tags left behind
     html = html.replace(/<p>\s*<\/p>/gi, '');
 
-    return html;
+    return styleBrandLinks(html);
   }
 
   // Replace <img> tags with a simple italic placeholder line.
@@ -113,7 +122,7 @@ export function markdownToClipboardHtml(
     },
   );
 
-  return cleaned;
+  return styleBrandLinks(cleaned);
 }
 
 /**

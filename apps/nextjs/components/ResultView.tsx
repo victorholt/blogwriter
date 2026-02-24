@@ -393,11 +393,19 @@ export default function ResultView(): React.ReactElement {
                 a: ({ href, children }) => {
                   const isPlaceholder = href?.startsWith('placeholder:');
 
+                  if (isPlaceholder) {
+                    return (
+                      <span className="result__link result__link--placeholder">
+                        {children}
+                        <span className="result__link-badge">needs link</span>
+                      </span>
+                    );
+                  }
+
                   return (
-                    <span className={`result__link ${isPlaceholder ? 'result__link--placeholder' : ''}`}>
+                    <a href={href} target="_blank" rel="noopener noreferrer" className="result__brand-link">
                       {children}
-                      <span className="result__link-badge">{isPlaceholder ? 'needs link' : 'ai generated'}</span>
-                    </span>
+                    </a>
                   );
                 },
                 p: ({ children }) => {

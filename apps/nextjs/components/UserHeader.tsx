@@ -27,7 +27,7 @@ export default function UserHeader(): React.ReactElement | null {
               <span className="user-header__name">{user.displayName}</span>
               <button
                 className="user-header__btn user-header__btn--logout"
-                onClick={() => logout()}
+                onClick={() => { logout(); router.push('/login'); }}
               >
                 Log out
               </button>

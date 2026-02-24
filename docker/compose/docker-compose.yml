@@ -35,11 +35,14 @@ services:
     container_name: ${CONTAINER_PREFIX:-blogwriter}-api
     environment:
       PORT: "4000"
-      DATABASE_URL: postgresql://${POSTGRES_USER:-blogwriter_user}:${POSTGRES_PASSWORD:-blogwriter_pass}@postgres:5432/${POSTGRES_DB:-blogwriter_db}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://${POSTGRES_USER:-blogwriter_user}:${POSTGRES_PASSWORD:-blogwriter_pass}@postgres:5432/${POSTGRES_DB:-blogwriter_db}}
       JWT_SECRET: ${JWT_SECRET:-blogwriter-dev-jwt-secret-change-in-production}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@blogwriter.local}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
     networks:
       - app-network
     restart: unless-stopped

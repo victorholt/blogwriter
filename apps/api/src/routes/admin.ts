@@ -5,7 +5,7 @@ import { db } from '../db';
 import { agentModelConfigs, agentAdditionalInstructions, appSettings, brandVoiceCache, themes, brandLabels, voicePresets, auditLogs, users, blogSessions } from '../db/schema';
 import { eq, asc, and, desc, sql } from 'drizzle-orm';
 import { requireAdmin } from '../middleware/auth';
-import { invalidateCache } from '../mastra/lib/model-resolver';
+import { invalidateCache, getOpenRouterApiKey } from '../mastra/lib/model-resolver';
 import { enhanceText as agentEnhanceText } from '../mastra/agents/text-enhancer';
 import { clearDressCache, syncDressesFromApi, getCacheStats } from '../services/dress-cache';
 import { AGENT_DEFAULTS } from '../mastra/lib/agent-defaults';
@@ -15,6 +15,7 @@ import { formatBrandVoiceText } from '../mastra/agents/brand-voice-formatter';
 import { testSmtpConnection } from '../services/email';
 import { invalidateGuestModeCache, invalidateRegistrationCache } from '../services/site-settings';
 import adminUsersRoutes from './admin-users';
+import adminDatabaseRoutes from './admin-database';
 
 // Read app version once at startup
 let appVersion = '0.0.0';
@@ -92,6 +93,31 @@ router.get('/models', async (_req, res) => {
   } catch (err) {
     console.error('[Admin] Error fetching models:', err);
     return res.status(500).json({ success: false, error: 'Failed to fetch available models' });
+  }
+});
+
+// --- OpenRouter Credits ---
+
+router.get('/openrouter/credits', async (_req, res) => {
+  try {
+    const apiKey = await getOpenRouterApiKey();
+    if (!apiKey) {
+      return res.json({ success: false, error: 'No OpenRouter API key configured' });
+    }
+
+    const response = await fetch('https://openrouter.ai/api/v1/auth/key', {
+      headers: { Authorization: `Bearer ${apiKey}` },
+    });
+
+    if (!response.ok) {
+      return res.json({ success: false, error: `OpenRouter returned ${response.status}` });
+    }
+
+    const json: any = await response.json();
+    return res.json({ success: true, data: json.data });
+  } catch (err) {
+    console.error('[Admin] Error fetching OpenRouter credits:', err);
+    return res.status(500).json({ success: false, error: 'Failed to fetch credits' });
   }
 });
 
@@ -292,6 +318,7 @@ const updateSettingsSchema = z.object({
   smtp_encryption: z.enum(['none', 'ssl', 'tls']).optional(),
   smtp_auto_tls: z.enum(['true', 'false']).optional(),
   smtp_auth: z.enum(['true', 'false']).optional(),
+  gtm_id: z.string().max(20).optional(),
 });
 
 router.put('/settings', async (req, res) => {
@@ -486,6 +513,8 @@ const createBrandLabelSchema = z.object({
   displayName: z.string().min(1, 'Display name is required'),
   seoKeywords: z.string().optional(),
   avoidTerms: z.string().optional(),
+  websiteUrl: z.string().optional(),
+  description: z.string().optional(),
 });
 
 router.post('/brand-labels', async (req, res) => {
@@ -510,6 +539,8 @@ const updateBrandLabelSchema = z.object({
   sortOrder: z.number().optional(),
   seoKeywords: z.string().optional(),
   avoidTerms: z.string().optional(),
+  websiteUrl: z.string().optional(),
+  description: z.string().optional(),
 });
 
 router.put('/brand-labels/:id', async (req, res) => {
@@ -714,6 +745,7 @@ router.get('/version', async (_req, res) => {
 // --- User Management ---
 
 router.use('/users', adminUsersRoutes);
+router.use('/database', adminDatabaseRoutes);
 
 // --- Audit Logs ---
 
