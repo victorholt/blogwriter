@@ -49,8 +49,14 @@ case "${DB_COMMAND}" in
         info "Querying database info..."
         dc exec api node -e '
             const { Pool } = require("pg");
-            const url = process.env.DATABASE_URL || "";
+            let url = process.env.DATABASE_URL || "";
             const masked = url.replace(/:\/\/([^:]+):([^@]+)@/, "://$1:*****@");
+            // Sanitize: URL-encode user/pass to handle special chars (e.g. <, >, @)
+            const m = url.match(/^(postgres(?:ql)?:\/\/)([^:]+):(.+)@(.+)$/);
+            if (m) {
+                const [, proto, rawUser, rawPass, rest] = m;
+                url = proto + encodeURIComponent(decodeURIComponent(rawUser)) + ":" + encodeURIComponent(decodeURIComponent(rawPass)) + "@" + rest;
+            }
             const isLocal = url.includes("@localhost") || url.includes("@postgres:");
             const pool = new Pool({
                 connectionString: url,
