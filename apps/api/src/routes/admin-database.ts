@@ -460,7 +460,11 @@ router.post('/migrate', async (req, res) => {
   try {
     const password = req.body?.password;
     const connectionString = await resolveTargetConnectionString(config, password);
-    targetPool = new Pool({ connectionString });
+    const isLocal = connectionString.includes('@localhost') || connectionString.includes('@postgres:');
+    targetPool = new Pool({
+      connectionString,
+      ...(isLocal ? {} : { ssl: { rejectUnauthorized: false } }),
+    });
 
     // Step 1: Create schema
     sendEvent('status', 'Creating schema on target...');

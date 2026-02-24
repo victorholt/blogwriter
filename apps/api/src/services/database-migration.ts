@@ -109,6 +109,16 @@ export function buildConnectionString(params: DirectConnectionParams): string {
   return `postgresql://${encodeURIComponent(username)}:${encodeURIComponent(password)}@${host}:${port}/${database}`;
 }
 
+/** Build pool options with SSL for non-local connections */
+function poolOptions(connectionString: string, timeoutMs = 5000) {
+  const isLocal = connectionString.includes('@localhost') || connectionString.includes('@postgres:');
+  return {
+    connectionString,
+    connectionTimeoutMillis: timeoutMs,
+    ...(isLocal ? {} : { ssl: { rejectUnauthorized: false } }),
+  };
+}
+
 export function maskConnectionString(url: string): string {
   try {
     const u = new URL(url);
@@ -148,7 +158,7 @@ export async function fetchAwsCredentials(
 export async function testConnection(
   connectionString: string,
 ): Promise<{ version: string }> {
-  const pool = new Pool({ connectionString, connectionTimeoutMillis: 5000 });
+  const pool = new Pool(poolOptions(connectionString));
   try {
     const result = await pool.query('SELECT version()');
     const version = (result.rows[0]?.version as string) || 'Unknown';
@@ -428,7 +438,7 @@ export async function resetSequences(targetPool: Pool): Promise<void> {
 export async function checkTarget(
   connectionString: string,
 ): Promise<TargetCheckResult> {
-  const pool = new Pool({ connectionString, connectionTimeoutMillis: 5000 });
+  const pool = new Pool(poolOptions(connectionString));
   try {
     // Check if we can connect
     await pool.query('SELECT 1');
@@ -467,10 +477,7 @@ export async function verifyMigration(
     targetCount: number;
   }>;
 }> {
-  const targetPool = new Pool({
-    connectionString: targetConnectionString,
-    connectionTimeoutMillis: 5000,
-  });
+  const targetPool = new Pool(poolOptions(targetConnectionString));
 
   try {
     const sourceCounts = await getTableCounts(source);
