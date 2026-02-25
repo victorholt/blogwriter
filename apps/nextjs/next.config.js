@@ -13,6 +13,9 @@ try {
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  sassOptions: {
+    silenceDeprecations: ['import'],
+  },
   output: 'standalone',
   generateBuildId: () => appVersion,
   env: {

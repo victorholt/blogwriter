@@ -16,6 +16,7 @@ const DEFAULT_AGENTS = [
   { agentId: 'brand-voice-fast', agentLabel: 'Brand Voice (Fast)', modelId: DEFAULT_MODEL, temperature: '0.5', maxTokens: '4096', enabled: false },
   { agentId: 'brand-voice-formatter', agentLabel: 'Brand Voice Formatter', modelId: DEFAULT_MODEL, temperature: '0.4', maxTokens: '4096' },
   { agentId: 'voice-merger', agentLabel: 'Voice Merger', modelId: DEFAULT_MODEL, temperature: '0.4', maxTokens: '4096' },
+  { agentId: 'feedback-reviewer', agentLabel: 'Feedback Reviewer', modelId: DEFAULT_MODEL, temperature: '0.3', maxTokens: '1024', enabled: false },
 ];
 
 const DEFAULT_SETTINGS = [

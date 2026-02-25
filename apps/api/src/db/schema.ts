@@ -11,6 +11,7 @@ export const users = pgTable('users', {
   displayName: text('display_name').notNull(),
   role: text('role').default('user').notNull(),
   isActive: boolean('is_active').default(true).notNull(),
+  storeCode: text('store_code'),
   lastLoginAt: timestamp('last_login_at'),
   passwordResetToken: text('password_reset_token'),
   passwordResetExpiresAt: timestamp('password_reset_expires_at'),
@@ -230,3 +231,43 @@ export const voicePresets = pgTable('voice_presets', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
+
+// ============================================================
+// Feedback Forms & Responses
+// ============================================================
+
+export const feedbackForms = pgTable('feedback_forms', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  name: text('name').notNull(),
+  slug: text('slug').notNull().unique(),
+  type: text('type').default('form').notNull(),        // 'form' | 'chat'
+  description: text('description'),
+  // JSON array of question definitions (editable in admin)
+  questions: text('questions').notNull().default('[]'),
+  isActive: boolean('is_active').default(true).notNull(),
+  isDefault: boolean('is_default').default(false).notNull(),
+  sortOrder: integer('sort_order').default(0).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const feedbackResponses = pgTable('feedback_responses', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  formId: text('form_id').references(() => feedbackForms.id, { onDelete: 'set null' }),
+  formSlug: text('form_slug').notNull(),               // snapshot at submit time
+  userId: text('user_id').references(() => users.id, { onDelete: 'set null' }),
+  storeCode: text('store_code'),                       // snapshot at submit time
+  answers: text('answers').notNull(),                  // JSON: Record<questionId, answer>
+  // Review agent
+  agentReview: text('agent_review'),                   // JSON: { flagged, flags[], summary }
+  agentReviewedAt: timestamp('agent_reviewed_at'),
+  // Admin workflow
+  status: text('status').default('new').notNull(),     // 'new' | 'reviewed' | 'actioned'
+  adminNotes: text('admin_notes'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => [
+  index('idx_feedback_responses_form').on(table.formId),
+  index('idx_feedback_responses_status').on(table.status),
+  index('idx_feedback_responses_created').on(table.createdAt),
+]);

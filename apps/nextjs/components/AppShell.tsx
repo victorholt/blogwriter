@@ -5,26 +5,28 @@ import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import {
   Plus, Menu, X, FileText, Mic, UserCog, Settings, LogOut,
-  Key, Bot, Package, Palette, Database, Mail, Users, ClipboardList, ArrowLeft,
+  Key, Bot, Package, Palette, Database, Mail, Users, ClipboardList, ArrowLeft, MessageSquare,
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth-store';
 import { useAppSettingsStore } from '@/stores/app-settings-store';
 import { useWizardStore } from '@/stores/wizard-store';
 import { fetchDefaultSavedVoice } from '@/lib/api';
 import SiteFooter from '@/components/SiteFooter';
+import FeedbackWidget from '@/components/FeedbackWidget';
 
 const SETTINGS_NAV = [
   { slug: 'general', label: 'General', icon: Settings },
+  { slug: 'users', label: 'Users', icon: Users },
+  { slug: 'email', label: 'Email', icon: Mail },
   { slug: 'api', label: 'API Config', icon: Key },
   { slug: 'agents', label: 'Agent Models', icon: Bot },
   { slug: 'products', label: 'Product API', icon: Package },
-  { slug: 'themes', label: 'Themes', icon: Palette },
-  { slug: 'voices', label: 'Voices', icon: Mic },
-  { slug: 'data', label: 'Data', icon: Database },
   { slug: 'blog', label: 'Blog', icon: FileText },
-  { slug: 'email', label: 'Email', icon: Mail },
-  { slug: 'users', label: 'Users', icon: Users },
+  { slug: 'voices', label: 'Voices', icon: Mic },
+  { slug: 'themes', label: 'Themes', icon: Palette },
+  { slug: 'feedback', label: 'Feedback', icon: MessageSquare },
   { slug: 'audit', label: 'Audit', icon: ClipboardList },
+  { slug: 'data', label: 'Data', icon: Database },
 ] as const;
 
 export default function AppShell({ children }: { children: React.ReactNode }): React.ReactElement {
@@ -238,6 +240,8 @@ export default function AppShell({ children }: { children: React.ReactNode }): R
           <SiteFooter />
         </div>
       </div>
+
+      <FeedbackWidget />
     </>
   );
 }

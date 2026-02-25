@@ -3,6 +3,7 @@
 // Import order matters: reset/tokens → layout → shared → pages
 // ============================================================
 
+// stylelint-disable-next-line import/no-deprecated
 @import './styles/reset';
 @import './styles/layout';
 @import './styles/shared';
@@ -17,7 +18,14 @@
 @import './styles/instructions';
 @import './styles/generating';
 @import './styles/result';
-@import './styles/settings';
+@import './styles/settings-layout';
+@import './styles/settings-agents';
+@import './styles/settings-themes';
+@import './styles/settings-brand-labels';
+@import './styles/settings-users';
+@import './styles/settings-data';
+@import './styles/settings-audit';
+@import './styles/settings-email';
 @import './styles/agent-insight';
 @import './styles/insight-popup';
 @import './styles/diff';
@@ -33,3 +41,4 @@
 @import './styles/status-page';
 @import './styles/footer';
 @import './styles/legal';
+@import './styles/feedback';

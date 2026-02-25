@@ -2,20 +2,21 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Settings, Key, Bot, Package, Palette, Mic, Database, FileText, Mail, Users, ClipboardList } from 'lucide-react';
+import { Settings, Key, Bot, Package, Palette, Mic, Database, FileText, Mail, Users, ClipboardList, MessageSquare } from 'lucide-react';
 
 const NAV_ITEMS = [
   { slug: 'general', label: 'General', icon: Settings },
+  { slug: 'users', label: 'Users', icon: Users },
+  { slug: 'email', label: 'Email', icon: Mail },
   { slug: 'api', label: 'API Config', icon: Key },
   { slug: 'agents', label: 'Agent Models', icon: Bot },
   { slug: 'products', label: 'Product API', icon: Package },
-  { slug: 'themes', label: 'Themes', icon: Palette },
-  { slug: 'voices', label: 'Voices', icon: Mic },
-  { slug: 'data', label: 'Data', icon: Database },
   { slug: 'blog', label: 'Blog', icon: FileText },
-  { slug: 'email', label: 'Email', icon: Mail },
-  { slug: 'users', label: 'Users', icon: Users },
+  { slug: 'voices', label: 'Voices', icon: Mic },
+  { slug: 'themes', label: 'Themes', icon: Palette },
+  { slug: 'feedback', label: 'Feedback', icon: MessageSquare },
   { slug: 'audit', label: 'Audit', icon: ClipboardList },
+  { slug: 'data', label: 'Data', icon: Database },
 ] as const;
 
 interface SettingsSidebarProps {

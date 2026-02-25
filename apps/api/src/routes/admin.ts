@@ -2,8 +2,8 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { readFileSync } from 'fs';
 import { db } from '../db';
-import { agentModelConfigs, agentAdditionalInstructions, appSettings, brandVoiceCache, themes, brandLabels, voicePresets, auditLogs, users, blogSessions } from '../db/schema';
-import { eq, asc, and, desc, sql } from 'drizzle-orm';
+import { agentModelConfigs, agentAdditionalInstructions, appSettings, brandVoiceCache, themes, brandLabels, voicePresets, auditLogs, users, blogSessions, feedbackForms, feedbackResponses } from '../db/schema';
+import { eq, asc, and, desc, sql, isNull, isNotNull } from 'drizzle-orm';
 import { requireAdmin } from '../middleware/auth';
 import { invalidateCache, getOpenRouterApiKey } from '../mastra/lib/model-resolver';
 import { enhanceText as agentEnhanceText } from '../mastra/agents/text-enhancer';
@@ -12,7 +12,8 @@ import { AGENT_DEFAULTS } from '../mastra/lib/agent-defaults';
 import { loadProductApiConfig } from '../services/product-api-client';
 import { invalidateInsightsCache } from '../services/agent-trace';
 import { formatBrandVoiceText } from '../mastra/agents/brand-voice-formatter';
-import { testSmtpConnection } from '../services/email';
+import { testSmtpConnection, sendTemplateEmail } from '../services/email';
+import { renderAllPreviews, EMAIL_TEMPLATES } from '../services/email-templates';
 import { invalidateGuestModeCache, invalidateRegistrationCache } from '../services/site-settings';
 import adminUsersRoutes from './admin-users';
 import adminDatabaseRoutes from './admin-database';
@@ -65,8 +66,15 @@ async function fetchOpenRouterModels(): Promise<CachedModels['data']> {
   }
 
   console.log('[Admin] Fetching models from OpenRouter...');
-  const res = await fetch('https://openrouter.ai/api/v1/models');
-  const json: any = await res.json();
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000);
+  let res: Response;
+  try {
+    res = await fetch('https://openrouter.ai/api/v1/models', { signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
+  const json: any = await res!.json();
   const models = (json.data || [])
     .filter((m: any) => isAllowedModel(m.id))
     .map((m: any) => ({
@@ -333,6 +341,9 @@ const updateSettingsSchema = z.object({
   smtp_auto_tls: z.enum(['true', 'false']).optional(),
   smtp_auth: z.enum(['true', 'false']).optional(),
   gtm_id: z.string().max(20).optional(),
+  feedback_enabled: z.enum(['true', 'false']).optional(),
+  feedback_widget_enabled: z.enum(['true', 'false']).optional(),
+  feedback_agent_enabled: z.enum(['true', 'false']).optional(),
 });
 
 router.put('/settings', async (req, res) => {
@@ -763,20 +774,80 @@ router.use('/database', adminDatabaseRoutes);
 
 // --- Audit Logs ---
 
+router.get('/audit/filters', async (_req, res) => {
+  try {
+    const [actions, resourceTypes, storeCodes] = await Promise.all([
+      db.selectDistinct({ value: auditLogs.action }).from(auditLogs).orderBy(auditLogs.action),
+      db.selectDistinct({ value: auditLogs.resourceType }).from(auditLogs).orderBy(auditLogs.resourceType),
+      db.selectDistinct({ value: users.storeCode })
+        .from(auditLogs)
+        .innerJoin(users, eq(auditLogs.userId, users.id))
+        .where(isNotNull(users.storeCode))
+        .orderBy(users.storeCode),
+    ]);
+    return res.json({
+      success: true,
+      data: {
+        actions: actions.map((r) => r.value),
+        resourceTypes: resourceTypes.map((r) => r.value).filter(Boolean),
+        storeCodes: storeCodes.map((r) => r.value).filter(Boolean),
+      },
+    });
+  } catch (err) {
+    console.error('[Admin] Audit filters error:', err);
+    return res.status(500).json({ success: false, error: 'Failed to fetch audit filters' });
+  }
+});
+
 router.get('/audit', async (req, res) => {
   try {
     const page = Math.max(1, parseInt(req.query.page as string) || 1);
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 50));
     const offset = (page - 1) * limit;
+    const action = (req.query.action as string) || '';
+    const resourceType = (req.query.resourceType as string) || '';
+    const userId = (req.query.userId as string) || '';
+    const storeCode = (req.query.storeCode as string) || '';
 
-    const rows = await db
-      .select()
-      .from(auditLogs)
-      .orderBy(desc(auditLogs.createdAt))
-      .limit(limit)
-      .offset(offset);
+    const conditions = [];
+    if (action) conditions.push(eq(auditLogs.action, action));
+    if (resourceType) conditions.push(eq(auditLogs.resourceType, resourceType));
+    if (userId === 'guest') conditions.push(isNull(auditLogs.userId));
+    else if (userId) conditions.push(eq(auditLogs.userId, userId));
+    if (storeCode === '__none__') {
+      conditions.push(isNotNull(auditLogs.userId));
+      conditions.push(isNull(users.storeCode));
+    } else if (storeCode) {
+      conditions.push(eq(users.storeCode, storeCode));
+    }
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
-    const countResult = await db.select({ count: sql<number>`count(*)` }).from(auditLogs);
+    const [rows, countResult] = await Promise.all([
+      db
+        .select({
+          id: auditLogs.id,
+          userId: auditLogs.userId,
+          spaceId: auditLogs.spaceId,
+          action: auditLogs.action,
+          resourceType: auditLogs.resourceType,
+          resourceId: auditLogs.resourceId,
+          metadata: auditLogs.metadata,
+          createdAt: auditLogs.createdAt,
+          userDisplayName: users.displayName,
+          userEmail: users.email,
+          userStoreCode: users.storeCode,
+        })
+        .from(auditLogs)
+        .leftJoin(users, eq(auditLogs.userId, users.id))
+        .where(whereClause)
+        .orderBy(desc(auditLogs.createdAt))
+        .limit(limit)
+        .offset(offset),
+      db.select({ count: sql<number>`count(*)` })
+        .from(auditLogs)
+        .leftJoin(users, eq(auditLogs.userId, users.id))
+        .where(whereClause),
+    ]);
     const total = Number(countResult[0]?.count || 0);
 
     return res.json({ success: true, data: { logs: rows, total, page, totalPages: Math.ceil(total / limit) } });
@@ -826,6 +897,294 @@ router.post('/smtp/test', async (_req, res) => {
   } catch (err) {
     const message = err instanceof Error ? err.message : 'SMTP test failed';
     return res.status(500).json({ success: false, error: message });
+  }
+});
+
+// --- Email Templates ---
+
+router.get('/email/templates', async (_req, res) => {
+  try {
+    const previews = renderAllPreviews();
+    return res.json({ success: true, data: previews });
+  } catch (err) {
+    console.error('[Admin] Error fetching email templates:', err);
+    return res.status(500).json({ success: false, error: 'Failed to fetch email templates' });
+  }
+});
+
+const testEmailSchema = z.object({
+  to: z.string().email('Valid email address is required'),
+});
+
+router.post('/email/templates/:id/test', async (req, res) => {
+  const { id } = req.params;
+  if (!EMAIL_TEMPLATES[id]) {
+    return res.status(404).json({ success: false, error: 'Template not found' });
+  }
+
+  const parsed = testEmailSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ success: false, error: parsed.error.issues[0]?.message || 'Invalid request' });
+  }
+
+  try {
+    const sent = await sendTemplateEmail(parsed.data.to, id);
+    if (!sent) {
+      return res.json({ success: false, error: 'SMTP not configured or send failed' });
+    }
+    return res.json({ success: true, data: { message: `Test email sent to ${parsed.data.to}` } });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Failed to send test email';
+    console.error(`[Admin] Error sending test email (${id}):`, message);
+    return res.status(500).json({ success: false, error: message });
+  }
+});
+
+// --- Feedback Forms (CRUD) ---
+
+const PILOT_SURVEY_QUESTIONS = JSON.stringify([
+  { id: 'contentWorkflow', section: 1, required: true, type: 'radio', question: 'How does your team currently handle blog content?', options: [
+    { value: 'established', label: 'Established', description: 'We follow a consistent, defined content calendar.' },
+    { value: 'ad_hoc', label: 'Ad Hoc', description: 'We create content when we have time or inspiration.' },
+    { value: 'none', label: 'None', description: 'We rarely or never publish blog content.' },
+  ]},
+  { id: 'draftReadiness', section: 1, required: true, type: 'radio', question: 'How close was the AI\'s draft to being "ready to publish"?', options: [
+    { value: 'ready', label: 'Ready to Ship', description: 'I could post this with zero or very minor tweaks (typos/formatting).' },
+    { value: 'polishing', label: 'Polishing Needed', description: 'I made light edits to align it with my specific brand voice/details.' },
+    { value: 'draft', label: 'Draft Only', description: 'I used it as a structural outline, but rewrote significant portions.' },
+    { value: 'not_usable', label: 'Not Usable', description: 'The content did not meet my quality or brand standards.' },
+  ]},
+  { id: 'timeComparison', section: 1, required: true, type: 'radio', question: 'Compared to your usual way of working, using this tool felt:', options: [
+    { value: 'much_faster', label: 'Much faster', description: 'Saved hours of work' },
+    { value: 'somewhat_faster', label: 'Somewhat faster', description: 'Saved some time' },
+    { value: 'neutral', label: 'Neutral', description: 'Took about the same effort as writing myself' },
+    { value: 'more_work', label: 'More work', description: 'Editing/fixing took longer than writing from scratch' },
+  ]},
+  { id: 'brandConfidence', section: 1, required: true, type: 'radio', question: 'How confident would you feel letting this tool represent your store\'s brand with only a quick "sanity check" review?', options: [
+    { value: 'high', label: 'High Confidence', description: 'I trust the tone and accuracy.' },
+    { value: 'moderate', label: 'Moderate Confidence', description: 'I\'d use it, but I\'d always check the "vibe" first.' },
+    { value: 'low', label: 'Low Confidence', description: 'I\'m hesitant; it doesn\'t quite sound like us yet.' },
+    { value: 'none', label: 'No Confidence', description: 'I wouldn\'t trust it to represent our brand.' },
+  ]},
+  { id: 'improvement', section: 2, required: false, type: 'textarea', question: 'If you could change one specific thing to make this tool more helpful for your store, what would it be?' },
+  { id: 'role', section: 3, required: true, type: 'radio', question: 'Your Role:', options: [
+    { value: 'owner', label: 'Store Owner' },
+    { value: 'manager', label: 'Store Manager / Employee' },
+    { value: 'corporate', label: 'Corporate Team' },
+  ]},
+  { id: 'businessType', section: 3, required: true, type: 'radio', question: 'Business Type:', options: [
+    { value: 'single', label: 'Single Boutique Location' },
+    { value: 'multi', label: 'Multi-Location / Regional Group' },
+  ]},
+]);
+
+// Seed pilot survey if it doesn't exist
+async function seedPilotSurvey(): Promise<void> {
+  try {
+    const existing = await db.select({ id: feedbackForms.id }).from(feedbackForms).where(eq(feedbackForms.slug, 'pilot-v1')).limit(1);
+    if (existing.length === 0) {
+      await db.insert(feedbackForms).values({
+        name: 'Pilot Survey',
+        slug: 'pilot-v1',
+        type: 'form',
+        description: 'Initial pilot feedback survey for Bride Write users.',
+        questions: PILOT_SURVEY_QUESTIONS,
+        isActive: true,
+        isDefault: true,
+        sortOrder: 0,
+      });
+      console.log('[Feedback] Seeded pilot survey form.');
+    }
+  } catch (err) {
+    console.error('[Feedback] Failed to seed pilot survey:', err);
+  }
+}
+// Run seed asynchronously at startup
+seedPilotSurvey().catch(() => {});
+
+router.get('/feedback/forms', async (_req, res) => {
+  try {
+    const rows = await db.select().from(feedbackForms).orderBy(feedbackForms.sortOrder, feedbackForms.createdAt);
+    return res.json({ success: true, data: rows });
+  } catch (err) {
+    console.error('[Admin] Error fetching feedback forms:', err);
+    return res.status(500).json({ success: false, error: 'Failed to fetch feedback forms' });
+  }
+});
+
+const createFeedbackFormSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  slug: z.string().min(1, 'Slug is required').regex(/^[a-z0-9-]+$/, 'Slug must be lowercase letters, numbers, and hyphens'),
+  type: z.enum(['form', 'chat']).default('form'),
+  description: z.string().optional(),
+  questions: z.string().default('[]'),  // JSON string
+  isActive: z.boolean().default(true),
+  isDefault: z.boolean().default(false),
+  sortOrder: z.number().int().default(0),
+});
+
+router.post('/feedback/forms', async (req, res) => {
+  const parsed = createFeedbackFormSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ success: false, error: parsed.error.issues[0]?.message || 'Invalid request' });
+  }
+  try {
+    const [row] = await db.insert(feedbackForms).values(parsed.data).returning();
+    return res.json({ success: true, data: row });
+  } catch (err) {
+    console.error('[Admin] Error creating feedback form:', err);
+    return res.status(500).json({ success: false, error: 'Failed to create feedback form' });
+  }
+});
+
+const updateFeedbackFormSchema = z.object({
+  name: z.string().min(1).optional(),
+  description: z.string().optional(),
+  questions: z.string().optional(),  // JSON string
+  isActive: z.boolean().optional(),
+  isDefault: z.boolean().optional(),
+  sortOrder: z.number().int().optional(),
+});
+
+router.put('/feedback/forms/:id', async (req, res) => {
+  const parsed = updateFeedbackFormSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ success: false, error: parsed.error.issues[0]?.message || 'Invalid request' });
+  }
+  try {
+    const [row] = await db.update(feedbackForms)
+      .set({ ...parsed.data, updatedAt: new Date() })
+      .where(eq(feedbackForms.id, req.params.id))
+      .returning();
+    if (!row) return res.status(404).json({ success: false, error: 'Form not found' });
+    return res.json({ success: true, data: row });
+  } catch (err) {
+    console.error('[Admin] Error updating feedback form:', err);
+    return res.status(500).json({ success: false, error: 'Failed to update feedback form' });
+  }
+});
+
+router.get('/feedback/forms/:id/export', async (req, res) => {
+  try {
+    const [form] = await db.select().from(feedbackForms).where(eq(feedbackForms.id, req.params.id)).limit(1);
+    if (!form) return res.status(404).json({ success: false, error: 'Form not found' });
+    const responses = await db.select().from(feedbackResponses).where(eq(feedbackResponses.formId, req.params.id)).orderBy(desc(feedbackResponses.createdAt));
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename="feedback-${form.slug}-export.json"`);
+    return res.send(JSON.stringify({ form, responses }, null, 2));
+  } catch (err) {
+    console.error('[Admin] Error exporting feedback form:', err);
+    return res.status(500).json({ success: false, error: 'Failed to export form' });
+  }
+});
+
+// --- Feedback Responses ---
+
+router.get('/feedback', async (req, res) => {
+  try {
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = 20;
+    const offset = (page - 1) * limit;
+    const status = (req.query.status as string) || '';
+    const storeCode = (req.query.storeCode as string) || '';
+    const formSlug = (req.query.formSlug as string) || '';
+
+    const conditions = [];
+    if (status) conditions.push(eq(feedbackResponses.status, status));
+    if (storeCode) conditions.push(eq(feedbackResponses.storeCode, storeCode));
+    if (formSlug) conditions.push(eq(feedbackResponses.formSlug, formSlug));
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+    const [rows, countResult] = await Promise.all([
+      db.select().from(feedbackResponses).where(whereClause).orderBy(desc(feedbackResponses.createdAt)).limit(limit).offset(offset),
+      db.select({ count: sql<number>`count(*)` }).from(feedbackResponses).where(whereClause),
+    ]);
+    const total = Number(countResult[0]?.count || 0);
+    return res.json({ success: true, data: { responses: rows, total, page, totalPages: Math.ceil(total / limit) } });
+  } catch (err) {
+    console.error('[Admin] Error fetching feedback:', err);
+    return res.status(500).json({ success: false, error: 'Failed to fetch feedback' });
+  }
+});
+
+router.get('/feedback/stats', async (_req, res) => {
+  try {
+    const [total, byStatus, flagged] = await Promise.all([
+      db.select({ count: sql<number>`count(*)` }).from(feedbackResponses),
+      db.select({ status: feedbackResponses.status, count: sql<number>`count(*)` }).from(feedbackResponses).groupBy(feedbackResponses.status),
+      db.select({ count: sql<number>`count(*)` }).from(feedbackResponses).where(sql`${feedbackResponses.agentReview} IS NOT NULL AND ${feedbackResponses.agentReview} LIKE '%"flagged":true%'`),
+    ]);
+    const statusMap: Record<string, number> = {};
+    for (const row of byStatus) statusMap[row.status] = Number(row.count);
+    return res.json({
+      success: true,
+      data: {
+        total: Number(total[0]?.count || 0),
+        new: statusMap['new'] || 0,
+        reviewed: statusMap['reviewed'] || 0,
+        actioned: statusMap['actioned'] || 0,
+        flagged: Number(flagged[0]?.count || 0),
+      },
+    });
+  } catch (err) {
+    console.error('[Admin] Error fetching feedback stats:', err);
+    return res.status(500).json({ success: false, error: 'Failed to fetch stats' });
+  }
+});
+
+router.get('/feedback/:id', async (req, res) => {
+  try {
+    const [row] = await db.select().from(feedbackResponses).where(eq(feedbackResponses.id, req.params.id)).limit(1);
+    if (!row) return res.status(404).json({ success: false, error: 'Response not found' });
+    return res.json({ success: true, data: row });
+  } catch (err) {
+    console.error('[Admin] Error fetching feedback response:', err);
+    return res.status(500).json({ success: false, error: 'Failed to fetch feedback response' });
+  }
+});
+
+router.post('/feedback/:id/review', async (req, res) => {
+  try {
+    const [row] = await db.select().from(feedbackResponses).where(eq(feedbackResponses.id, req.params.id)).limit(1);
+    if (!row) return res.status(404).json({ success: false, error: 'Response not found' });
+
+    const [form] = await db.select().from(feedbackForms).where(eq(feedbackForms.id, row.formId ?? '')).limit(1);
+    if (!form) return res.status(404).json({ success: false, error: 'Form not found' });
+
+    const { reviewFeedback } = await import('../mastra/agents/feedback-reviewer');
+    const answers = JSON.parse(row.answers) as Record<string, string>;
+    const review = await reviewFeedback(form.questions, answers);
+    const [updated] = await db.update(feedbackResponses)
+      .set({ agentReview: JSON.stringify(review), agentReviewedAt: new Date(), updatedAt: new Date() })
+      .where(eq(feedbackResponses.id, req.params.id))
+      .returning();
+    return res.json({ success: true, data: updated });
+  } catch (err) {
+    console.error('[Admin] Error running feedback review:', err);
+    return res.status(500).json({ success: false, error: 'Failed to run agent review' });
+  }
+});
+
+const updateFeedbackResponseSchema = z.object({
+  status: z.enum(['new', 'reviewed', 'actioned']).optional(),
+  adminNotes: z.string().optional(),
+});
+
+router.put('/feedback/:id', async (req, res) => {
+  const parsed = updateFeedbackResponseSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ success: false, error: parsed.error.issues[0]?.message || 'Invalid request' });
+  }
+  try {
+    const [row] = await db.update(feedbackResponses)
+      .set({ ...parsed.data, updatedAt: new Date() })
+      .where(eq(feedbackResponses.id, req.params.id))
+      .returning();
+    if (!row) return res.status(404).json({ success: false, error: 'Response not found' });
+    return res.json({ success: true, data: row });
+  } catch (err) {
+    console.error('[Admin] Error updating feedback response:', err);
+    return res.status(500).json({ success: false, error: 'Failed to update feedback response' });
   }
 });
 

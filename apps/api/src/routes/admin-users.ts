@@ -21,6 +21,7 @@ router.get('/', async (req, res) => {
         displayName: users.displayName,
         role: users.role,
         isActive: users.isActive,
+        storeCode: users.storeCode,
         lastLoginAt: users.lastLoginAt,
         createdAt: users.createdAt,
       })
@@ -43,7 +44,7 @@ router.get('/', async (req, res) => {
 // POST /api/admin/:token/users - Create user
 router.post('/', async (req, res) => {
   try {
-    const { email, displayName, password, role } = req.body;
+    const { email, displayName, password, role, storeCode } = req.body;
 
     if (!email || !displayName || !password) {
       return res.status(400).json({ success: false, error: 'Email, display name, and password are required' });
@@ -61,6 +62,7 @@ router.post('/', async (req, res) => {
       passwordHash,
       displayName: displayName.trim(),
       role: role === 'admin' ? 'admin' : 'user',
+      storeCode: storeCode ? storeCode.trim().toUpperCase() : null,
     }).returning();
 
     const [space] = await db.insert(spaces).values({
@@ -96,12 +98,13 @@ router.post('/', async (req, res) => {
 // PUT /api/admin/:token/users/:id - Update user
 router.put('/:id', async (req, res) => {
   try {
-    const { displayName, role, isActive } = req.body;
+    const { displayName, role, isActive, storeCode } = req.body;
     const updates: Record<string, unknown> = { updatedAt: new Date() };
 
     if (displayName !== undefined) updates.displayName = displayName.trim();
     if (role !== undefined) updates.role = role === 'admin' ? 'admin' : 'user';
     if (isActive !== undefined) updates.isActive = isActive;
+    if (storeCode !== undefined) updates.storeCode = storeCode ? storeCode.trim().toUpperCase() : null;
 
     await db.update(users).set(updates).where(eq(users.id, req.params.id));
 

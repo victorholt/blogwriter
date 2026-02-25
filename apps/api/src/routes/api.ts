@@ -11,6 +11,7 @@ import userBlogRoutes from './user-blogs'
 import blogSharingRoutes from './blog-sharing'
 import savedVoiceRoutes from './saved-voices'
 import voiceMergeRoutes from './voice-merge'
+import feedbackRoutes from './feedback'
 import { db } from '../db'
 import { appSettings, agentModelConfigs } from '../db/schema'
 import { eq, inArray } from 'drizzle-orm'
@@ -50,6 +51,9 @@ router.use('/saved-voices', savedVoiceRoutes)
 
 // Voice Merge (requires auth)
 router.use('/voice-merge', voiceMergeRoutes)
+
+// Feedback (public, optional auth)
+router.use('/feedback', feedbackRoutes)
 
 // Admin
 router.use('/admin', adminRoutes)
@@ -134,6 +138,7 @@ router.get('/settings/init', async (_req, res) => {
           'debug_mode', 'insights_enabled',
           'blog_timeline_style', 'blog_generate_images', 'blog_generate_links', 'blog_sharing_enabled',
           'app_name', 'gtm_id',
+          'feedback_enabled', 'feedback_widget_enabled',
         ])),
       db.select({ agentId: agentModelConfigs.agentId })
         .from(agentModelConfigs)
@@ -157,6 +162,8 @@ router.get('/settings/init', async (_req, res) => {
       gtmId: map.gtm_id || '',
       guestModeEnabled,
       registrationEnabled,
+      feedbackEnabled: map.feedback_enabled === 'true',
+      feedbackWidgetEnabled: map.feedback_widget_enabled === 'true',
     });
   } catch {
     return res.json({
@@ -164,6 +171,7 @@ router.get('/settings/init', async (_req, res) => {
       timelineStyle: 'preview-bar', generateImages: true, generateLinks: true,
       sharingEnabled: false, previewAgents: 'none', appName: 'BlogWriter', gtmId: '',
       guestModeEnabled: true, registrationEnabled: true,
+      feedbackEnabled: false, feedbackWidgetEnabled: false,
     });
   }
 })

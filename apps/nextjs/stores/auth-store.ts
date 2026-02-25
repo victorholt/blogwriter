@@ -13,7 +13,7 @@ interface AuthState {
   checkAuth: () => Promise<void>;
   setAuthState: (user: AuthUser | null, guestModeEnabled: boolean, registrationEnabled: boolean) => void;
   login: (email: string, password: string) => Promise<{ error?: string }>;
-  register: (email: string, password: string, displayName: string) => Promise<{ error?: string }>;
+  register: (email: string, password: string, displayName: string, storeCode: string) => Promise<{ error?: string }>;
   logout: () => Promise<void>;
   setGuestModeEnabled: (enabled: boolean) => void;
 }
@@ -75,8 +75,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     return { error: result.error || 'Login failed' };
   },
 
-  register: async (email, password, displayName) => {
-    const result = await authApi.register(email, password, displayName);
+  register: async (email, password, displayName, storeCode) => {
+    const result = await authApi.register(email, password, displayName, storeCode);
     if (result.user) {
       set({ user: result.user, isAuthenticated: true, isGuest: false });
       return {};

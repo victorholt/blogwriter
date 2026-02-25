@@ -14,12 +14,12 @@ interface AuthResponse {
   success?: boolean;
 }
 
-export async function register(email: string, password: string, displayName: string): Promise<AuthResponse> {
+export async function register(email: string, password: string, displayName: string, storeCode: string): Promise<AuthResponse> {
   const res = await fetch(`${API_BASE}/api/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
-    body: JSON.stringify({ email, password, displayName }),
+    body: JSON.stringify({ email, password, displayName, storeCode }),
   });
   return res.json();
 }

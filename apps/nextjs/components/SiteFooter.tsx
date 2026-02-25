@@ -5,6 +5,7 @@ import { useAppSettingsStore } from '@/stores/app-settings-store';
 
 export default function SiteFooter(): React.ReactElement {
   const appName = useAppSettingsStore((s) => s.appName);
+  const feedbackEnabled = useAppSettingsStore((s) => s.feedbackEnabled);
 
   return (
     <footer className="site-footer">
@@ -16,6 +17,12 @@ export default function SiteFooter(): React.ReactElement {
         <Link href="/privacy" className="site-footer__link">Privacy</Link>
         <span className="site-footer__sep">&middot;</span>
         <Link href="/terms" className="site-footer__link">Terms</Link>
+        {feedbackEnabled && (
+          <>
+            <span className="site-footer__sep">&middot;</span>
+            <Link href="/feedback" className="site-footer__link">Share Feedback</Link>
+          </>
+        )}
       </div>
     </footer>
   );

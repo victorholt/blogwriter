@@ -2,6 +2,7 @@ import nodemailer from 'nodemailer';
 import { db } from '../db';
 import { appSettings } from '../db/schema';
 import { inArray } from 'drizzle-orm';
+import { renderTemplate, EMAIL_TEMPLATES } from './email-templates';
 
 interface SmtpConfig {
   host: string;
@@ -85,54 +86,107 @@ function createTransporter(config: SmtpConfig): nodemailer.Transporter {
   return nodemailer.createTransport(options);
 }
 
-export async function sendPasswordResetEmail(toEmail: string, resetToken: string): Promise<boolean> {
+// ---------------------------------------------------------------------------
+// Helper to resolve runtime vars (appUrl, appName)
+// ---------------------------------------------------------------------------
+
+function getAppUrl(): string {
+  return process.env.APP_URL || process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:3000';
+}
+
+async function getAppName(): Promise<string> {
+  const rows = await db.select().from(appSettings).where(inArray(appSettings.key, ['app_name']));
+  return rows[0]?.value || 'BrideWrite';
+}
+
+// ---------------------------------------------------------------------------
+// Send helpers
+// ---------------------------------------------------------------------------
+
+async function sendEmail(
+  toEmail: string,
+  subject: string,
+  html: string,
+  text: string,
+): Promise<boolean> {
   const config = await getSmtpConfig();
   if (!config) {
-    console.warn('[Email] SMTP not configured, skipping password reset email');
+    console.warn('[Email] SMTP not configured, skipping email');
     return false;
   }
-
-  const appUrl = process.env.APP_URL || process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:3000';
-  const resetUrl = `${appUrl}/reset-password?token=${resetToken}`;
 
   try {
     const transporter = createTransporter(config);
     await transporter.sendMail({
       from: `"${config.fromName}" <${config.fromEmail}>`,
       to: toEmail,
-      subject: 'Reset your BlogWriter password',
-      text: `You requested a password reset. Click this link to set a new password:\n\n${resetUrl}\n\nThis link expires in 1 hour. If you didn't request this, you can ignore this email.`,
-      html: `
-        <p>You requested a password reset.</p>
-        <p><a href="${resetUrl}">Click here to set a new password</a></p>
-        <p>This link expires in 1 hour. If you didn't request this, you can ignore this email.</p>
-      `,
+      subject,
+      text,
+      html,
     });
     return true;
   } catch (err) {
-    console.error('[Email] Failed to send password reset email:', err);
+    console.error('[Email] Failed to send email:', err);
     return false;
   }
 }
 
-export async function sendBlogSharedNotification(toEmail: string, fromName: string, blogTitle: string): Promise<boolean> {
-  const config = await getSmtpConfig();
-  if (!config) return false;
+// ---------------------------------------------------------------------------
+// Public send functions
+// ---------------------------------------------------------------------------
 
-  try {
-    const transporter = createTransporter(config);
-    await transporter.sendMail({
-      from: `"${config.fromName}" <${config.fromEmail}>`,
-      to: toEmail,
-      subject: `${fromName} shared a blog with you`,
-      text: `${fromName} shared the blog "${blogTitle}" with you. Log in to BlogWriter to view it.`,
-      html: `<p><strong>${fromName}</strong> shared the blog "<em>${blogTitle}</em>" with you.</p><p>Log in to BlogWriter to view it.</p>`,
-    });
-    return true;
-  } catch (err) {
-    console.error('[Email] Failed to send blog shared notification:', err);
-    return false;
-  }
+export async function sendPasswordResetEmail(toEmail: string, resetToken: string): Promise<boolean> {
+  const appUrl = getAppUrl();
+  const appName = await getAppName();
+  const resetUrl = `${appUrl}/reset-password?token=${resetToken}`;
+
+  const rendered = renderTemplate('password-reset', { appName, resetUrl });
+  if (!rendered) return false;
+
+  return sendEmail(toEmail, rendered.subject, rendered.html, rendered.text);
+}
+
+export async function sendBlogSharedNotification(toEmail: string, fromName: string, blogTitle: string): Promise<boolean> {
+  const appUrl = getAppUrl();
+  const appName = await getAppName();
+
+  const rendered = renderTemplate('blog-shared', { appName, fromName, blogTitle, appUrl });
+  if (!rendered) return false;
+
+  return sendEmail(toEmail, rendered.subject, rendered.html, rendered.text);
+}
+
+export async function sendWelcomeEmail(toEmail: string, displayName: string): Promise<boolean> {
+  const appUrl = getAppUrl();
+  const appName = await getAppName();
+
+  const rendered = renderTemplate('welcome', { appName, displayName, appUrl });
+  if (!rendered) return false;
+
+  return sendEmail(toEmail, rendered.subject, rendered.html, rendered.text);
+}
+
+export async function sendPasswordChangedEmail(toEmail: string): Promise<boolean> {
+  const appName = await getAppName();
+
+  const rendered = renderTemplate('password-changed', { appName });
+  if (!rendered) return false;
+
+  return sendEmail(toEmail, rendered.subject, rendered.html, rendered.text);
+}
+
+/** Send any template by ID with the given vars — used by the admin test endpoint. */
+export async function sendTemplateEmail(toEmail: string, templateId: string, vars?: Record<string, string>): Promise<boolean> {
+  const tpl = EMAIL_TEMPLATES[templateId];
+  if (!tpl) return false;
+
+  const appName = await getAppName();
+  const appUrl = getAppUrl();
+  const merged = { appName, appUrl, ...tpl.sampleVars, ...vars };
+  const rendered = renderTemplate(templateId, merged);
+  if (!rendered) return false;
+
+  return sendEmail(toEmail, rendered.subject, rendered.html, rendered.text);
 }
 
 export async function testSmtpConnection(): Promise<{ success: boolean; error?: string }> {

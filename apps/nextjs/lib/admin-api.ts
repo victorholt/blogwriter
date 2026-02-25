@@ -322,6 +322,34 @@ export async function testSmtp(): Promise<ApiResponse<{ message: string }>> {
   return res.json();
 }
 
+// --- Email Templates ---
+
+export interface EmailTemplatePreview {
+  id: string;
+  name: string;
+  description: string;
+  subject: string;
+  html: string;
+}
+
+export async function fetchEmailTemplates(): Promise<ApiResponse<EmailTemplatePreview[]>> {
+  const res = await fetch(`${API_BASE}/api/admin/email/templates`, { credentials: 'include' });
+  return res.json();
+}
+
+export async function sendTestEmail(
+  templateId: string,
+  to: string,
+): Promise<ApiResponse<{ message: string }>> {
+  const res = await fetch(`${API_BASE}/api/admin/email/templates/${templateId}/test`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ to }),
+  });
+  return res.json();
+}
+
 // --- Voice Presets ---
 
 export interface AdminVoicePreset {
@@ -373,6 +401,115 @@ export async function deleteVoicePreset(id: number): Promise<ApiResponse<{ delet
     credentials: 'include',
   });
   return res.json();
+}
+
+// --- Feedback ---
+
+export interface FeedbackResponseItem {
+  id: string;
+  formSlug: string;
+  storeCode: string | null;
+  answers: string; // JSON
+  agentReview: string | null; // JSON: { flagged, flags[], summary }
+  agentReviewedAt: string | null;
+  status: string; // 'new' | 'reviewed' | 'actioned'
+  adminNotes: string | null;
+  createdAt: string;
+}
+
+export interface FeedbackFormItem {
+  id: string;
+  name: string;
+  slug: string;
+  type: string;
+  description: string | null;
+  questions: string; // JSON
+  isActive: boolean;
+  isDefault: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FeedbackStats {
+  total: number;
+  new: number;
+  reviewed: number;
+  actioned: number;
+  flagged: number;
+}
+
+export async function fetchFeedbackResponse(id: string): Promise<ApiResponse<FeedbackResponseItem>> {
+  const res = await fetch(`${API_BASE}/api/admin/feedback/${id}`, { credentials: 'include' });
+  return res.json();
+}
+
+export async function fetchFeedbackResponses(
+  page = 1,
+  filters: { status?: string; storeCode?: string; formSlug?: string } = {},
+): Promise<ApiResponse<{ responses: FeedbackResponseItem[]; totalPages: number; total: number }>> {
+  const params = new URLSearchParams({ page: String(page) });
+  if (filters.status) params.set('status', filters.status);
+  if (filters.storeCode) params.set('storeCode', filters.storeCode);
+  if (filters.formSlug) params.set('formSlug', filters.formSlug);
+  const res = await fetch(`${API_BASE}/api/admin/feedback?${params}`, { credentials: 'include' });
+  return res.json();
+}
+
+export async function fetchFeedbackStats(): Promise<ApiResponse<FeedbackStats>> {
+  const res = await fetch(`${API_BASE}/api/admin/feedback/stats`, { credentials: 'include' });
+  return res.json();
+}
+
+export async function fetchFeedbackForms(): Promise<ApiResponse<FeedbackFormItem[]>> {
+  const res = await fetch(`${API_BASE}/api/admin/feedback/forms`, { credentials: 'include' });
+  return res.json();
+}
+
+export async function updateFeedbackResponse(
+  id: string,
+  data: { status?: string; adminNotes?: string },
+): Promise<ApiResponse<unknown>> {
+  const res = await fetch(`${API_BASE}/api/admin/feedback/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(data),
+  });
+  return res.json();
+}
+
+export async function triggerFeedbackReview(id: string): Promise<ApiResponse<unknown>> {
+  const res = await fetch(`${API_BASE}/api/admin/feedback/${id}/review`, {
+    method: 'POST',
+    credentials: 'include',
+  });
+  return res.json();
+}
+
+export async function updateFeedbackForm(
+  id: string,
+  data: { name?: string; description?: string; questions?: string; isActive?: boolean; isDefault?: boolean },
+): Promise<ApiResponse<unknown>> {
+  const res = await fetch(`${API_BASE}/api/admin/feedback/forms/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(data),
+  });
+  return res.json();
+}
+
+export async function exportFeedbackForm(id: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/api/admin/feedback/forms/${id}/export`, { credentials: 'include' });
+  if (!res.ok) return;
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `feedback-form-${id}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 export async function formatVoicePresetStream(

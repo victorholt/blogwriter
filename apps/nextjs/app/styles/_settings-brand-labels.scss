@@ -1,0 +1,129 @@
+// ============================================================
+// Settings — Brand Labels Section
+// ============================================================
+
+.brand-labels {
+  &__card {
+    border: 1px solid var(--color-gray-200);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    margin-bottom: 12px;
+    background: white;
+  }
+
+  &__card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  &__card-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__card-slug {
+    font-family: monospace;
+    font-size: 12px;
+    color: var(--color-gray-400);
+    flex-shrink: 0;
+  }
+
+  &__card-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  &__card-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  &__tag-field {
+    .settings-field__label {
+      font-size: 11px;
+      margin-bottom: 4px;
+    }
+  }
+
+  &__card-footer {
+    margin-top: 12px;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  &__desc-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--color-gray-500);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    margin-bottom: 4px;
+
+    &:hover {
+      color: var(--color-gray-700);
+    }
+  }
+
+  &__desc-textarea {
+    width: 100%;
+    min-height: 72px;
+    padding: 8px 10px;
+    font-size: 13px;
+    line-height: 1.5;
+    border: 1px solid var(--color-gray-200);
+    border-radius: var(--radius-md);
+    background: var(--color-gray-50);
+    color: var(--color-gray-700);
+    outline: none;
+    resize: vertical;
+
+    &:focus {
+      border-color: var(--color-blue);
+      background: white;
+    }
+
+    &::placeholder {
+      color: var(--color-gray-400);
+    }
+  }
+
+  &__name-input {
+    width: 100%;
+    max-width: 240px;
+    padding: 6px 10px;
+    font-size: 14px;
+    font-weight: 600;
+    border: 1px solid var(--color-gray-200);
+    border-radius: var(--radius-md);
+    background: white;
+    color: var(--color-gray-700);
+    outline: none;
+
+    &:focus {
+      border-color: var(--color-blue);
+    }
+  }
+
+  &__create-row {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--color-gray-200);
+  }
+}

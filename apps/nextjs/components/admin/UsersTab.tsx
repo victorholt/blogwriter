@@ -11,6 +11,7 @@ interface UserRow {
   displayName: string;
   role: string;
   isActive: boolean;
+  storeCode: string | null;
   lastLoginAt: string | null;
   createdAt: string;
 }
@@ -21,11 +22,13 @@ export default function UsersTab(): React.ReactElement {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [createForm, setCreateForm] = useState({ email: '', displayName: '', password: '', role: 'user' });
+  const [createForm, setCreateForm] = useState({ email: '', displayName: '', password: '', role: 'user', storeCode: '' });
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
   const [resetPasswordUserId, setResetPasswordUserId] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState('');
+  // Track per-row storeCode edits
+  const [storeCodeEdits, setStoreCodeEdits] = useState<Record<string, string>>({});
 
   const loadUsers = useCallback(async (p: number) => {
     setLoading(true);
@@ -35,6 +38,12 @@ export default function UsersTab(): React.ReactElement {
       if (data.success && data.data) {
         setUsers(data.data.users);
         setTotalPages(data.data.totalPages);
+        // Seed local storeCode edit state
+        const edits: Record<string, string> = {};
+        for (const u of data.data.users) {
+          edits[u.id] = u.storeCode ?? '';
+        }
+        setStoreCodeEdits(edits);
       }
     } catch { /* ignore */ }
     setLoading(false);
@@ -50,12 +59,15 @@ export default function UsersTab(): React.ReactElement {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify(createForm),
+        body: JSON.stringify({
+          ...createForm,
+          storeCode: createForm.storeCode.trim().toUpperCase() || null,
+        }),
       });
       const data = await res.json();
       if (data.success) {
         setShowCreateForm(false);
-        setCreateForm({ email: '', displayName: '', password: '', role: 'user' });
+        setCreateForm({ email: '', displayName: '', password: '', role: 'user', storeCode: '' });
         loadUsers(page);
       } else {
         setError(data.error || 'Failed to create user');
@@ -105,6 +117,20 @@ export default function UsersTab(): React.ReactElement {
     loadUsers(page);
   }
 
+  async function handleStoreCodeBlur(userId: string): Promise<void> {
+    const raw = storeCodeEdits[userId] ?? '';
+    const value = raw.trim().toUpperCase() || null;
+    await fetch(`${API_BASE}/api/admin/users/${userId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ storeCode: value }),
+    });
+    // Update local row to reflect saved value
+    setUsers((prev) => prev.map((u) => u.id === userId ? { ...u, storeCode: value } : u));
+    setStoreCodeEdits((prev) => ({ ...prev, [userId]: value ?? '' }));
+  }
+
   return (
     <section className="settings-section">
       <div className="users-tab__header">
@@ -138,6 +164,10 @@ export default function UsersTab(): React.ReactElement {
                 <input className="input" type="password" placeholder="Min 8 characters" value={createForm.password} onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })} />
               </div>
               <div className="settings-field settings-field--sm">
+                <label className="settings-field__label">Store Code</label>
+                <input className="input" placeholder="e.g. ABC123" value={createForm.storeCode} onChange={(e) => setCreateForm({ ...createForm, storeCode: e.target.value.toUpperCase() })} />
+              </div>
+              <div className="settings-field settings-field--sm">
                 <label className="settings-field__label">Role</label>
                 <select className="input" value={createForm.role} onChange={(e) => setCreateForm({ ...createForm, role: e.target.value })}>
                   <option value="user">User</option>
@@ -169,6 +199,7 @@ export default function UsersTab(): React.ReactElement {
             <thead>
               <tr>
                 <th className="users-tab__th">User</th>
+                <th className="users-tab__th">Store Code</th>
                 <th className="users-tab__th">Role</th>
                 <th className="users-tab__th">Status</th>
                 <th className="users-tab__th">Last Login</th>
@@ -181,6 +212,16 @@ export default function UsersTab(): React.ReactElement {
                   <td className="users-tab__td">
                     <span className="users-tab__name">{user.displayName}</span>
                     <span className="users-tab__email">{user.email}</span>
+                  </td>
+                  <td className="users-tab__td">
+                    <input
+                      className="users-tab__store-code-input"
+                      type="text"
+                      value={storeCodeEdits[user.id] ?? ''}
+                      placeholder="—"
+                      onChange={(e) => setStoreCodeEdits((prev) => ({ ...prev, [user.id]: e.target.value.toUpperCase() }))}
+                      onBlur={() => handleStoreCodeBlur(user.id)}
+                    />
                   </td>
                   <td className="users-tab__td">
                     <select

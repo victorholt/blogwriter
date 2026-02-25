@@ -4,7 +4,7 @@ import { users, spaces, spaceMembers } from '../db/schema';
 import { eq } from 'drizzle-orm';
 import { hashPassword, verifyPassword, setAuthCookies, clearAuthCookies } from '../services/auth';
 import { requireAuth } from '../middleware/auth';
-import { sendPasswordResetEmail } from '../services/email';
+import { sendPasswordResetEmail, sendWelcomeEmail, sendPasswordChangedEmail } from '../services/email';
 import { logAudit } from '../services/audit';
 import { isRegistrationEnabled } from '../services/site-settings';
 
@@ -18,10 +18,14 @@ router.post('/register', async (req, res) => {
       return res.status(403).json({ error: 'Registration is currently disabled' });
     }
 
-    const { email, password, displayName } = req.body;
+    const { email, password, displayName, storeCode } = req.body;
 
     if (!email || !password || !displayName) {
       return res.status(400).json({ error: 'Email, password, and display name are required' });
+    }
+
+    if (!storeCode || typeof storeCode !== 'string' || !storeCode.trim()) {
+      return res.status(400).json({ error: 'Store code is required' });
     }
 
     if (typeof password !== 'string' || password.length < 8) {
@@ -48,6 +52,7 @@ router.post('/register', async (req, res) => {
       email: emailLower,
       passwordHash,
       displayName: displayName.trim(),
+      storeCode: storeCode.trim().toUpperCase(),
       role: 'user',
     }).returning();
 
@@ -67,6 +72,9 @@ router.post('/register', async (req, res) => {
     // Set cookies
     setAuthCookies(res, { userId: user.id, email: user.email, role: user.role });
     logAudit({ userId: user.id, spaceId: space.id, action: 'user.register', resourceType: 'user', resourceId: user.id, req });
+
+    // Send welcome email (fire-and-forget)
+    sendWelcomeEmail(user.email, user.displayName).catch(() => {});
 
     return res.status(201).json({
       user: {
@@ -194,6 +202,9 @@ router.post('/change-password', requireAuth, async (req, res) => {
     const passwordHash = await hashPassword(newPassword);
     await db.update(users).set({ passwordHash, updatedAt: new Date() }).where(eq(users.id, req.user!.id));
 
+    // Send confirmation email (fire-and-forget)
+    sendPasswordChangedEmail(req.user!.email).catch(() => {});
+
     return res.json({ success: true });
   } catch (err) {
     console.error('[Auth] Change password error:', err);
@@ -283,12 +294,17 @@ router.post('/reset-password', async (req, res) => {
     }
 
     const passwordHash = await hashPassword(newPassword);
-    await db.update(users).set({
+    const [updated] = await db.update(users).set({
       passwordHash,
       passwordResetToken: null,
       passwordResetExpiresAt: null,
       updatedAt: new Date(),
-    }).where(eq(users.id, matchedUserId));
+    }).where(eq(users.id, matchedUserId)).returning({ email: users.email });
+
+    // Send confirmation email (fire-and-forget)
+    if (updated?.email) {
+      sendPasswordChangedEmail(updated.email).catch(() => {});
+    }
 
     return res.json({ success: true });
   } catch (err) {

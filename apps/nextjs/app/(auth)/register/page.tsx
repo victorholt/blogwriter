@@ -8,6 +8,7 @@ export default function RegisterPage(): React.ReactElement {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
+  const [storeCode, setStoreCode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const register = useAuthStore((s) => s.register);
@@ -47,7 +48,7 @@ export default function RegisterPage(): React.ReactElement {
     setError('');
     setLoading(true);
 
-    const result = await register(email, password, displayName);
+    const result = await register(email, password, displayName, storeCode);
     setLoading(false);
 
     if (result.error) {
@@ -72,6 +73,16 @@ export default function RegisterPage(): React.ReactElement {
               onChange={(e) => setDisplayName(e.target.value)}
               required
               autoFocus
+            />
+          </label>
+          <label className="auth-card__label">
+            Store Code
+            <input
+              className="auth-card__input"
+              type="text"
+              value={storeCode}
+              onChange={(e) => setStoreCode(e.target.value.toUpperCase())}
+              required
             />
           </label>
           <label className="auth-card__label">

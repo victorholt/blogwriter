@@ -189,6 +189,7 @@ export interface InitSettings {
   gtmId: string;
   guestModeEnabled: boolean;
   registrationEnabled: boolean;
+  feedbackEnabled: boolean;
 }
 
 const INIT_DEFAULTS: InitSettings = {
@@ -196,6 +197,7 @@ const INIT_DEFAULTS: InitSettings = {
   timelineStyle: 'preview-bar', generateImages: true, generateLinks: true,
   sharingEnabled: false, previewAgents: 'none', appName: 'BlogWriter', gtmId: '',
   guestModeEnabled: true, registrationEnabled: true,
+  feedbackEnabled: false,
 };
 
 export async function fetchInitSettings(): Promise<InitSettings> {

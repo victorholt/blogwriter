@@ -11,6 +11,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
   const setAuthState = useAuthStore((s) => s.setAuthState);
   const setAppName = useAppSettingsStore((s) => s.setAppName);
   const setGtmId = useAppSettingsStore((s) => s.setGtmId);
+  const setFeedbackEnabled = useAppSettingsStore((s) => s.setFeedbackEnabled);
   const applyInitSettings = useWizardStore((s) => s.applyInitSettings);
 
   useEffect(() => {
@@ -27,12 +28,13 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
         // Populate app settings store
         setAppName(settings.appName);
         setGtmId(settings.gtmId);
+        setFeedbackEnabled(settings.feedbackEnabled);
 
         // Populate wizard store with blog/debug settings
         applyInitSettings(settings);
       },
     );
-  }, [setAuthState, setAppName, setGtmId, applyInitSettings]);
+  }, [setAuthState, setAppName, setGtmId, setFeedbackEnabled, applyInitSettings]);
 
   return <>{children}</>;
 }
