@@ -86,6 +86,43 @@ const PILOT_SURVEY_QUESTIONS = JSON.stringify([
   ]},
 ]);
 
+async function ensureFeedbackTables(): Promise<void> {
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS "feedback_forms" (
+      "id"          text PRIMARY KEY NOT NULL,
+      "name"        text NOT NULL,
+      "slug"        text NOT NULL UNIQUE,
+      "type"        text NOT NULL DEFAULT 'form',
+      "description" text,
+      "questions"   text NOT NULL DEFAULT '[]',
+      "is_active"   boolean NOT NULL DEFAULT true,
+      "is_default"  boolean NOT NULL DEFAULT false,
+      "sort_order"  integer NOT NULL DEFAULT 0,
+      "created_at"  timestamp NOT NULL DEFAULT now(),
+      "updated_at"  timestamp NOT NULL DEFAULT now()
+    )
+  `);
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS "feedback_responses" (
+      "id"                text PRIMARY KEY NOT NULL,
+      "form_id"           text REFERENCES "feedback_forms"("id") ON DELETE SET NULL,
+      "form_slug"         text NOT NULL,
+      "user_id"           text REFERENCES "users"("id") ON DELETE SET NULL,
+      "store_code"        text,
+      "answers"           text NOT NULL,
+      "agent_review"      text,
+      "agent_reviewed_at" timestamp,
+      "status"            text NOT NULL DEFAULT 'new',
+      "admin_notes"       text,
+      "created_at"        timestamp NOT NULL DEFAULT now(),
+      "updated_at"        timestamp NOT NULL DEFAULT now()
+    )
+  `);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS "idx_feedback_responses_form"    ON "feedback_responses"("form_id")`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS "idx_feedback_responses_status"  ON "feedback_responses"("status")`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS "idx_feedback_responses_created" ON "feedback_responses"("created_at")`);
+}
+
 export async function seedDatabase(): Promise<void> {
   console.log('[Seed] Checking for default data...');
 
@@ -120,6 +157,9 @@ export async function seedDatabase(): Promise<void> {
       .onConflictDoNothing({ target: brandLabels.slug });
   }
   console.log(`[Seed] Brand labels: ${DEFAULT_BRAND_LABELS.length} defaults ensured`);
+
+  // Ensure feedback tables exist (drizzle-kit push may fail in some envs)
+  await ensureFeedbackTables();
 
   // Seed pilot feedback form (ON CONFLICT DO NOTHING on slug)
   await db.insert(feedbackForms)
