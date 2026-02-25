@@ -33,6 +33,7 @@ Commands:
     migrate     Run pending migrations
     generate    Generate migrations from schema changes
     push        Push schema changes directly (no migration files)
+    seed        Run the database seeder (inserts defaults idempotently)
 
 Examples:
     ./cli db info
@@ -40,6 +41,7 @@ Examples:
     ./cli db migrate
     ./cli db generate
     ./cli db push
+    ./cli db seed
 
 EOF
 }
@@ -122,6 +124,15 @@ case "${DB_COMMAND}" in
         info "Pushing schema changes directly..."
         run_drizzle db:push
         success "Schema pushed!"
+        ;;
+    seed)
+        info "Running database seeder..."
+        if [ "${ENV}" = "local" ]; then
+            dc exec api npm run db:seed
+        else
+            COMPOSE_PROFILES="${COMPOSE_PROFILES:+${COMPOSE_PROFILES},}tools" dc run --build --rm api-migrations npm run db:seed
+        fi
+        success "Seed completed!"
         ;;
     help|--help|-h|"")
         show_db_help

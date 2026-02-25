@@ -1,5 +1,5 @@
 import { db } from './index';
-import { agentModelConfigs, appSettings, brandLabels, users, spaces, spaceMembers } from './schema';
+import { agentModelConfigs, appSettings, brandLabels, feedbackForms, users, spaces, spaceMembers } from './schema';
 import { sql, eq } from 'drizzle-orm';
 import { hashPassword } from '../services/auth';
 
@@ -45,7 +45,46 @@ const DEFAULT_SETTINGS = [
   { key: 'smtp_encryption', value: 'none' },
   { key: 'smtp_auto_tls', value: 'true' },
   { key: 'smtp_auth', value: 'true' },
+  { key: 'feedback_enabled', value: 'false' },
+  { key: 'feedback_widget_enabled', value: 'false' },
+  { key: 'feedback_agent_enabled', value: 'false' },
 ];
+
+const PILOT_SURVEY_QUESTIONS = JSON.stringify([
+  { id: 'contentWorkflow', section: 1, required: true, type: 'radio', question: 'How does your team currently handle blog content?', options: [
+    { value: 'established', label: 'Established', description: 'We follow a consistent, defined content calendar.' },
+    { value: 'ad_hoc', label: 'Ad Hoc', description: 'We create content when we have time or inspiration.' },
+    { value: 'none', label: 'None', description: 'We rarely or never publish blog content.' },
+  ]},
+  { id: 'draftReadiness', section: 1, required: true, type: 'radio', question: 'How close was the AI\'s draft to being "ready to publish"?', options: [
+    { value: 'ready', label: 'Ready to Ship', description: 'I could post this with zero or very minor tweaks.' },
+    { value: 'polishing', label: 'Polishing Needed', description: 'I made light edits to align it with my brand.' },
+    { value: 'draft', label: 'Draft Only', description: 'I used it as a structural outline but rewrote significant portions.' },
+    { value: 'not_usable', label: 'Not Usable', description: 'The content did not meet my quality or brand standards.' },
+  ]},
+  { id: 'timeComparison', section: 1, required: true, type: 'radio', question: 'Compared to your usual way of working, using this tool felt:', options: [
+    { value: 'much_faster', label: 'Much faster', description: 'Saved hours of work' },
+    { value: 'somewhat_faster', label: 'Somewhat faster', description: 'Saved some time' },
+    { value: 'neutral', label: 'Neutral', description: 'Took about the same effort' },
+    { value: 'more_work', label: 'More work', description: 'Editing/fixing took longer than writing from scratch' },
+  ]},
+  { id: 'brandConfidence', section: 1, required: true, type: 'radio', question: 'How confident would you feel letting this tool represent your store\'s brand?', options: [
+    { value: 'high', label: 'High Confidence', description: 'I trust the tone and accuracy.' },
+    { value: 'moderate', label: 'Moderate Confidence', description: 'I\'d use it, but I\'d always check the \'vibe\' first.' },
+    { value: 'low', label: 'Low Confidence', description: 'I\'m hesitant; it doesn\'t quite sound like us yet.' },
+    { value: 'none', label: 'No Confidence', description: 'I wouldn\'t trust it to represent our brand.' },
+  ]},
+  { id: 'improvement', section: 2, required: false, type: 'textarea', question: 'If you could change one specific thing to make this tool more helpful, what would it be?' },
+  { id: 'role', section: 3, required: true, type: 'radio', question: 'Your Role:', options: [
+    { value: 'owner', label: 'Store Owner' },
+    { value: 'manager', label: 'Store Manager / Employee' },
+    { value: 'corporate', label: 'Corporate Team' },
+  ]},
+  { id: 'businessType', section: 3, required: true, type: 'radio', question: 'Business Type:', options: [
+    { value: 'single', label: 'Single Boutique Location' },
+    { value: 'multi', label: 'Multi-Location / Regional Group' },
+  ]},
+]);
 
 export async function seedDatabase(): Promise<void> {
   console.log('[Seed] Checking for default data...');
@@ -81,6 +120,21 @@ export async function seedDatabase(): Promise<void> {
       .onConflictDoNothing({ target: brandLabels.slug });
   }
   console.log(`[Seed] Brand labels: ${DEFAULT_BRAND_LABELS.length} defaults ensured`);
+
+  // Seed pilot feedback form (ON CONFLICT DO NOTHING on slug)
+  await db.insert(feedbackForms)
+    .values({
+      name: 'Pilot Survey',
+      slug: 'pilot-v1',
+      type: 'form',
+      description: 'Initial pilot feedback survey for boutique bridal stores.',
+      questions: PILOT_SURVEY_QUESTIONS,
+      isActive: true,
+      isDefault: true,
+      sortOrder: 0,
+    })
+    .onConflictDoNothing({ target: feedbackForms.slug });
+  console.log('[Seed] Feedback forms: pilot survey ensured');
 
   // Ensure admin user exists with admin role (idempotent)
   const adminEmail = (process.env.ADMIN_EMAIL || 'admin@blogwriter.local').toLowerCase().trim();
