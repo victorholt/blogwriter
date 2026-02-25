@@ -1132,6 +1132,30 @@ router.get('/feedback/stats', async (_req, res) => {
   }
 });
 
+router.get('/feedback/pending-review-ids', async (req, res) => {
+  try {
+    const limit = Math.min(200, Math.max(1, parseInt(req.query.limit as string) || 50));
+    const [totalRow, rows] = await Promise.all([
+      db.select({ count: sql<number>`count(*)` }).from(feedbackResponses).where(isNull(feedbackResponses.agentReviewedAt)),
+      db.select({ id: feedbackResponses.id })
+        .from(feedbackResponses)
+        .where(isNull(feedbackResponses.agentReviewedAt))
+        .orderBy(asc(feedbackResponses.createdAt))
+        .limit(limit),
+    ]);
+    return res.json({
+      success: true,
+      data: {
+        ids: rows.map((r) => r.id),
+        total: Number(totalRow[0]?.count || 0),
+      },
+    });
+  } catch (err) {
+    console.error('[Admin] Error fetching pending review IDs:', err);
+    return res.status(500).json({ success: false, error: 'Failed to fetch pending review IDs' });
+  }
+});
+
 router.get('/feedback/:id', async (req, res) => {
   try {
     const [row] = await db.select().from(feedbackResponses).where(eq(feedbackResponses.id, req.params.id)).limit(1);

@@ -479,6 +479,11 @@ export async function updateFeedbackResponse(
   return res.json();
 }
 
+export async function fetchPendingReviewIds(limit: number): Promise<ApiResponse<{ ids: string[]; total: number }>> {
+  const res = await fetch(`${API_BASE}/api/admin/feedback/pending-review-ids?limit=${limit}`, { credentials: 'include' });
+  return res.json();
+}
+
 export async function triggerFeedbackReview(id: string): Promise<ApiResponse<unknown>> {
   const res = await fetch(`${API_BASE}/api/admin/feedback/${id}/review`, {
     method: 'POST',

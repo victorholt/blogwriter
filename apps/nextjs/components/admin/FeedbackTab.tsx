@@ -1,19 +1,20 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import {
-  Loader2, ChevronRight, AlertTriangle, Bot, Download,
+  Loader2, ChevronRight, AlertTriangle, Bot, Download, Play, CheckCircle2,
 } from 'lucide-react';
 import Toggle from '@/components/ui/Toggle';
 import SearchSelect from '@/components/ui/SearchSelect';
+import Modal from '@/components/ui/Modal';
 import type { SearchSelectGroup } from '@/components/ui/SearchSelect';
 import { useSettings } from './SettingsContext';
 import {
   fetchFeedbackResponses,
   fetchFeedbackStats,
   fetchFeedbackForms,
-  updateFeedbackResponse,
+  fetchPendingReviewIds,
   triggerFeedbackReview,
   exportFeedbackForm,
   updateFeedbackForm,
@@ -49,14 +50,7 @@ function parseQuestions(raw: string): ParsedQuestion[] {
   try { return JSON.parse(raw); } catch { return []; }
 }
 
-function getAnswerLabel(questions: ParsedQuestion[], questionId: string, value: string): string {
-  const q = questions.find((x) => x.id === questionId);
-  if (!q) return value;
-  const opt = q.options?.find((o) => o.value === value);
-  return opt?.label ?? value;
-}
-
-// ---- Response Row (link to detail page) ----
+// ---- Response Row ----
 
 interface ResponseRowProps {
   response: FeedbackResponseItem;
@@ -113,7 +107,35 @@ function ResponseRow({ response, questions }: ResponseRowProps): React.ReactElem
   );
 }
 
+// ---- Batch review progress bar ----
+
+interface ReviewProgressProps {
+  done: number;
+  total: number;
+  currentLabel?: string;
+}
+
+function ReviewProgress({ done, total, currentLabel }: ReviewProgressProps): React.ReactElement {
+  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+  return (
+    <div className="feedback-tab__batch-progress">
+      <div className="feedback-tab__batch-progress-bar">
+        <div className="feedback-tab__batch-progress-fill" style={{ width: `${pct}%` }} />
+      </div>
+      <div className="feedback-tab__batch-progress-text">
+        <Loader2 size={12} className="spin" style={{ flexShrink: 0 }} />
+        {currentLabel
+          ? <span>Reviewing {done + 1} of {total}&hairsp;&mdash;&hairsp;{currentLabel}</span>
+          : <span>Reviewed {done} of {total}</span>
+        }
+      </div>
+    </div>
+  );
+}
+
 // ---- Main Tab ----
+
+const BATCH_OPTIONS = [5, 10, 20, 50] as const;
 
 export default function FeedbackTab(): React.ReactElement {
   const { allSettings, setAllSettings } = useSettings();
@@ -129,6 +151,15 @@ export default function FeedbackTab(): React.ReactElement {
   const [statusFilter, setStatusFilter] = useState('');
   const [storeCodeFilter, setStoreCodeFilter] = useState('');
   const [formSlugFilter, setFormSlugFilter] = useState('');
+
+  // Batch review
+  const [batchSize, setBatchSize] = useState<number>(10);
+  const [reviewing, setReviewing] = useState(false);
+  const [reviewProgress, setReviewProgress] = useState<{ done: number; total: number; currentLabel?: string }>({ done: 0, total: 0 });
+  const [showContinueModal, setShowContinueModal] = useState(false);
+  const [remainingAfterBatch, setRemainingAfterBatch] = useState(0);
+  const [reviewDoneMsg, setReviewDoneMsg] = useState('');
+  const reviewAbortRef = useRef(false);
 
   // Form editing
   const [editingFormId, setEditingFormId] = useState<string | null>(null);
@@ -146,10 +177,14 @@ export default function FeedbackTab(): React.ReactElement {
     setLoading(false);
   }, []);
 
-  useEffect(() => {
+  const refreshStats = useCallback(() => {
     fetchFeedbackStats().then((r) => { if (r.success && r.data) setStats(r.data); }).catch(() => {});
-    fetchFeedbackForms().then((r) => { if (r.success && r.data) setForms(r.data); }).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    refreshStats();
+    fetchFeedbackForms().then((r) => { if (r.success && r.data) setForms(r.data); }).catch(() => {});
+  }, [refreshStats]);
 
   useEffect(() => {
     loadResponses(page, statusFilter, storeCodeFilter, formSlugFilter);
@@ -167,7 +202,6 @@ export default function FeedbackTab(): React.ReactElement {
     setResponses((prev) => prev.map((r) => r.id === id ? { ...r, ...patch } : r));
   }
 
-  // Get questions for a given form slug (for label lookup)
   function getQuestionsForSlug(slug: string): ParsedQuestion[] {
     const form = forms.find((f) => f.slug === slug);
     if (!form) return [];
@@ -182,7 +216,6 @@ export default function FeedbackTab(): React.ReactElement {
 
   async function handleSaveFormQuestions(formId: string): Promise<void> {
     setFormSaveError('');
-    // Validate JSON
     try {
       JSON.parse(editingQuestionsJson);
     } catch {
@@ -205,33 +238,81 @@ export default function FeedbackTab(): React.ReactElement {
     setForms((prev) => prev.map((f) => f.id === form.id ? { ...f, isActive: !form.isActive } : f));
   }
 
+  async function runBatch(ids: string[]): Promise<void> {
+    reviewAbortRef.current = false;
+    setReviewing(true);
+    setReviewProgress({ done: 0, total: ids.length });
+    setReviewDoneMsg('');
+
+    for (let i = 0; i < ids.length; i++) {
+      if (reviewAbortRef.current) break;
+      const id = ids[i];
+      const questions = responses.find((r) => r.id === id);
+      setReviewProgress({ done: i, total: ids.length, currentLabel: questions?.storeCode || `#${i + 1}` });
+      await triggerFeedbackReview(id);
+      setReviewProgress({ done: i + 1, total: ids.length });
+    }
+
+    setReviewing(false);
+
+    // Refresh data
+    await Promise.all([
+      loadResponses(page, statusFilter, storeCodeFilter, formSlugFilter),
+      refreshStats(),
+    ]);
+
+    // Check if more remain
+    const pending = await fetchPendingReviewIds(1);
+    const remaining = pending.success && pending.data ? pending.data.total : 0;
+
+    if (remaining > 0) {
+      setRemainingAfterBatch(remaining);
+      setShowContinueModal(true);
+    } else {
+      setReviewDoneMsg('All responses reviewed.');
+    }
+  }
+
+  async function handleStartReview(): Promise<void> {
+    const result = await fetchPendingReviewIds(batchSize);
+    if (!result.success || !result.data || result.data.ids.length === 0) {
+      setReviewDoneMsg('No unreviewed responses found.');
+      return;
+    }
+    await runBatch(result.data.ids);
+  }
+
+  async function handleContinueReview(): Promise<void> {
+    setShowContinueModal(false);
+    const result = await fetchPendingReviewIds(batchSize);
+    if (!result.success || !result.data || result.data.ids.length === 0) {
+      setReviewDoneMsg('All responses reviewed.');
+      return;
+    }
+    await runBatch(result.data.ids);
+  }
+
   return (
     <section className="settings-section">
       <h2 className="settings-section__heading">Feedback</h2>
 
-      {/* Toggles */}
-      <div className="feedback-tab__toggles">
-        <div className="feedback-tab__toggle-item">
-          <Toggle
-            checked={allSettings.feedback_enabled === 'true'}
-            onChange={() => handleToggle('feedback_enabled', allSettings.feedback_enabled === 'true')}
-            label="Feedback enabled"
-          />
-        </div>
-        <div className="feedback-tab__toggle-item">
-          <Toggle
-            checked={allSettings.feedback_widget_enabled === 'true'}
-            onChange={() => handleToggle('feedback_widget_enabled', allSettings.feedback_widget_enabled === 'true')}
-            label="Floating widget"
-          />
-        </div>
-        <div className="feedback-tab__toggle-item">
-          <Toggle
-            checked={allSettings.feedback_agent_enabled === 'true'}
-            onChange={() => handleToggle('feedback_agent_enabled', allSettings.feedback_agent_enabled === 'true')}
-            label="Agent review"
-          />
-        </div>
+      {/* Settings row: toggles in a subtle bar */}
+      <div className="feedback-tab__settings-bar">
+        <Toggle
+          checked={allSettings.feedback_enabled === 'true'}
+          onChange={() => handleToggle('feedback_enabled', allSettings.feedback_enabled === 'true')}
+          label="Feedback enabled"
+        />
+        <Toggle
+          checked={allSettings.feedback_widget_enabled === 'true'}
+          onChange={() => handleToggle('feedback_widget_enabled', allSettings.feedback_widget_enabled === 'true')}
+          label="Floating widget"
+        />
+        <Toggle
+          checked={allSettings.feedback_agent_enabled === 'true'}
+          onChange={() => handleToggle('feedback_agent_enabled', allSettings.feedback_agent_enabled === 'true')}
+          label="Agent review"
+        />
       </div>
 
       {/* Stats */}
@@ -252,81 +333,126 @@ export default function FeedbackTab(): React.ReactElement {
         </div>
       )}
 
-      {/* Filters */}
-      <div className="feedback-tab__filters">
-        <div className="feedback-tab__filter">
-          <label>Status</label>
-          <SearchSelect
-            value={statusFilter}
-            onChange={(v) => { setStatusFilter(v); setPage(1); }}
-            groups={[{ label: 'Status', options: [
-              { label: 'All', value: '' },
-              { label: 'New', value: 'new' },
-              { label: 'Reviewed', value: 'reviewed' },
-              { label: 'Actioned', value: 'actioned' },
-            ] }] satisfies SearchSelectGroup[]}
-            placeholder="All"
-          />
+      {/* Responses section */}
+      <div className="feedback-tab__responses-section">
+        {/* Section header: label + batch review controls */}
+        <div className="feedback-tab__responses-header">
+          <span className="feedback-tab__responses-title">Responses</span>
+
+          <div className="feedback-tab__batch-controls">
+            {reviewing ? (
+              <ReviewProgress
+                done={reviewProgress.done}
+                total={reviewProgress.total}
+                currentLabel={reviewProgress.currentLabel}
+              />
+            ) : (
+              <>
+                {reviewDoneMsg && (
+                  <span className="feedback-tab__batch-done">
+                    <CheckCircle2 size={13} />
+                    {reviewDoneMsg}
+                  </span>
+                )}
+                <label className="feedback-tab__batch-label">Review</label>
+                <select
+                  className="feedback-tab__batch-select"
+                  value={batchSize}
+                  onChange={(e) => setBatchSize(Number(e.target.value))}
+                >
+                  {BATCH_OPTIONS.map((n) => (
+                    <option key={n} value={n}>{n} at a time</option>
+                  ))}
+                </select>
+                <button
+                  className="feedback-tab__batch-btn"
+                  onClick={handleStartReview}
+                  title="Run agent review on unreviewed responses"
+                >
+                  <Play size={12} />
+                  Review New
+                </button>
+              </>
+            )}
+          </div>
         </div>
-        {forms.length > 1 && (
+
+        {/* Filters */}
+        <div className="feedback-tab__filters">
           <div className="feedback-tab__filter">
-            <label>Form</label>
+            <label>Status</label>
             <SearchSelect
-              value={formSlugFilter}
-              onChange={(v) => { setFormSlugFilter(v); setPage(1); }}
-              groups={[{ label: 'Forms', options: [
-                { label: 'All forms', value: '' },
-                ...forms.map((f) => ({ label: f.name, value: f.slug })),
+              value={statusFilter}
+              onChange={(v) => { setStatusFilter(v); setPage(1); }}
+              groups={[{ label: 'Status', options: [
+                { label: 'All', value: '' },
+                { label: 'New', value: 'new' },
+                { label: 'Reviewed', value: 'reviewed' },
+                { label: 'Actioned', value: 'actioned' },
               ] }] satisfies SearchSelectGroup[]}
-              placeholder="All forms"
+              placeholder="All"
             />
           </div>
-        )}
-        <div className="feedback-tab__filter">
-          <label>Store Code</label>
-          <input
-            className="input"
-            style={{ fontSize: 13, padding: '7px 10px' }}
-            value={storeCodeFilter}
-            onChange={(e) => { setStoreCodeFilter(e.target.value); setPage(1); }}
-            placeholder="Filter by store code"
-          />
-        </div>
-      </div>
-
-      {/* Response list */}
-      {loading ? (
-        <p style={{ textAlign: 'center', color: 'var(--color-gray-400)', padding: '24px 0' }}>
-          <Loader2 size={16} className="spin" /> Loading responses…
-        </p>
-      ) : responses.length === 0 ? (
-        <p style={{ textAlign: 'center', color: 'var(--color-gray-400)', padding: '24px 0' }}>
-          No responses yet.
-        </p>
-      ) : (
-        <div className="feedback-tab__list">
-          {responses.map((r) => (
-            <ResponseRow
-              key={r.id}
-              response={r}
-              questions={getQuestionsForSlug(r.formSlug)}
-              onUpdated={handleResponseUpdated}
+          {forms.length > 1 && (
+            <div className="feedback-tab__filter">
+              <label>Form</label>
+              <SearchSelect
+                value={formSlugFilter}
+                onChange={(v) => { setFormSlugFilter(v); setPage(1); }}
+                groups={[{ label: 'Forms', options: [
+                  { label: 'All forms', value: '' },
+                  ...forms.map((f) => ({ label: f.name, value: f.slug })),
+                ] }] satisfies SearchSelectGroup[]}
+                placeholder="All forms"
+              />
+            </div>
+          )}
+          <div className="feedback-tab__filter">
+            <label>Store Code</label>
+            <input
+              className="input"
+              style={{ fontSize: 13, padding: '7px 10px' }}
+              value={storeCodeFilter}
+              onChange={(e) => { setStoreCodeFilter(e.target.value); setPage(1); }}
+              placeholder="Filter by store code"
             />
-          ))}
+          </div>
         </div>
-      )}
 
-      {totalPages > 1 && (
-        <div className="blog-dashboard__pagination" style={{ marginTop: 16 }}>
-          <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Previous</button>
-          <span>Page {page} of {totalPages}</span>
-          <button disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>Next</button>
-        </div>
-      )}
+        {/* Response list */}
+        {loading ? (
+          <p style={{ textAlign: 'center', color: 'var(--color-gray-400)', padding: '24px 0' }}>
+            <Loader2 size={16} className="spin" /> Loading responses…
+          </p>
+        ) : responses.length === 0 ? (
+          <p style={{ textAlign: 'center', color: 'var(--color-gray-400)', padding: '24px 0' }}>
+            No responses yet.
+          </p>
+        ) : (
+          <div className="feedback-tab__list">
+            {responses.map((r) => (
+              <ResponseRow
+                key={r.id}
+                response={r}
+                questions={getQuestionsForSlug(r.formSlug)}
+                onUpdated={handleResponseUpdated}
+              />
+            ))}
+          </div>
+        )}
+
+        {totalPages > 1 && (
+          <div className="blog-dashboard__pagination" style={{ marginTop: 16 }}>
+            <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Previous</button>
+            <span>Page {page} of {totalPages}</span>
+            <button disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>Next</button>
+          </div>
+        )}
+      </div>
 
       {/* Form management */}
       <div className="feedback-tab__forms">
-        <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--color-gray-700)', marginBottom: 12 }}>Forms</h3>
+        <h3 style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-gray-500)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Forms</h3>
         {forms.length === 0 && (
           <p style={{ fontSize: 13, color: 'var(--color-gray-400)' }}>No forms found.</p>
         )}
@@ -375,7 +501,6 @@ export default function FeedbackTab(): React.ReactElement {
           </div>
         ))}
 
-        {/* Inline JSON editor for questions */}
         {editingFormId && (
           <div className="settings-card" style={{ marginTop: 12 }}>
             <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-gray-700)', marginBottom: 8 }}>
@@ -402,6 +527,29 @@ export default function FeedbackTab(): React.ReactElement {
           </div>
         )}
       </div>
+
+      {/* Continue-batch modal */}
+      <Modal
+        open={showContinueModal}
+        onClose={() => setShowContinueModal(false)}
+        title="Continue reviewing?"
+      >
+        <div className="feedback-tab__continue-modal">
+          <p className="feedback-tab__continue-modal-body">
+            {remainingAfterBatch} response{remainingAfterBatch !== 1 ? 's' : ''} still need agent review.
+            Continue with the next {batchSize}?
+          </p>
+          <div className="feedback-tab__continue-modal-actions">
+            <button className="btn btn--primary" onClick={handleContinueReview}>
+              <Play size={13} />
+              Continue reviewing
+            </button>
+            <button className="btn btn--ghost" onClick={() => setShowContinueModal(false)}>
+              Done for now
+            </button>
+          </div>
+        </div>
+      </Modal>
     </section>
   );
 }
