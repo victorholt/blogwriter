@@ -189,6 +189,19 @@ export async function sendTemplateEmail(toEmail: string, templateId: string, var
   return sendEmail(toEmail, rendered.subject, rendered.html, rendered.text);
 }
 
+export async function sendFeedbackNotification(
+  toEmail: string,
+  formName: string,
+  storeCode: string | undefined,
+  answersText: string,
+): Promise<boolean> {
+  const appName = await getAppName();
+  const subject = `[${appName}] New Feedback — ${formName}${storeCode ? ` (${storeCode})` : ''}`;
+  const html = `<p><strong>New pilot feedback received.</strong></p><p>Store Code: ${storeCode || 'N/A'}</p><pre>${answersText}</pre>`;
+  const text = `New pilot feedback received.\nStore Code: ${storeCode || 'N/A'}\n\n${answersText}`;
+  return sendEmail(toEmail, subject, html, text);
+}
+
 export async function testSmtpConnection(): Promise<{ success: boolean; error?: string }> {
   const config = await getSmtpConfig();
   if (!config) {

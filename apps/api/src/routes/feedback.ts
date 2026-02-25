@@ -3,7 +3,7 @@ import { db } from '../db';
 import { feedbackForms, feedbackResponses, appSettings, users } from '../db/schema';
 import { eq, and } from 'drizzle-orm';
 import { optionalAuth } from '../middleware/auth';
-import { sendEmail } from '../services/email';
+import { sendFeedbackNotification } from '../services/email';
 
 const router = Router();
 
@@ -167,12 +167,7 @@ async function sendAdminNotification(formName: string, storeCode: string | undef
       .map(([k, v]) => `${k}: ${v}`)
       .join('\n');
 
-    await sendEmail(
-      adminEmail,
-      `New Feedback — ${formName}${storeCode ? ` (${storeCode})` : ''}`,
-      `<p><strong>New pilot feedback received.</strong></p><p>Store Code: ${storeCode || 'N/A'}</p><pre>${answersText}</pre>`,
-      `New pilot feedback received.\nStore Code: ${storeCode || 'N/A'}\n\n${answersText}`,
-    );
+    await sendFeedbackNotification(adminEmail, formName, storeCode, answersText);
   } catch { /* ignore */ }
 }
 
