@@ -86,7 +86,14 @@ const PILOT_SURVEY_QUESTIONS = JSON.stringify([
   ]},
 ]);
 
-async function ensureFeedbackTables(): Promise<void> {
+async function ensureSchemaColumns(): Promise<void> {
+  // brand_labels: website_url + description added in d424b64
+  await db.execute(sql`ALTER TABLE "brand_labels" ADD COLUMN IF NOT EXISTS "website_url"  text NOT NULL DEFAULT ''`);
+  await db.execute(sql`ALTER TABLE "brand_labels" ADD COLUMN IF NOT EXISTS "description"  text NOT NULL DEFAULT ''`);
+
+  // users: store_code added in dd00d0f
+  await db.execute(sql`ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "store_code" text`);
+
   await db.execute(sql`
     CREATE TABLE IF NOT EXISTS "feedback_forms" (
       "id"          text PRIMARY KEY NOT NULL,
@@ -159,7 +166,7 @@ export async function seedDatabase(): Promise<void> {
   console.log(`[Seed] Brand labels: ${DEFAULT_BRAND_LABELS.length} defaults ensured`);
 
   // Ensure feedback tables exist (drizzle-kit push may fail in some envs)
-  await ensureFeedbackTables();
+  await ensureSchemaColumns();
 
   // Seed pilot feedback form (ON CONFLICT DO NOTHING on slug)
   await db.insert(feedbackForms)
