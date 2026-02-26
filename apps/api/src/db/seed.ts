@@ -1,5 +1,5 @@
 import { db } from './index';
-import { agentModelConfigs, appSettings, brandLabels, feedbackForms, users, spaces, spaceMembers } from './schema';
+import { agentModelConfigs, appSettings, brandLabels, feedbackForms, docsPages, users, spaces, spaceMembers } from './schema';
 import { sql, eq } from 'drizzle-orm';
 import { hashPassword } from '../services/auth';
 
@@ -48,6 +48,8 @@ const DEFAULT_SETTINGS = [
   { key: 'feedback_enabled', value: 'false' },
   { key: 'feedback_widget_enabled', value: 'false' },
   { key: 'feedback_agent_enabled', value: 'false' },
+  { key: 'docs_enabled', value: 'true' },
+  { key: 'media_allowed_types', value: 'image/jpeg,image/png,image/gif,image/webp,image/svg+xml,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/plain,text/csv' },
 ];
 
 const PILOT_SURVEY_QUESTIONS = JSON.stringify([
@@ -128,6 +130,48 @@ async function ensureSchemaColumns(): Promise<void> {
   await db.execute(sql`CREATE INDEX IF NOT EXISTS "idx_feedback_responses_form"    ON "feedback_responses"("form_id")`);
   await db.execute(sql`CREATE INDEX IF NOT EXISTS "idx_feedback_responses_status"  ON "feedback_responses"("status")`);
   await db.execute(sql`CREATE INDEX IF NOT EXISTS "idx_feedback_responses_created" ON "feedback_responses"("created_at")`);
+
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS "docs_pages" (
+      "id"           text PRIMARY KEY NOT NULL,
+      "slug"         text NOT NULL UNIQUE,
+      "title"        text NOT NULL,
+      "content"      text NOT NULL DEFAULT '',
+      "parent_id"    text,
+      "sort_order"   integer NOT NULL DEFAULT 0,
+      "is_published" boolean NOT NULL DEFAULT false,
+      "is_default"   boolean NOT NULL DEFAULT false,
+      "updated_by"   text,
+      "created_at"   timestamp NOT NULL DEFAULT now(),
+      "updated_at"   timestamp NOT NULL DEFAULT now()
+    )
+  `);
+  await db.execute(sql`ALTER TABLE "docs_pages" ADD COLUMN IF NOT EXISTS "is_default" boolean NOT NULL DEFAULT false`);
+
+  // Expand media_allowed_types to include document types (idempotent: only updates if still image-only default)
+  await db.execute(sql`
+    UPDATE "app_settings"
+    SET "value" = 'image/jpeg,image/png,image/gif,image/webp,image/svg+xml,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/plain,text/csv'
+    WHERE "key" = 'media_allowed_types'
+      AND "value" = 'image/jpeg,image/png,image/gif,image/webp,image/svg+xml'
+  `);
+
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS "media_files" (
+      "id"           text PRIMARY KEY NOT NULL,
+      "filename"     text NOT NULL,
+      "storage_path" text NOT NULL,
+      "url"          text NOT NULL,
+      "mime_type"    text NOT NULL,
+      "size"         integer NOT NULL,
+      "width"        integer,
+      "height"       integer,
+      "parent_id"    text,
+      "alt"          text NOT NULL DEFAULT '',
+      "uploaded_by"  text,
+      "created_at"   timestamp NOT NULL DEFAULT now()
+    )
+  `);
 }
 
 export async function seedDatabase(): Promise<void> {
@@ -182,6 +226,40 @@ export async function seedDatabase(): Promise<void> {
     })
     .onConflictDoNothing({ target: feedbackForms.slug });
   console.log('[Seed] Feedback forms: pilot survey ensured');
+
+  // Seed starter docs page (ON CONFLICT DO NOTHING on slug)
+  await db.insert(docsPages)
+    .values({
+      slug: 'getting-started',
+      title: 'Getting Started',
+      content: `# Getting Started
+
+Welcome to **BlogWriter** — your AI-powered blog writing assistant.
+
+## What is BlogWriter?
+
+BlogWriter helps bridal boutiques create high-quality, on-brand blog content in minutes. It analyzes your brand voice and uses AI agents to generate, edit, and refine blog posts around your dress collections.
+
+## Creating Your First Blog
+
+1. Click **New Blog** in the top navigation
+2. Enter your store information and select your dresses
+3. Analyze your brand voice (or use the default settings)
+4. Watch the AI agents generate your blog post
+
+## Managing Your Content
+
+Use the **My Blogs** section to view, edit, and share all your generated posts.
+
+## Getting Help
+
+Browse the sidebar to explore all documentation topics, or use the search bar to find what you need.`,
+      sortOrder: 0,
+      isPublished: true,
+      isDefault: true,
+    })
+    .onConflictDoNothing({ target: docsPages.slug });
+  console.log('[Seed] Docs: getting-started page ensured');
 
   // Ensure admin user exists with admin role (idempotent)
   const adminEmail = (process.env.ADMIN_EMAIL || 'admin@blogwriter.local').toLowerCase().trim();

@@ -16,6 +16,7 @@
   "dependencies": {
     "@aws-sdk/client-secrets-manager": "^3.996.0",
     "@mastra/core": "^0.24.9",
+    "@types/multer": "^2.0.0",
     "bcrypt": "^6.0.0",
     "cheerio": "^1.2.0",
     "cookie-parser": "^1.4.7",
@@ -26,6 +27,7 @@
     "helmet": "^8.0.0",
     "jsonwebtoken": "^9.0.3",
     "morgan": "^1.10.0",
+    "multer": "^2.0.2",
     "nodemailer": "^8.0.1",
     "pg": "^8.18.0",
     "zod": "^4.3.6"

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Settings, Key, Bot, Package, Palette, Mic, Database, FileText, Mail, Users, ClipboardList, MessageSquare } from 'lucide-react';
+import { Settings, Key, Bot, Package, Palette, Mic, Database, FileText, Mail, Users, ClipboardList, MessageSquare, Image } from 'lucide-react';
 
 const NAV_ITEMS = [
   { slug: 'general', label: 'General', icon: Settings },
@@ -15,6 +15,7 @@ const NAV_ITEMS = [
   { slug: 'voices', label: 'Voices', icon: Mic },
   { slug: 'themes', label: 'Themes', icon: Palette },
   { slug: 'feedback', label: 'Feedback', icon: MessageSquare },
+  { slug: 'media', label: 'Media', icon: Image },
   { slug: 'audit', label: 'Audit', icon: ClipboardList },
   { slug: 'data', label: 'Data', icon: Database },
 ] as const;

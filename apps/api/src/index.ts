@@ -3,6 +3,7 @@ import cors from 'cors'
 import helmet from 'helmet'
 import morgan from 'morgan'
 import cookieParser from 'cookie-parser'
+import path from 'path'
 import apiRoutes from './routes/api'
 import { runMigrations } from './db/migrate'
 import { seedDatabase } from './db/seed'
@@ -20,6 +21,14 @@ app.use(morgan('dev'))
 app.use(cookieParser())
 app.use(express.json({ limit: '50mb' }))
 app.use(express.urlencoded({ extended: true }))
+
+// Static file serving for uploads — override CORP header so images load cross-origin
+// (the Next.js app and API run on different ports in dev, and potentially different
+// subdomains in prod; images must be embeddable from any same-site origin)
+app.use('/uploads', (_req, res, next) => {
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  next();
+}, express.static(path.join(process.cwd(), 'uploads')))
 
 // Routes
 app.use('/api', apiRoutes)

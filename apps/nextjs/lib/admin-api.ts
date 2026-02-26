@@ -575,3 +575,153 @@ export async function formatVoicePresetStream(
 
   return result;
 }
+
+// --- Docs Pages ---
+
+export interface AdminDocsNavItem {
+  id: string;
+  slug: string;
+  title: string;
+  parentId: string | null;
+  sortOrder: number;
+  isPublished: boolean;
+  isDefault: boolean;
+}
+
+export interface AdminDocsPage extends AdminDocsNavItem {
+  content: string;
+  updatedAt: string;
+  updatedBy: string | null;
+  createdAt: string;
+}
+
+export async function fetchAdminDocsNav(): Promise<ApiResponse<AdminDocsNavItem[]>> {
+  const res = await fetch(`${API_BASE}/api/admin/docs`, { credentials: 'include' });
+  return res.json();
+}
+
+export async function fetchAdminDocsPage(slug: string): Promise<ApiResponse<AdminDocsPage>> {
+  const res = await fetch(`${API_BASE}/api/admin/docs/by-slug/${slug}`, { credentials: 'include' });
+  return res.json();
+}
+
+export async function createDocsPage(
+  data: { title: string; slug: string; content?: string; parentId?: string | null; sortOrder?: number; isPublished?: boolean },
+): Promise<ApiResponse<AdminDocsPage>> {
+  const res = await fetch(`${API_BASE}/api/admin/docs`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(data),
+  });
+  return res.json();
+}
+
+export async function updateDocsPage(
+  id: string,
+  data: { title?: string; slug?: string; content?: string; parentId?: string | null; sortOrder?: number; isPublished?: boolean; isDefault?: boolean },
+): Promise<ApiResponse<AdminDocsPage>> {
+  const res = await fetch(`${API_BASE}/api/admin/docs/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(data),
+  });
+  return res.json();
+}
+
+export async function deleteDocsPage(id: string): Promise<ApiResponse<{ deleted: boolean }>> {
+  const res = await fetch(`${API_BASE}/api/admin/docs/${id}`, {
+    method: 'DELETE',
+    credentials: 'include',
+  });
+  return res.json();
+}
+
+export async function reorderDocsPages(
+  items: Array<{ id: string; sortOrder: number; parentId?: string | null }>,
+): Promise<ApiResponse<unknown>> {
+  const res = await fetch(`${API_BASE}/api/admin/docs/reorder`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(items),
+  });
+  return res.json();
+}
+
+// --- Media Files ---
+
+export interface MediaFile {
+  id: string;
+  filename: string;
+  storagePath: string;
+  url: string;
+  mimeType: string;
+  size: number;
+  width: number | null;
+  height: number | null;
+  parentId: string | null;
+  alt: string;
+  uploadedBy: string | null;
+  createdAt: string;
+  childCount?: number;
+}
+
+function resolveMediaUrl(url: string): string {
+  // DB stores relative paths like /uploads/abc.png; prepend the API base so the
+  // browser can load them regardless of whether the user goes through the proxy
+  // or directly to the Next.js / API ports.
+  if (url.startsWith('/')) return `${API_BASE}${url}`;
+  return url;
+}
+
+function resolveMediaFile(file: MediaFile): MediaFile {
+  return { ...file, url: resolveMediaUrl(file.url) };
+}
+
+export async function fetchMediaFiles(): Promise<ApiResponse<MediaFile[]>> {
+  const res = await fetch(`${API_BASE}/api/admin/media`, { credentials: 'include' });
+  const json: ApiResponse<MediaFile[]> = await res.json();
+  if (json.success && json.data) json.data = json.data.map(resolveMediaFile);
+  return json;
+}
+
+export async function uploadMediaFile(
+  file: File,
+  opts?: { parentId?: string; alt?: string },
+): Promise<ApiResponse<MediaFile>> {
+  const form = new FormData();
+  form.append('file', file);
+  if (opts?.parentId) form.append('parentId', opts.parentId);
+  if (opts?.alt) form.append('alt', opts.alt);
+  const res = await fetch(`${API_BASE}/api/admin/media`, {
+    method: 'POST',
+    credentials: 'include',
+    body: form,
+  });
+  const json: ApiResponse<MediaFile> = await res.json();
+  if (json.success && json.data) json.data = resolveMediaFile(json.data);
+  return json;
+}
+
+export async function updateMediaFile(
+  id: string,
+  data: { alt: string },
+): Promise<ApiResponse<MediaFile>> {
+  const res = await fetch(`${API_BASE}/api/admin/media/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(data),
+  });
+  return res.json();
+}
+
+export async function deleteMediaFile(id: string): Promise<ApiResponse<{ deleted: number }>> {
+  const res = await fetch(`${API_BASE}/api/admin/media/${id}`, {
+    method: 'DELETE',
+    credentials: 'include',
+  });
+  return res.json();
+}

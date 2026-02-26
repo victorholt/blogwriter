@@ -190,6 +190,7 @@ export interface InitSettings {
   guestModeEnabled: boolean;
   registrationEnabled: boolean;
   feedbackEnabled: boolean;
+  docsEnabled: boolean;
 }
 
 const INIT_DEFAULTS: InitSettings = {
@@ -198,6 +199,7 @@ const INIT_DEFAULTS: InitSettings = {
   sharingEnabled: false, previewAgents: 'none', appName: 'BlogWriter', gtmId: '',
   guestModeEnabled: true, registrationEnabled: true,
   feedbackEnabled: false,
+  docsEnabled: true,
 };
 
 export async function fetchInitSettings(): Promise<InitSettings> {

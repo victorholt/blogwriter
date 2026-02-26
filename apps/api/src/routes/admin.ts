@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { readFileSync } from 'fs';
 import { db } from '../db';
-import { agentModelConfigs, agentAdditionalInstructions, appSettings, brandVoiceCache, themes, brandLabels, voicePresets, auditLogs, users, blogSessions, feedbackForms, feedbackResponses } from '../db/schema';
+import { agentModelConfigs, agentAdditionalInstructions, appSettings, brandVoiceCache, themes, brandLabels, voicePresets, auditLogs, users, blogSessions, feedbackForms, feedbackResponses, docsPages } from '../db/schema';
 import { eq, asc, and, desc, sql, isNull, isNotNull } from 'drizzle-orm';
 import { requireAdmin } from '../middleware/auth';
 import { invalidateCache, getOpenRouterApiKey } from '../mastra/lib/model-resolver';
@@ -14,9 +14,10 @@ import { invalidateInsightsCache } from '../services/agent-trace';
 import { formatBrandVoiceText } from '../mastra/agents/brand-voice-formatter';
 import { testSmtpConnection, sendTemplateEmail } from '../services/email';
 import { renderAllPreviews, EMAIL_TEMPLATES } from '../services/email-templates';
-import { invalidateGuestModeCache, invalidateRegistrationCache } from '../services/site-settings';
+import { invalidateGuestModeCache, invalidateRegistrationCache, invalidateDocsCache } from '../services/site-settings';
 import adminUsersRoutes from './admin-users';
 import adminDatabaseRoutes from './admin-database';
+import adminMediaRoutes from './admin-media';
 
 // Read app version once at startup
 let appVersion = '0.0.0';
@@ -344,6 +345,8 @@ const updateSettingsSchema = z.object({
   feedback_enabled: z.enum(['true', 'false']).optional(),
   feedback_widget_enabled: z.enum(['true', 'false']).optional(),
   feedback_agent_enabled: z.enum(['true', 'false']).optional(),
+  docs_enabled: z.enum(['true', 'false']).optional(),
+  media_allowed_types: z.string().optional(),
 });
 
 router.put('/settings', async (req, res) => {
@@ -380,6 +383,10 @@ router.put('/settings', async (req, res) => {
     // Invalidate registration cache if registration_enabled was changed
     if (updates.registration_enabled !== undefined) {
       invalidateRegistrationCache();
+    }
+    // Invalidate docs cache if docs_enabled was changed
+    if (updates.docs_enabled !== undefined) {
+      invalidateDocsCache();
     }
 
     // Return masked values
@@ -771,6 +778,7 @@ router.get('/version', async (_req, res) => {
 
 router.use('/users', adminUsersRoutes);
 router.use('/database', adminDatabaseRoutes);
+router.use('/media', adminMediaRoutes);
 
 // --- Audit Logs ---
 
@@ -1209,6 +1217,129 @@ router.put('/feedback/:id', async (req, res) => {
   } catch (err) {
     console.error('[Admin] Error updating feedback response:', err);
     return res.status(500).json({ success: false, error: 'Failed to update feedback response' });
+  }
+});
+
+// ============================================================
+// Docs Pages
+// ============================================================
+
+router.get('/docs', async (_req, res) => {
+  try {
+    const rows = await db
+      .select({ id: docsPages.id, slug: docsPages.slug, title: docsPages.title, parentId: docsPages.parentId, sortOrder: docsPages.sortOrder, isPublished: docsPages.isPublished, isDefault: docsPages.isDefault })
+      .from(docsPages)
+      .orderBy(asc(docsPages.sortOrder), asc(docsPages.createdAt));
+    return res.json({ success: true, data: rows });
+  } catch (err) {
+    console.error('[Admin] Error fetching docs:', err);
+    return res.status(500).json({ success: false, error: 'Failed to fetch docs' });
+  }
+});
+
+const createDocsPageSchema = z.object({
+  title: z.string().min(1),
+  slug: z.string().min(1).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'Slug must be lowercase alphanumeric with hyphens'),
+  content: z.string().default(''),
+  parentId: z.string().nullable().optional(),
+  sortOrder: z.number().int().default(0),
+  isPublished: z.boolean().default(false),
+});
+
+router.post('/docs', async (req, res) => {
+  const parsed = createDocsPageSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ success: false, error: parsed.error.issues[0]?.message || 'Invalid request' });
+  }
+  try {
+    const [row] = await db.insert(docsPages)
+      .values({ ...parsed.data, updatedBy: req.user?.id })
+      .returning();
+    return res.json({ success: true, data: row });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : '';
+    if (msg.includes('unique')) return res.status(409).json({ success: false, error: 'A page with that slug already exists' });
+    console.error('[Admin] Error creating docs page:', err);
+    return res.status(500).json({ success: false, error: 'Failed to create page' });
+  }
+});
+
+const updateDocsPageSchema = z.object({
+  title: z.string().min(1).optional(),
+  slug: z.string().min(1).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).optional(),
+  content: z.string().optional(),
+  parentId: z.string().nullable().optional(),
+  sortOrder: z.number().int().optional(),
+  isPublished: z.boolean().optional(),
+  isDefault: z.boolean().optional(),
+});
+
+// GET /docs/by-slug/:slug — fetch single page by slug (includes unpublished)
+router.get('/docs/by-slug/:slug', async (req, res) => {
+  try {
+    const [row] = await db.select().from(docsPages).where(eq(docsPages.slug, req.params.slug)).limit(1);
+    if (!row) return res.status(404).json({ success: false, error: 'Page not found' });
+    return res.json({ success: true, data: row });
+  } catch (err) {
+    console.error('[Admin] Error fetching docs page:', err);
+    return res.status(500).json({ success: false, error: 'Failed to fetch page' });
+  }
+});
+
+// POST /docs/reorder must be declared before PUT /docs/:id to avoid conflict
+router.post('/docs/reorder', async (req, res) => {
+  const schema = z.array(z.object({ id: z.string(), sortOrder: z.number().int(), parentId: z.string().nullable().optional() }));
+  const parsed = schema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ success: false, error: 'Invalid reorder payload' });
+  }
+  try {
+    for (const item of parsed.data) {
+      await db.update(docsPages)
+        .set({ sortOrder: item.sortOrder, ...(item.parentId !== undefined ? { parentId: item.parentId } : {}), updatedAt: new Date() })
+        .where(eq(docsPages.id, item.id));
+    }
+    return res.json({ success: true });
+  } catch (err) {
+    console.error('[Admin] Error reordering docs:', err);
+    return res.status(500).json({ success: false, error: 'Failed to reorder pages' });
+  }
+});
+
+router.put('/docs/:id', async (req, res) => {
+  const parsed = updateDocsPageSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ success: false, error: parsed.error.issues[0]?.message || 'Invalid request' });
+  }
+  try {
+    // If setting this page as default, unset all others first
+    if (parsed.data.isDefault === true) {
+      await db.update(docsPages).set({ isDefault: false }).where(eq(docsPages.isDefault, true));
+    }
+    const [row] = await db.update(docsPages)
+      .set({ ...parsed.data, updatedBy: req.user?.id, updatedAt: new Date() })
+      .where(eq(docsPages.id, req.params.id))
+      .returning();
+    if (!row) return res.status(404).json({ success: false, error: 'Page not found' });
+    return res.json({ success: true, data: row });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : '';
+    if (msg.includes('unique')) return res.status(409).json({ success: false, error: 'A page with that slug already exists' });
+    console.error('[Admin] Error updating docs page:', err);
+    return res.status(500).json({ success: false, error: 'Failed to update page' });
+  }
+});
+
+router.delete('/docs/:id', async (req, res) => {
+  try {
+    // Orphan children rather than cascade-delete
+    await db.update(docsPages).set({ parentId: null, updatedAt: new Date() }).where(eq(docsPages.parentId, req.params.id));
+    const [row] = await db.delete(docsPages).where(eq(docsPages.id, req.params.id)).returning({ id: docsPages.id });
+    if (!row) return res.status(404).json({ success: false, error: 'Page not found' });
+    return res.json({ success: true, data: { deleted: true } });
+  } catch (err) {
+    console.error('[Admin] Error deleting docs page:', err);
+    return res.status(500).json({ success: false, error: 'Failed to delete page' });
   }
 });
 

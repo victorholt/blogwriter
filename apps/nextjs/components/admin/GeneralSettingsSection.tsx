@@ -128,6 +128,15 @@ export default function GeneralSettingsSection(): React.ReactElement {
           description="When enabled, a Share button appears on the blog preview, allowing users to create public read-only links to their generated posts."
         />
       </div>
+
+      <div className="settings-card">
+        <Toggle
+          checked={allSettings.docs_enabled !== 'false'}
+          onChange={() => handleToggle('docs_enabled', allSettings.docs_enabled !== 'false')}
+          label="Documentation"
+          description="When enabled, the Docs section is accessible to all users via the footer and mobile navigation."
+        />
+      </div>
     </section>
   );
 }

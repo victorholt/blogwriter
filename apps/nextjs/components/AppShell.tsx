@@ -33,6 +33,7 @@ export default function AppShell({ children }: { children: React.ReactNode }): R
   const { user, isAuthenticated, isLoading, guestModeEnabled } = useAuthStore();
   const logout = useAuthStore((s) => s.logout);
   const appName = useAppSettingsStore((s) => s.appName);
+  const docsEnabled = useAppSettingsStore((s) => s.docsEnabled);
   const reset = useWizardStore((s) => s.reset);
   const startWithDefaultVoice = useWizardStore((s) => s.startWithDefaultVoice);
   const router = useRouter();
@@ -204,6 +205,15 @@ export default function AppShell({ children }: { children: React.ReactNode }): R
                     <UserCog size={16} />
                     Account
                   </Link>
+                  {docsEnabled && (
+                    <Link
+                      href="/docs"
+                      className={`app-shell__drawer-item ${currentSection === 'docs' ? 'app-shell__drawer-item--active' : ''}`}
+                    >
+                      <FileText size={16} />
+                      Docs
+                    </Link>
+                  )}
 
                   {user.role === 'admin' && (
                     <>

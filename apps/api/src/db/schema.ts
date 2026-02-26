@@ -271,3 +271,44 @@ export const feedbackResponses = pgTable('feedback_responses', {
   index('idx_feedback_responses_status').on(table.status),
   index('idx_feedback_responses_created').on(table.createdAt),
 ]);
+
+// ============================================================
+// Docs Pages
+// ============================================================
+
+// ============================================================
+// Media Files
+// ============================================================
+
+export const mediaFiles = pgTable('media_files', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  filename: text('filename').notNull(),          // sanitized original name e.g. "screenshot.png"
+  storagePath: text('storage_path').notNull(),   // relative disk path e.g. "uploads/abc123.jpg"
+  url: text('url').notNull(),                    // public URL (disk now, cloud later)
+  mimeType: text('mime_type').notNull(),
+  size: integer('size').notNull(),               // bytes
+  width: integer('width'),                       // px (null for non-images / SVGs)
+  height: integer('height'),
+  parentId: text('parent_id'),                   // null = original; set for thumbnails/resized
+  alt: text('alt').notNull().default(''),
+  uploadedBy: text('uploaded_by'),               // FK to users.id (nullable)
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// ============================================================
+// Docs Pages
+// ============================================================
+
+export const docsPages = pgTable('docs_pages', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  slug: text('slug').notNull().unique(),
+  title: text('title').notNull(),
+  content: text('content').notNull().default(''),
+  parentId: text('parent_id'),                  // null = root level
+  sortOrder: integer('sort_order').notNull().default(0),
+  isPublished: boolean('is_published').notNull().default(false),
+  isDefault: boolean('is_default').notNull().default(false),
+  updatedBy: text('updated_by'),                // last editor user ID
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});

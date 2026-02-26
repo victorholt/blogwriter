@@ -43,6 +43,8 @@ services:
       AWS_REGION: ${AWS_REGION:-us-east-1}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+    volumes:
+      - uploads_data:/app/uploads
     networks:
       - app-network
     restart: unless-stopped
@@ -124,6 +126,8 @@ volumes:
   postgres_data:
     driver: local
   valkey_data:
+    driver: local
+  uploads_data:
     driver: local
 networks:
   app-network:

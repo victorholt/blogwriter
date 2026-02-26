@@ -64,3 +64,34 @@ export function invalidateRegistrationCache(): void {
   registrationCachedValue = null;
   registrationCachedAt = 0;
 }
+
+// ── Docs ─────────────────────────────────────────────────────
+
+let docsCachedValue: boolean | null = null;
+let docsCachedAt = 0;
+
+export async function isDocsEnabled(): Promise<boolean> {
+  const now = Date.now();
+  if (docsCachedValue !== null && now - docsCachedAt < CACHE_TTL) {
+    return docsCachedValue;
+  }
+
+  try {
+    const row = await db
+      .select()
+      .from(appSettings)
+      .where(eq(appSettings.key, 'docs_enabled'))
+      .limit(1);
+
+    docsCachedValue = row[0]?.value !== 'false'; // default true if missing
+    docsCachedAt = now;
+    return docsCachedValue;
+  } catch {
+    return true; // fail-open
+  }
+}
+
+export function invalidateDocsCache(): void {
+  docsCachedValue = null;
+  docsCachedAt = 0;
+}
