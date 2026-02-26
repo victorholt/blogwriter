@@ -83,7 +83,8 @@ router.post('/', (req, res) => {
     if (err) {
       return res.status(400).json({ success: false, error: err.message });
     }
-    const uploadedFile = (req as typeof req & { file?: multer.File }).file;
+    type UploadedFile = { originalname: string; filename: string; mimetype: string; size: number; path: string };
+    const uploadedFile = (req as unknown as { file?: UploadedFile }).file;
     if (!uploadedFile) {
       return res.status(400).json({ success: false, error: 'No file uploaded' });
     }
@@ -99,11 +100,11 @@ router.post('/', (req, res) => {
 
     try {
       const [row] = await db.insert(mediaFiles).values({
-        filename: req.file.originalname,
+        filename: uploadedFile.originalname,
         storagePath,
         url,
-        mimeType: req.file.mimetype,
-        size: req.file.size,
+        mimeType: uploadedFile.mimetype,
+        size: uploadedFile.size,
         parentId: parentId || null,
         alt,
         uploadedBy,
@@ -112,7 +113,7 @@ router.post('/', (req, res) => {
       return res.json({ success: true, data: row });
     } catch (dbErr) {
       // Clean up uploaded file if DB insert fails
-      fs.unlink(req.file.path, () => {});
+      fs.unlink(uploadedFile.path, () => {});
       console.error('[Media] Error inserting media file:', dbErr);
       return res.status(500).json({ success: false, error: 'Failed to save media file' });
     }
