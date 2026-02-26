@@ -21,6 +21,7 @@ const DEFAULT_AGENTS = [
 
 const DEFAULT_SETTINGS = [
   { key: 'app_name', value: 'BlogWriter' },
+  { key: 'app_url', value: '' },
   { key: 'openrouter_api_key', value: '' },
   { key: 'product_api_base_url', value: 'https://product.dev.essensedesigns.info' },
   { key: 'product_api_timeout', value: '30000' },

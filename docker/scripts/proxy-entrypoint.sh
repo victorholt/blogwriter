@@ -2,8 +2,8 @@
 set -e
 
 # If DOMAIN is set (production/staging), generate configs from templates via envsubst.
-# In local dev, the override compose file volume-mounts the hardcoded configs instead.
-if [ -n "$DOMAIN" ]; then
+# In local dev (APP_ENV=local), the override compose file volume-mounts hardcoded configs instead.
+if [ -n "$DOMAIN" ] && [ "$APP_ENV" != "local" ]; then
     echo "Generating Apache config for domain: ${DOMAIN}"
     # Whitelist only ${DOMAIN} so Apache's own %{HTTP_HOST}, %{REQUEST_URI} etc. are preserved
     envsubst '${DOMAIN}' \
@@ -15,7 +15,7 @@ if [ -n "$DOMAIN" ]; then
 fi
 
 # Watch for certificate changes and gracefully reload Apache
-if [ -n "$DOMAIN" ]; then
+if [ -n "$DOMAIN" ] && [ "$APP_ENV" != "local" ]; then
     (
         CERT="/usr/local/apache2/conf/ssl/${DOMAIN}.crt"
         LAST_MOD=""

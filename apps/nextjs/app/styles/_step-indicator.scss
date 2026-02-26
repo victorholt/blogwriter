@@ -120,3 +120,87 @@
     }
   }
 }
+
+// ============================================================
+// New Blog / Voice Picker Modal
+// ============================================================
+
+.new-blog-modal {
+  &__subtitle {
+    font-size: 13px;
+    color: var(--color-gray-500);
+    margin-bottom: 12px;
+  }
+
+  &__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  &__voice-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--color-gray-200);
+    background: #fff;
+    cursor: pointer;
+    text-align: left;
+    gap: 2px;
+    transition: background 0.1s;
+
+    &:hover {
+      background: var(--color-gray-50);
+    }
+  }
+
+  &__name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-gray-900);
+  }
+
+  &__badge {
+    font-size: 11px;
+    color: var(--color-blue);
+    font-weight: 600;
+  }
+
+  &__url {
+    font-size: 12px;
+    color: var(--color-gray-400);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+
+  &__sep {
+    border: none;
+    border-top: 1px solid var(--color-gray-100);
+    margin: 12px 0;
+  }
+
+  &__fresh-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--color-gray-500);
+    padding: 4px 0;
+    transition: color 0.1s;
+
+    &:hover {
+      color: var(--color-gray-900);
+    }
+  }
+}

@@ -3,6 +3,8 @@
 import { useWizardStore } from '@/stores/wizard-store';
 import { Store, Volume2, Star, FileEdit, Check, RotateCcw } from 'lucide-react';
 import type { WizardStep } from '@/types';
+import { useNewBlogFlow } from '@/hooks/useNewBlogFlow';
+import NewBlogModal from '@/components/wizard/NewBlogModal';
 
 const STEPS: { id: WizardStep; label: string; icon: typeof Store }[] = [
   { id: 1, label: 'STORE INFO', icon: Store },
@@ -17,7 +19,8 @@ export default function StepIndicator(): React.ReactElement {
   const setStep = useWizardStore((s) => s.setStep);
   const setView = useWizardStore((s) => s.setView);
   const resetGenerationForRetry = useWizardStore((s) => s.resetGenerationForRetry);
-  const reset = useWizardStore((s) => s.reset);
+
+  const { trigger: handleNewVoiceTrigger, showModal, voices, handleSelectVoice, handleNewVoice, closeModal } = useNewBlogFlow();
 
   const isGenerating = view === 'generating';
 
@@ -59,7 +62,7 @@ export default function StepIndicator(): React.ReactElement {
               </>
             )}
           </div>
-          <button type="button" onClick={reset} className="step-indicator__reset">
+          <button type="button" onClick={handleNewVoiceTrigger} className="step-indicator__reset">
             <RotateCcw size={12} />
             <span className="step-indicator__reset__text">New Voice</span>
           </button>
@@ -91,11 +94,19 @@ export default function StepIndicator(): React.ReactElement {
             </button>
           );
         })}
-        <button type="button" onClick={reset} className="step-indicator__reset">
+        <button type="button" onClick={handleNewVoiceTrigger} className="step-indicator__reset">
           <RotateCcw size={12} />
           <span className="step-indicator__reset__text">New Voice</span>
         </button>
       </nav>
+
+      <NewBlogModal
+        showModal={showModal}
+        voices={voices}
+        handleSelectVoice={handleSelectVoice}
+        handleNewVoice={handleNewVoice}
+        closeModal={closeModal}
+      />
     </>
   );
 }

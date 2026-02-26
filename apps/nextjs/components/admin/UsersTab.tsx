@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Loader2, Plus } from 'lucide-react';
+import { Loader2, Plus, Trash2 } from 'lucide-react';
+import Modal from '@/components/ui/Modal';
+import { deleteUserPermanently } from '@/lib/admin-api';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://blogwriter.test:4444';
 
@@ -29,6 +31,9 @@ export default function UsersTab(): React.ReactElement {
   const [newPassword, setNewPassword] = useState('');
   // Track per-row storeCode edits
   const [storeCodeEdits, setStoreCodeEdits] = useState<Record<string, string>>({});
+  // Permanent delete confirmation
+  const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const loadUsers = useCallback(async (p: number) => {
     setLoading(true);
@@ -130,6 +135,22 @@ export default function UsersTab(): React.ReactElement {
     setUsers((prev) => prev.map((u) => u.id === userId ? { ...u, storeCode: value } : u));
     setStoreCodeEdits((prev) => ({ ...prev, [userId]: value ?? '' }));
   }
+
+  async function handlePermanentDelete(): Promise<void> {
+    if (!deleteUserId) return;
+    setDeleting(true);
+    const result = await deleteUserPermanently(deleteUserId);
+    if (result.success) {
+      setDeleteUserId(null);
+      loadUsers(page);
+    } else {
+      setError(result.error || 'Failed to delete user');
+      setDeleteUserId(null);
+    }
+    setDeleting(false);
+  }
+
+  const deleteTarget = deleteUserId ? users.find((u) => u.id === deleteUserId) : null;
 
   return (
     <section className="settings-section">
@@ -254,6 +275,15 @@ export default function UsersTab(): React.ReactElement {
                     >
                       {user.isActive ? 'Disable' : 'Enable'}
                     </button>
+                    {!user.isActive && (
+                      <button
+                        className="btn btn--sm btn--danger"
+                        onClick={() => setDeleteUserId(user.id)}
+                        title="Permanently delete user"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -293,6 +323,21 @@ export default function UsersTab(): React.ReactElement {
           <button disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>Next</button>
         </div>
       )}
+
+      <Modal open={!!deleteUserId} onClose={() => setDeleteUserId(null)} title="Permanently delete user">
+        <p className="users-tab__delete-body">
+          Are you sure you want to permanently delete <strong>{deleteTarget?.displayName}</strong> ({deleteTarget?.email})?
+          This will remove all their data and cannot be undone.
+        </p>
+        <div className="users-tab__delete-actions">
+          <button className="btn btn--ghost" onClick={() => setDeleteUserId(null)} disabled={deleting}>
+            Cancel
+          </button>
+          <button className="btn btn--danger" onClick={handlePermanentDelete} disabled={deleting}>
+            {deleting ? <><Loader2 size={14} className="spin" /> Deleting...</> : 'Delete permanently'}
+          </button>
+        </div>
+      </Modal>
     </section>
   );
 }

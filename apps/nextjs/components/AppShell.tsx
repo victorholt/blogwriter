@@ -9,10 +9,10 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth-store';
 import { useAppSettingsStore } from '@/stores/app-settings-store';
-import { useWizardStore } from '@/stores/wizard-store';
-import { fetchDefaultSavedVoice } from '@/lib/api';
+import { useNewBlogFlow } from '@/hooks/useNewBlogFlow';
 import SiteFooter from '@/components/SiteFooter';
 import FeedbackWidget from '@/components/FeedbackWidget';
+import NewBlogModal from '@/components/wizard/NewBlogModal';
 
 const SETTINGS_NAV = [
   { slug: 'general', label: 'General', icon: Settings },
@@ -34,11 +34,10 @@ export default function AppShell({ children }: { children: React.ReactNode }): R
   const logout = useAuthStore((s) => s.logout);
   const appName = useAppSettingsStore((s) => s.appName);
   const docsEnabled = useAppSettingsStore((s) => s.docsEnabled);
-  const reset = useWizardStore((s) => s.reset);
-  const startWithDefaultVoice = useWizardStore((s) => s.startWithDefaultVoice);
   const router = useRouter();
   const pathname = usePathname();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const { trigger: handleNewBlog, showModal, voices, handleSelectVoice, handleNewVoice, closeModal } = useNewBlogFlow();
 
   // Close drawer on route change
   useEffect(() => {
@@ -61,24 +60,6 @@ export default function AppShell({ children }: { children: React.ReactNode }): R
   const isOnSettings = pathname.startsWith('/settings');
   const currentSection = pathname.replace('/my', '').replace(/^\//, '').split('/')[0] || 'blogs';
   const currentSettingsSection = pathname.replace('/settings', '').replace(/^\//, '') || 'general';
-
-  async function handleNewBlog(): Promise<void> {
-    if (isAuthenticated) {
-      try {
-        const result = await fetchDefaultSavedVoice();
-        if (result.success && result.data) {
-          startWithDefaultVoice(result.data.id, result.data.voiceData, result.data.sourceUrl);
-          if (pathname !== '/new') router.push('/new');
-          return;
-        }
-      } catch {
-        // Fall through to normal reset
-      }
-    }
-    reset();
-    if (pathname === '/new') return;
-    router.push('/new');
-  }
 
   return (
     <>
@@ -252,6 +233,14 @@ export default function AppShell({ children }: { children: React.ReactNode }): R
       </div>
 
       <FeedbackWidget />
+
+      <NewBlogModal
+        showModal={showModal}
+        voices={voices}
+        handleSelectVoice={handleSelectVoice}
+        handleNewVoice={handleNewVoice}
+        closeModal={closeModal}
+      />
     </>
   );
 }

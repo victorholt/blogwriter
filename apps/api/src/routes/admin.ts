@@ -316,6 +316,7 @@ router.get('/settings', async (req, res) => {
 
 const updateSettingsSchema = z.object({
   app_name: z.string().min(1).max(100).optional(),
+  app_url: z.string().max(500).optional(),
   openrouter_api_key: z.string().optional(),
   product_api_base_url: z.string().optional(),
   product_api_timeout: z.string().optional(),

@@ -13,6 +13,8 @@ export default function GeneralSettingsSection(): React.ReactElement {
   const setGlobalGtmId = useAppSettingsStore((s) => s.setGtmId);
   const [appName, setAppName] = useState(allSettings.app_name || 'BlogWriter');
   const [savingAppName, setSavingAppName] = useState(false);
+  const [appUrl, setAppUrl] = useState(allSettings.app_url || '');
+  const [savingAppUrl, setSavingAppUrl] = useState(false);
   const [gtmId, setGtmId] = useState(allSettings.gtm_id || '');
   const [savingGtmId, setSavingGtmId] = useState(false);
 
@@ -33,6 +35,18 @@ export default function GeneralSettingsSection(): React.ReactElement {
       setGlobalAppName(appName.trim());
     }
     setSavingAppName(false);
+  }
+
+  async function handleSaveAppUrl(): Promise<void> {
+    setSavingAppUrl(true);
+    // Strip trailing slash before saving
+    const value = appUrl.trim().replace(/\/$/, '');
+    setAppUrl(value);
+    const result = await updateSettings({ app_url: value });
+    if (result.success && result.data) {
+      setAllSettings((prev) => ({ ...prev, ...result.data }));
+    }
+    setSavingAppUrl(false);
   }
 
   async function handleSaveGtmId(): Promise<void> {
@@ -72,6 +86,32 @@ export default function GeneralSettingsSection(): React.ReactElement {
               disabled={savingAppName || !appName.trim() || appName.trim() === (allSettings.app_name || 'BlogWriter')}
             >
               {savingAppName ? 'Saving...' : 'Save'}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="settings-card">
+        <div className="settings-field">
+          <label className="settings-field__label">Website URL</label>
+          <p className="settings-field__current" style={{ fontFamily: 'inherit' }}>
+            The public URL of this app (e.g. <code>https://app.example.com</code>). Used as the base for links in emails. Trailing slashes are stripped automatically.
+          </p>
+          <div className="settings-field__row">
+            <input
+              className="input"
+              type="url"
+              value={appUrl}
+              onChange={(e) => setAppUrl(e.target.value)}
+              placeholder="https://app.example.com"
+              maxLength={500}
+            />
+            <button
+              className="btn btn--primary"
+              onClick={handleSaveAppUrl}
+              disabled={savingAppUrl || appUrl.trim().replace(/\/$/, '') === (allSettings.app_url || '')}
+            >
+              {savingAppUrl ? 'Saving...' : 'Save'}
             </button>
           </div>
         </div>

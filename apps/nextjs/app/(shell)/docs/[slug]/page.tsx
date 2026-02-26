@@ -7,11 +7,13 @@ import { fetchDocsPage, type DocsPage } from '@/lib/docs-api';
 import { fetchAdminDocsPage, type AdminDocsPage } from '@/lib/admin-api';
 import DocsContent from '@/components/docs/DocsContent';
 import { useDocsContext } from '../layout';
+import { useAppSettingsStore } from '@/stores/app-settings-store';
 
 export default function DocsSlugPage() {
   const { slug } = useParams<{ slug: string }>();
   const searchParams = useSearchParams();
   const { isAdmin, nav, refreshNav } = useDocsContext();
+  const appName = useAppSettingsStore((s) => s.appName);
 
   const [page, setPage] = useState<DocsPage | AdminDocsPage | null>(null);
   const [loading, setLoading] = useState(true);
@@ -44,6 +46,14 @@ export default function DocsSlugPage() {
 
     load();
   }, [slug, isAdmin]);
+
+  // Set browser tab title
+  useEffect(() => {
+    if (page) {
+      document.title = `${page.title} — ${appName}`;
+    }
+    return () => { document.title = appName; };
+  }, [page, appName]);
 
   // Remove ?edit=1 from URL after mounting
   useEffect(() => {

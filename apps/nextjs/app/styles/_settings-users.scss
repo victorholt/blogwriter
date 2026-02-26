@@ -133,4 +133,17 @@
       color: #dc2626;
     }
   }
+
+  &__delete-body {
+    font-size: 14px;
+    color: var(--color-gray-700);
+    line-height: 1.5;
+    margin-bottom: 20px;
+  }
+
+  &__delete-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
 }

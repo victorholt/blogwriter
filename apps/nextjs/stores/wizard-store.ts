@@ -60,6 +60,9 @@ interface WizardState {
   generationRecovering: boolean;
   agentOutputs: Record<string, string>;
 
+  // Auto-load control
+  skipAutoLoadVoice: boolean;
+
   // Debug
   debugMode: boolean;
   insightsEnabled: boolean;
@@ -118,6 +121,8 @@ interface WizardState {
   loadSavedVoice: (savedId: string, voice: BrandVoice, sourceUrl: string | null) => void;
   setSavedVoiceId: (id: string | null) => void;
   startWithDefaultVoice: (savedId: string, voice: BrandVoice, sourceUrl: string | null) => void;
+  startNewVoice: () => void;
+  clearSkipAutoLoad: () => void;
   rejectBrandVoice: () => void;
   resetGenerationForRetry: () => void;
   invalidateUrlDependentState: () => void;
@@ -167,6 +172,7 @@ const initialState = {
   review: null as BlogReview | null,
   blogTraceIds: {} as Record<string, string>,
   agentOutputs: {} as Record<string, string>,
+  skipAutoLoadVoice: false,
   debugMode: false,
   insightsEnabled: true,
   timelineStyle: 'preview-bar' as const,
@@ -304,6 +310,20 @@ export const useWizardStore = create<WizardState>()(
         brandVoiceConfirmed: true,
         currentStep: 3 as WizardStep,
       }),
+
+    startNewVoice: () =>
+      set({
+        ...initialState,
+        selectedDressIds: new Set<string>(),
+        dressesMap: new Map<string, Dress>(),
+        analysisStatusLog: [],
+        analysisDebugData: [],
+        blogTraceIds: {},
+        agentOutputs: {},
+        skipAutoLoadVoice: true,
+      }),
+
+    clearSkipAutoLoad: () => set({ skipAutoLoadVoice: false }),
 
     rejectBrandVoice: () =>
       set((state) => ({

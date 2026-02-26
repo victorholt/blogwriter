@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { db } from '../db';
-import { users, spaces, spaceMembers } from '../db/schema';
-import { eq, desc, sql } from 'drizzle-orm';
+import { users, spaces, spaceMembers, blogSessions } from '../db/schema';
+import { eq, desc, sql, inArray } from 'drizzle-orm';
 import { hashPassword } from '../services/auth';
 import { logAudit } from '../services/audit';
 
@@ -153,6 +153,48 @@ router.delete('/:id', async (req, res) => {
   } catch (err) {
     console.error('[AdminUsers] Disable error:', err);
     return res.status(500).json({ success: false, error: 'Failed to disable user' });
+  }
+});
+
+// DELETE /api/admin/:token/users/:id/permanent - Hard delete user (must be disabled first)
+router.delete('/:id/permanent', async (req, res) => {
+  try {
+    const [user] = await db
+      .select({ id: users.id, isActive: users.isActive })
+      .from(users)
+      .where(eq(users.id, req.params.id))
+      .limit(1);
+
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+    if (user.isActive) {
+      return res.status(400).json({ success: false, error: 'User must be disabled before permanent deletion' });
+    }
+
+    // Find owned spaces
+    const ownedSpaces = await db
+      .select({ id: spaces.id })
+      .from(spaces)
+      .where(eq(spaces.ownerId, req.params.id));
+
+    if (ownedSpaces.length > 0) {
+      const spaceIds = ownedSpaces.map((s) => s.id);
+      // Null out blogSessions referencing these spaces (no cascade defined)
+      await db.update(blogSessions).set({ spaceId: null }).where(inArray(blogSessions.spaceId, spaceIds));
+      // Delete spaces (cascades to spaceMembers and savedBrandVoices)
+      await db.delete(spaces).where(eq(spaces.ownerId, req.params.id));
+    }
+
+    // Delete user — DB handles: spaceMembers.userId (cascade), feedbackResponses.userId (set null)
+    await db.delete(users).where(eq(users.id, req.params.id));
+
+    logAudit({ action: 'admin.user.permanent-delete', resourceType: 'user', resourceId: req.params.id, req });
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error('[AdminUsers] Permanent delete error:', err);
+    return res.status(500).json({ success: false, error: 'Failed to permanently delete user' });
   }
 });
 

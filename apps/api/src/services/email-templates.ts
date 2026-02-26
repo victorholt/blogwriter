@@ -73,7 +73,7 @@ function wrapInLayout(appName: string, content: string): string {
 // ---------------------------------------------------------------------------
 
 const SAMPLE_APP_NAME = 'BrideWrite';
-const SAMPLE_APP_URL = 'https://app.example.com';
+export const SAMPLE_APP_URL = 'https://app.example.com';
 
 const welcome: EmailTemplate = {
   id: 'welcome',

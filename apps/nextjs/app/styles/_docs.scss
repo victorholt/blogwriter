@@ -227,6 +227,17 @@
     &--active {
       background: var(--color-blue-light);
 
+      &::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 3px;
+        background: var(--color-blue);
+        border-radius: 0 2px 2px 0;
+      }
+
       .docs-nav__link { color: var(--color-blue); font-weight: 600; }
     }
 
@@ -448,71 +459,71 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 4px;
   margin-bottom: 20px;
 
-  &__default-toggle {
+  // Shared base for status indicators
+  &__default-toggle,
+  &__publish-toggle {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
-    padding: 4px 10px;
+    gap: 4px;
+    padding: 3px 8px;
     font-size: 12px;
-    font-weight: 600;
-    border: 1px solid var(--color-gray-200);
-    border-radius: 100px;
-    background: var(--color-gray-50);
+    font-weight: 500;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: none;
     color: var(--color-gray-400);
     cursor: pointer;
-    transition: all 0.15s;
+    transition: color 0.12s;
 
-    &:hover { border-color: var(--color-gray-300); color: var(--color-gray-600); }
+    &:hover { color: var(--color-gray-600); }
+  }
 
+  &__default-toggle {
     &--active {
-      background: #fffbeb;
-      border-color: #fde68a;
       color: #d97706;
       cursor: default;
+      &:hover { color: #d97706; }
     }
   }
 
   &__publish-toggle {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 4px 10px;
-    font-size: 12px;
-    font-weight: 600;
-    border: 1px solid var(--color-gray-200);
-    border-radius: 100px;
-    background: var(--color-gray-50);
-    color: var(--color-gray-500);
-    cursor: pointer;
-    transition: all 0.15s;
-
-    &:hover { border-color: var(--color-gray-300); }
-
     &--published {
-      background: #f0fdf4;
-      border-color: #bbf7d0;
       color: #059669;
+      &:hover { color: #047857; }
     }
+  }
+
+  // Divider between status items and edit action
+  &__sep {
+    width: 1px;
+    height: 16px;
+    background: var(--color-gray-200);
+    margin: 0 4px;
+    flex-shrink: 0;
   }
 
   &__edit-btn {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
-    padding: 5px 12px;
+    gap: 4px;
+    padding: 4px 10px;
     font-size: 12px;
-    font-weight: 600;
-    background: var(--color-gray-800);
-    color: white;
-    border: none;
-    border-radius: var(--radius-md);
+    font-weight: 500;
+    border: 1px solid var(--color-gray-200);
+    border-radius: var(--radius-sm);
+    background: white;
+    color: var(--color-gray-600);
     cursor: pointer;
-    transition: background 0.15s;
+    transition: border-color 0.12s, color 0.12s, background 0.12s;
 
-    &:hover { background: var(--color-gray-700); }
+    &:hover {
+      border-color: var(--color-gray-300);
+      background: var(--color-gray-50);
+      color: var(--color-gray-800);
+    }
   }
 }
 

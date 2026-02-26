@@ -18,8 +18,8 @@ const lora = Lora({
 })
 
 export const metadata: Metadata = {
-  title: 'Blog Writer — AI-Powered Wedding Dress Blog Generator',
-  description: 'Generate professional wedding dress blog posts with AI-powered agents.',
+  title: 'BlogWriter',
+  description: 'AI-powered blog post generator.',
 }
 
 export default function RootLayout({

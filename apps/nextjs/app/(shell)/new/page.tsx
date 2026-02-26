@@ -174,6 +174,8 @@ export default function NewBlogPage(): React.ReactElement {
   const brandVoice = useWizardStore((s) => s.brandVoice);
   const storeUrl = useWizardStore((s) => s.storeUrl);
   const startWithDefaultVoice = useWizardStore((s) => s.startWithDefaultVoice);
+  const skipAutoLoad = useWizardStore((s) => s.skipAutoLoadVoice);
+  const clearSkipAutoLoad = useWizardStore((s) => s.clearSkipAutoLoad);
   const setStep = useWizardStore((s) => s.setStep);
   const loadedRef = useRef(false);
 
@@ -188,6 +190,12 @@ export default function NewBlogPage(): React.ReactElement {
   useEffect(() => {
     if (authLoading || loadedRef.current) return;
     if (!isAuthenticated) return;
+    // If the user explicitly chose "Start fresh" / "New Voice", skip auto-load this cycle
+    if (skipAutoLoad) {
+      loadedRef.current = true;
+      clearSkipAutoLoad();
+      return;
+    }
     // Only act on a truly fresh/empty wizard state
     if (brandVoice || storeUrl || currentStep !== 1 || view !== 'wizard') return;
     loadedRef.current = true;
@@ -202,7 +210,7 @@ export default function NewBlogPage(): React.ReactElement {
       .catch(() => {
         // Network error — stay on Step 1
       });
-  }, [authLoading, isAuthenticated, brandVoice, storeUrl, currentStep, view, startWithDefaultVoice, setStep]);
+  }, [authLoading, isAuthenticated, skipAutoLoad, clearSkipAutoLoad, brandVoice, storeUrl, currentStep, view, startWithDefaultVoice, setStep]);
 
   // Warn before refresh/close when user has made progress
   useEffect(() => {

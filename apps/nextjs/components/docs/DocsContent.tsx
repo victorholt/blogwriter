@@ -107,6 +107,7 @@ export default function DocsContent({ page, nav, isAdmin, editMode, onEditModeCh
             {page.isPublished ? <Eye size={13} /> : <EyeOff size={13} />}
             {page.isPublished ? 'Published' : 'Draft'}
           </button>
+          <span className="docs-admin-bar__sep" aria-hidden="true" />
           <button
             className="docs-admin-bar__edit-btn"
             onClick={() => onEditModeChange(true)}

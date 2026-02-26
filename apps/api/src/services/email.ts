@@ -2,7 +2,7 @@ import nodemailer from 'nodemailer';
 import { db } from '../db';
 import { appSettings } from '../db/schema';
 import { inArray } from 'drizzle-orm';
-import { renderTemplate, EMAIL_TEMPLATES } from './email-templates';
+import { renderTemplate, EMAIL_TEMPLATES, SAMPLE_APP_URL } from './email-templates';
 
 interface SmtpConfig {
   host: string;
@@ -90,8 +90,22 @@ function createTransporter(config: SmtpConfig): nodemailer.Transporter {
 // Helper to resolve runtime vars (appUrl, appName)
 // ---------------------------------------------------------------------------
 
-function getAppUrl(): string {
-  return process.env.APP_URL || process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:3000';
+async function getAppUrl(): Promise<string> {
+  // 1. DB setting wins — admin-configurable via General Settings
+  const rows = await db.select().from(appSettings).where(inArray(appSettings.key, ['app_url']));
+  const dbUrl = rows[0]?.value?.trim();
+  if (dbUrl) return dbUrl.replace(/\/$/, '');
+
+  // 2. Explicit env override
+  if (process.env.APP_URL) return process.env.APP_URL.replace(/\/$/, '');
+
+  // 3. Build from DOMAIN env var
+  if (process.env.DOMAIN) {
+    const protocol = process.env.APP_ENV === 'prod' ? 'https' : 'http';
+    return `${protocol}://${process.env.DOMAIN}`;
+  }
+
+  return 'http://localhost:3000';
 }
 
 async function getAppName(): Promise<string> {
@@ -136,7 +150,7 @@ async function sendEmail(
 // ---------------------------------------------------------------------------
 
 export async function sendPasswordResetEmail(toEmail: string, resetToken: string): Promise<boolean> {
-  const appUrl = getAppUrl();
+  const appUrl = await getAppUrl();
   const appName = await getAppName();
   const resetUrl = `${appUrl}/reset-password?token=${resetToken}`;
 
@@ -147,7 +161,7 @@ export async function sendPasswordResetEmail(toEmail: string, resetToken: string
 }
 
 export async function sendBlogSharedNotification(toEmail: string, fromName: string, blogTitle: string): Promise<boolean> {
-  const appUrl = getAppUrl();
+  const appUrl = await getAppUrl();
   const appName = await getAppName();
 
   const rendered = renderTemplate('blog-shared', { appName, fromName, blogTitle, appUrl });
@@ -157,7 +171,7 @@ export async function sendBlogSharedNotification(toEmail: string, fromName: stri
 }
 
 export async function sendWelcomeEmail(toEmail: string, displayName: string): Promise<boolean> {
-  const appUrl = getAppUrl();
+  const appUrl = await getAppUrl();
   const appName = await getAppName();
 
   const rendered = renderTemplate('welcome', { appName, displayName, appUrl });
@@ -181,8 +195,12 @@ export async function sendTemplateEmail(toEmail: string, templateId: string, var
   if (!tpl) return false;
 
   const appName = await getAppName();
-  const appUrl = getAppUrl();
-  const merged = { appName, appUrl, ...tpl.sampleVars, ...vars };
+  const appUrl = await getAppUrl();
+  // Replace the placeholder sample URL with the real app URL in every sampleVar value
+  const resolvedSampleVars = Object.fromEntries(
+    Object.entries(tpl.sampleVars).map(([k, v]) => [k, v.replaceAll(SAMPLE_APP_URL, appUrl)]),
+  );
+  const merged = { ...resolvedSampleVars, appName, appUrl, ...vars };
   const rendered = renderTemplate(templateId, merged);
   if (!rendered) return false;
 

@@ -10,9 +10,11 @@ import AttributionOverlay from '@/components/AttributionOverlay';
 import CompareDropdown from '@/components/CompareDropdown';
 import type { CompareMode } from '@/components/CompareDropdown';
 import { copyRichText } from '@/lib/copy-utils';
-import { fetchDebugMode, fetchBrandLabels, createShareLink, deleteSharedBlog, fetchDefaultSavedVoice } from '@/lib/api';
+import { fetchDebugMode, fetchBrandLabels, createShareLink, deleteSharedBlog } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth-store';
 import Modal from '@/components/ui/Modal';
+import NewBlogModal from '@/components/wizard/NewBlogModal';
+import { useNewBlogFlow } from '@/hooks/useNewBlogFlow';
 
 /**
  * Preprocess markdown to convert bracket placeholders and real links
@@ -98,8 +100,6 @@ export default function ResultView(): React.ReactElement {
   const generatedBlog = useWizardStore((s) => s.generatedBlog);
   const seoMetadata = useWizardStore((s) => s.seoMetadata);
   const review = useWizardStore((s) => s.review);
-  const reset = useWizardStore((s) => s.reset);
-  const startWithDefaultVoice = useWizardStore((s) => s.startWithDefaultVoice);
   const setStep = useWizardStore((s) => s.setStep);
   const blogTraceIds = useWizardStore((s) => s.blogTraceIds);
   const agentOutputs = useWizardStore((s) => s.agentOutputs);
@@ -260,23 +260,7 @@ export default function ResultView(): React.ReactElement {
   const { isAuthenticated, user } = useAuthStore();
   const isAdmin = isAuthenticated && user?.role === 'admin';
 
-  async function handleStartOver(): Promise<void> {
-    if (isAuthenticated) {
-      try {
-        const result = await fetchDefaultSavedVoice();
-        if (result.success && result.data) {
-          startWithDefaultVoice(result.data.id, result.data.voiceData, result.data.sourceUrl);
-          return;
-        }
-      } catch {
-        // Fall through
-      }
-      // Authenticated but no default voice — go to Step 1 for URL analysis
-      reset();
-      return;
-    }
-    reset();
-  }
+  const { trigger: handleStartOver, showModal, voices, handleSelectVoice, handleNewVoice, closeModal } = useNewBlogFlow();
 
   function getScoreColor(score: number): string {
     if (score >= 8) return 'var(--color-green)';
@@ -634,6 +618,14 @@ export default function ResultView(): React.ReactElement {
           </div>
         )}
       </Modal>
+
+      <NewBlogModal
+        showModal={showModal}
+        voices={voices}
+        handleSelectVoice={handleSelectVoice}
+        handleNewVoice={handleNewVoice}
+        closeModal={closeModal}
+      />
     </>
   );
 }

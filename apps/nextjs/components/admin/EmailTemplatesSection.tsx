@@ -131,27 +131,30 @@ export default function EmailTemplatesSection(): React.ReactElement {
                     </div>
 
                     <div className="email-tpl__card-footer">
-                      <input
-                        type="email"
-                        className="input email-tpl__test-input"
-                        placeholder="recipient@example.com"
-                        value={getTestEmail(tpl.id)}
-                        onChange={(e) => setTestEmails((prev) => ({ ...prev, [tpl.id]: e.target.value }))}
-                      />
-                      <button
-                        className="btn btn--primary"
-                        onClick={() => handleSendTest(tpl.id)}
-                        disabled={isSending || !getTestEmail(tpl.id)}
-                      >
-                        {isSending ? (
-                          <Loader2 size={14} className="spin" />
-                        ) : result?.status === 'success' ? (
-                          <Check size={14} />
-                        ) : (
-                          <Send size={14} />
-                        )}
-                        {isSending ? 'Sending...' : 'Send Test'}
-                      </button>
+                      <span className="email-tpl__test-label">Send a test email</span>
+                      <div className="email-tpl__test-row">
+                        <input
+                          type="email"
+                          className="input email-tpl__test-input"
+                          placeholder="recipient@example.com"
+                          value={getTestEmail(tpl.id)}
+                          onChange={(e) => setTestEmails((prev) => ({ ...prev, [tpl.id]: e.target.value }))}
+                        />
+                        <button
+                          className="btn btn--primary email-tpl__test-btn"
+                          onClick={() => handleSendTest(tpl.id)}
+                          disabled={isSending || !getTestEmail(tpl.id)}
+                        >
+                          {isSending ? (
+                            <Loader2 size={14} className="spin" />
+                          ) : result?.status === 'success' ? (
+                            <Check size={14} />
+                          ) : (
+                            <Send size={14} />
+                          )}
+                          {isSending ? 'Sending...' : 'Send Test'}
+                        </button>
+                      </div>
                       {result && (
                         <span className={`email-tpl__send-result email-tpl__send-result--${result.status}`}>
                           {result.message}

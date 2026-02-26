@@ -650,6 +650,16 @@ export async function reorderDocsPages(
   return res.json();
 }
 
+// --- Users ---
+
+export async function deleteUserPermanently(userId: string): Promise<{ success: boolean; error?: string }> {
+  const res = await fetch(`${API_BASE}/api/admin/users/${userId}/permanent`, {
+    method: 'DELETE',
+    credentials: 'include',
+  });
+  return res.json();
+}
+
 // --- Media Files ---
 
 export interface MediaFile {

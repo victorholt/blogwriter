@@ -305,17 +305,38 @@ export function downloadBrandVoiceAsPdf(bv: BrandVoice): void {
 
 // ── PDF Snapshot Export (HTML-to-canvas) ─────────────────────
 
+const SNAPSHOT_DESKTOP_WIDTH = 960;
+
 export async function downloadBrandVoiceAsSnapshot(
   element: HTMLElement,
   filename: string,
 ): Promise<void> {
-  // Render the DOM element to a high-res canvas
-  const canvas = await html2canvas(element, {
-    scale: 2,
-    useCORS: true,
-    backgroundColor: '#ffffff',
-    logging: false,
-  });
+  // Force desktop layout regardless of current viewport size.
+  // Save and override inline styles so the element renders at a fixed width
+  // while html2canvas captures it; windowWidth makes CSS media queries use
+  // the desktop breakpoints.
+  const prevWidth = element.style.width;
+  const prevMaxWidth = element.style.maxWidth;
+  const prevMinWidth = element.style.minWidth;
+  element.style.width = `${SNAPSHOT_DESKTOP_WIDTH}px`;
+  element.style.maxWidth = 'none';
+  element.style.minWidth = 'unset';
+
+  let canvas!: HTMLCanvasElement;
+  try {
+    canvas = await html2canvas(element, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#ffffff',
+      logging: false,
+      windowWidth: 1280,
+      width: SNAPSHOT_DESKTOP_WIDTH,
+    });
+  } finally {
+    element.style.width = prevWidth;
+    element.style.maxWidth = prevMaxWidth;
+    element.style.minWidth = prevMinWidth;
+  }
 
   const imgData = canvas.toDataURL('image/png');
   const imgWidthPx = canvas.width;
