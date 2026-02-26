@@ -130,7 +130,7 @@ export default function DocsEditor({ page, nav, onSaved, onCancel }: DocsEditorP
     if (!editor) return;
     setSaveError('');
     setSaving(true);
-    const content = editor.storage.markdown.getMarkdown();
+    const content = (editor.storage as any).markdown.getMarkdown();
     const result = await updateDocsPage(page.id, {
       title: title.trim() || page.title,
       slug: slug || page.slug,
